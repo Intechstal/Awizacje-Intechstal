@@ -136,7 +136,7 @@ def admin():
     dane = c.fetchall()
     conn.close()
 
-    zajete = set(a[6] for a in dane)
+    zajete = { row[6]: row[1] for row in awizacje }  # data_godzina : firma
 
     dni = []
     dzien = datetime.now().replace(hour=0, minute=0)
