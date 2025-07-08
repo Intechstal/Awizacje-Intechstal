@@ -1,78 +1,49 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Edytuj awizację</title>
 </head>
 <body>
     <h1>Edytuj awizację</h1>
-    <form action="/admin/edit/{{ awizacja[0] }}" method="post">
-        <label for="firma">Firma:</label><br>
-        <input type="text" id="firma" name="firma" value="{{ awizacja[1] }}" required><br><br>
+    <form method="post">
+        Firma:<br />
+        <input type="text" name="firma" value="{{ awizacja[1] }}" /><br />
 
-        <label for="rejestracja">Rejestracja:</label><br>
-        <input type="text" id="rejestracja" name="rejestracja" value="{{ awizacja[2] }}" required><br><br>
+        Rejestracja:<br />
+        <input type="text" name="rejestracja" value="{{ awizacja[2] }}" /><br />
 
-        <label for="kierowca">Kierowca:</label><br>
-        <input type="text" id="kierowca" name="kierowca" value="{{ awizacja[3] }}" required><br><br>
+        Kierowca:<br />
+        <input type="text" name="kierowca" value="{{ awizacja[3] }}" /><br />
 
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" value="{{ awizacja[4] }}" required><br><br>
+        Email:<br />
+        <input type="email" name="email_kierowcy" value="{{ awizacja[4] }}" /><br />
 
-        <label for="telefon_kierowcy">Telefon do kierowcy:</label><br>
-        <input type="tel" id="telefon_kierowcy" name="telefon_kierowcy" value="{{ awizacja[5] }}" required><br><br>
+        Telefon do kierowcy:<br />
+        <input type="text" name="telefon_kierowcy" value="{{ awizacja[5] }}" /><br />
 
-        <label for="data_godzina">Data i godzina:</label><br>
-        <input type="datetime-local" id="data_godzina" name="data_godzina" value="{{ awizacja[6] }}" required><br><br>
+        Data i godzina:<br />
+        <input type="datetime-local" name="data_godzina" value="{{ awizacja[6] }}" /><br />
 
-        <label for="typ_ladunku">Typ ładunku:</label><br>
-        <input type="text" id="typ_ladunku" name="typ_ladunku" value="{{ awizacja[7] }}" required><br><br>
+        Typ ładunku:<br />
+        <input type="text" name="typ_ladunku" value="{{ awizacja[7] }}" /><br />
 
-        <label for="waga_ladunku">Waga ładunku:</label><br>
-        <input type="text" id="waga_ladunku" name="waga_ladunku" value="{{ awizacja[8] }}" required><br><br>
+        Waga ładunku:<br />
+        <input type="text" name="waga_ladunku" value="{{ awizacja[8] }}" /><br />
 
-        <label for="komentarz">Komentarz:</label><br>
-        <textarea id="komentarz" name="komentarz">{{ awizacja[9] }}</textarea><br><br>
+        Komentarz:<br />
+        <textarea name="komentarz">{{ awizacja[9] }}</textarea><br />
 
-        <label for="status">Status:</label><br>
-        <select id="status" name="status">
+        Status:<br />
+        <select name="status">
             <option value="oczekująca" {% if awizacja[10] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
-            <option value="zaakceptowana" {% if awizacja[10] == 'zaakceptowana' %}selected{% endif %}>Zaakceptowana</option>
+            <option value="zatwierdzona" {% if awizacja[10] == 'zatwierdzona' %}selected{% endif %}>Zatwierdzona</option>
             <option value="odrzucona" {% if awizacja[10] == 'odrzucona' %}selected{% endif %}>Odrzucona</option>
-        </select><br><br>
+        </select><br /><br />
 
-        <input type="submit" value="Zapisz zmiany">
+        <input type="submit" value="Zapisz zmiany" />
     </form>
-    <br>
-    <a href="/admin">Powrót do panelu admina</a>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <title>Edytuj Awizację</title>
-</head>
-<body>
-    <h1>Edytuj Awizację #{{ awizacja[0] }}</h1>
-    <form method="POST">
-        <label>Firma:<br><input type="text" name="firma" value="{{ awizacja[1] }}" required></label><br><br>
-        <label>Rejestracja:<br><input type="text" name="rejestracja" value="{{ awizacja[2] }}" required></label><br><br>
-        <label>Kierowca:<br><input type="text" name="kierowca" value="{{ awizacja[3] }}" required></label><br><br>
-        <label>Email kierowcy:<br><input type="email" name="email_kierowcy" value="{{ awizacja[4] }}" required></label><br><br>
-        <label>Telefon kierowcy:<br><input type="tel" name="telefon_kierowcy" value="{{ awizacja[5] }}" required></label><br><br>
-        <label>Data i godzina:<br><input type="text" name="data_godzina" value="{{ awizacja[6] }}" required></label><br><br>
-        <label>Typ ładunku:<br><input type="text" name="typ_ladunku" value="{{ awizacja[7] }}" required></label><br><br>
-        <label>Komentarz:<br><textarea name="komentarz">{{ awizacja[8] }}</textarea></label><br><br>
-        <label>Status:<br>
-            <select name="status">
-                <option value="oczekująca" {% if awizacja[9] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
-                <option value="zaakceptowana" {% if awizacja[9] == 'zaakceptowana' %}selected{% endif %}>Zaakceptowana</option>
-                <option value="odrzucona" {% if awizacja[9] == 'odrzucona' %}selected{% endif %}>Odrzucona</option>
-            </select>
-        </label><br><br>
-        <button type="submit">Zapisz zmiany</button>
-    </form>
-    <p><a href="/admin">« Powrót do panelu</a></p>
+
+    <p><a href="{{ url_for('admin') }}">Powrót do panelu admina</a></p>
 </body>
 </html>
