@@ -27,8 +27,13 @@
         <label>Telefon kierowcy:</label><br>
         <input type="tel" name="telefon" value="{{ dane.telefon if dane is defined else '' }}" required><br><br>
 
-        <label>Data i godzina awizacji:</label><br>
-        <input type="datetime-local" name="data_godzina" value="{{ dane.data_godzina if dane is defined else '' }}" required><br><br>
+        <label>Wybierz godzinę:</label>
+<select name="data_godzina" required>
+    {% for slot in sloty %}
+        <option value="{{ slot }}">{{ slot.replace('T', ' ') }}</option>
+    {% endfor %}
+</select>
+<br><br>
 
         <label>Typ ładunku:</label><br>
         <input type="text" name="typ_ladunku" value="{{ dane.typ_ladunku if dane is defined else '' }}" required><br><br>
