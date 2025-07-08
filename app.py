@@ -75,48 +75,52 @@ def admin():
     awizacje = c.fetchall()
     conn.close()
 
-    # Przygotowanie listy 6 dni roboczych od dziś
     today = datetime.now()
     dni = []
     d = today
     while len(dni) < 6:
-        if d.weekday() < 5:  # 0-4 to dni robocze
+        if d.weekday() < 5:  # tylko dni robocze
             dni.append(d)
         d += timedelta(days=1)
 
-    # Przygotowanie slotów czasowych co 15 minut wg podanych przedziałów
     sloty = []
     przedzialy = [
         ("07:30", "09:30"),
         ("11:00", "13:15"),
         ("14:30", "20:00"),
     ]
-    for dzien in dni:
-        for start, end in przedzialy:
-            start_time = datetime.strptime(start, "%H:%M").time()
-            end_time = datetime.strptime(end, "%H:%M").time()
-            current = datetime.combine(dzien.date(), start_time)
-            end_dt = datetime.combine(dzien.date(), end_time)
-            while current < end_dt:
-                sloty.append(current)
-                current += timedelta(minutes=15)
+    for start, end in przedzialy:
+        s = datetime.strptime(start, "%H:%M")
+        e = datetime.strptime(end, "%H:%M")
+        while s < e:
+            sloty.append(s)
+            s += timedelta(minutes=15)
 
-    # Zajęte sloty: klucz to 'YYYY-MM-DDTHH:MM', wartość to dict z firmą i statusem
+    # Unikalne godziny w formacie HH:MM
+    godziny_unikalne = []
+    for slot in sloty:
+        godz = slot.strftime("%H:%M")
+        if godz not in godziny_unikalne:
+            godziny_unikalne.append(godz)
+
     zajete = {}
-
-    # Funkcja blokująca 1h (4 sloty po 15min) dla awizacji
-    def blokuj_sloty(start_dt, firma, status):
-        for i in range(4):  # 1 godzina, 4 sloty po 15 min
-            blok = start_dt + timedelta(minutes=15*i)
-            key = blok.strftime('%Y-%m-%dT%H:%M')
-            zajete[key] = {"firma": firma, "status": status}
-
     for a in awizacje:
-        id_, firma, rejestracja, kierowca, email, telefon, data_godzina, typ_ladunku, waga_ladunku, komentarz, status = a
-        start_dt = datetime.strptime(data_godzina, "%Y-%m-%dT%H:%M")
-        blokuj_sloty(start_dt, firma, status)
+        start_dt = datetime.strptime(a[6], "%Y-%m-%dT%H:%M")
+        firma = a[1]
+        status = a[10]
 
-    return render_template("admin.html", dni=dni, godziny=sloty, zajete=zajete, awizacje=awizacje)
+        if status == "zaakceptowana":
+            for i in range(4):  # blok 1h (4 sloty po 15 min)
+                blok = start_dt + timedelta(minutes=15*i)
+                slot = blok.strftime('%Y-%m-%dT%H:%M')
+                zajete[slot] = {"firma": firma, "status": "zaakceptowana"}
+        elif status == "oczekująca":
+            for i in range(4):
+                blok = start_dt + timedelta(minutes=15*i)
+                slot = blok.strftime('%Y-%m-%dT%H:%M')
+                zajete[slot] = {"firma": firma, "status": "oczekująca"}
+
+    return render_template("admin.html", dni=dni, godziny=sloty, godziny_unikalne=godziny_unikalne, zajete=zajete, awizacje=awizacje)
 
 @app.route('/admin/accept/<int:id>')
 @auth.login_required
@@ -138,5 +142,5 @@ def reject_awizacja(id):
     conn.close()
     return redirect('/admin')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
