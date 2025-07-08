@@ -1,46 +1,78 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <title>Panel administratora</title>
+    <meta charset="UTF-8" />
+    <title>Panel Admina - Awizacje</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Lista awizacji</h1>
-    <table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Firma</th>
-                <th>Rejestracja</th>
-                <th>Kierowca</th>
-                <th>Email</th>
-                <th>Telefon</th>
-                <th>Data i godzina</th>
-                <th>Typ ładunku</th>
-                <th>Waga ładunku</th>
-                <th>Komentarz</th>
-                <th>Status</th>
-                <th>Akcje</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for a in awizacje %}
-            <tr>
-                <td>{{ a[0] }}</td>
-                <td>{{ a[1] }}</td>
-                <td>{{ a[2] }}</td>
-                <td>{{ a[3] }}</td>
-                <td>{{ a[4] }}</td>
-                <td>{{ a[5] }}</td>
-                <td>{{ a[6] }}</td>
-                <td>{{ a[7] }}</td>
-                <td>{{ a[8] }}</td>
-                <td>{{ a[9] }}</td>
-                <td>{{ a[10] }}</td>
-                <td><a href="/admin/edit/{{ a[0] }}">Edytuj</a></td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <h1>Panel Admina - Lista Awizacji</h1>
+    {% if awizacje %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Firma</th>
+                    <th>Rejestracja</th>
+                    <th>Kierowca</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                    <th>Data i godzina</th>
+                    <th>Typ ładunku</th>
+                    <th>Waga ładunku</th>
+                    <th>Status</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in awizacje %}
+                <tr>
+                    <td>{{ a[0] }}</td>
+                    <td>{{ a[1] }}</td>
+                    <td>{{ a[2] }}</td>
+                    <td>{{ a[3] }}</td>
+                    <td>{{ a[4] }}</td>
+                    <td>{{ a[5] }}</td>
+                    <td>{{ a[6] }}</td>
+                    <td>{{ a[7] }}</td>
+                    <td>{{ a[8] }}</td>
+                    <td>{{ a[9] }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_awizacja', id=a[0]) }}">Edytuj awizację</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Brak awizacji do wyświetlenia.</p>
+    {% endif %}
 </body>
 </html>
