@@ -51,9 +51,9 @@ def index():
     zajete = set()
     for data, status, usunieta in rekordy:
         if status != "odrzucona":
-            dt = datetime.strptime(data, '%Y-%m-%d %H:%M')
-            for i in range(4):  # 1h = 4 sloty po 15 min
-                zajete.add((dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%d %H:%M'))
+            dt = datetime.strptime(data, '%Y-%m-%dT%H:%M')
+            for i in range(4):  # blok 1h = 4 sloty 15-minutowe
+                zajete.add((dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M'))
 
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     dni = []
@@ -69,23 +69,22 @@ def index():
             start_dt = datetime.combine(dzien.date(), datetime.strptime(start, "%H:%M").time())
             end_dt = datetime.combine(dzien.date(), datetime.strptime(end, "%H:%M").time())
             while start_dt < end_dt:
-                blok = [(start_dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%d %H:%M') for i in range(4)]
+                blok = [(start_dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M') for i in range(4)]
                 if all(b not in zajete for b in blok):
-                    sloty_dostepne.append(start_dt.strftime('%Y-%m-%d %H:%M'))
+                    sloty_dostepne.append(start_dt.strftime('%Y-%m-%dT%H:%M'))
                 start_dt += timedelta(minutes=15)
 
     return render_template('form.html', sloty=sloty_dostepne)
 
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
-    data_godzina = request.form['data_godzina'].replace("T", " ")
     dane = (
         request.form['firma'],
         request.form['rejestracja'],
         request.form['kierowca'],
         request.form['email'],
         request.form['telefon'],
-        data_godzina,
+        request.form['data_godzina'],
         request.form['typ_ladunku'],
         request.form['waga_ladunku'],
         request.form.get('komentarz', '')
@@ -129,14 +128,14 @@ def admin():
 
     zajete = {}
     for a in awizacje:
-        dt = datetime.strptime(a[6], '%Y-%m-%d %H:%M')
+        dt = datetime.strptime(a[6], '%Y-%m-%dT%H:%M')
         firma = a[1]
         status = a[10]
 
         if status != "odrzucona":
-            for i in range(4):
+            for i in range(4):  # blok 1h = 4 sloty po 15 min
                 blok = dt + timedelta(minutes=15 * i)
-                slot = blok.strftime('%Y-%m-%d %H:%M')
+                slot = blok.strftime('%Y-%m-%dT%H:%M')
                 zajete[slot] = {"firma": firma, "status": status}
 
     return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=sloty, zajete=zajete)
@@ -148,6 +147,7 @@ def update_status(id):
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     if status == "odrzucona":
+        # zamiast usuwać, oznaczamy jako usuniętą
         c.execute("UPDATE awizacje SET status=?, usunieta=1 WHERE id=?", (status, id))
     else:
         c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
@@ -162,14 +162,13 @@ def edit_awizacja(id):
     c = conn.cursor()
 
     if request.method == 'POST':
-        data_godzina = request.form['data_godzina'].replace("T", " ")
         dane = (
             request.form['firma'],
             request.form['rejestracja'],
             request.form['kierowca'],
             request.form['email'],
             request.form['telefon'],
-            data_godzina,
+            request.form['data_godzina'],
             request.form['typ_ladunku'],
             request.form['waga_ladunku'],
             request.form.get('komentarz', ''),
