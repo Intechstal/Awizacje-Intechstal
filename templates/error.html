@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Błąd awizacji</title>
+</head>
+<body>
+    <h2 style="color:red;">Błąd</h2>
+    <p>{{ message }}</p>
+
+    <form action="/" method="get">
+        <input type="hidden" name="firma" value="{{ dane.firma }}">
+        <input type="hidden" name="rejestracja" value="{{ dane.rejestracja }}">
+        <input type="hidden" name="kierowca" value="{{ dane.kierowca }}">
+        <input type="hidden" name="email_kierowcy" value="{{ dane.email_kierowcy }}">
+        <input type="hidden" name="telefon_kierowcy" value="{{ dane.telefon_kierowcy }}">
+        <input type="hidden" name="data_godzina" value="{{ dane.data_godzina }}">
+        <input type="hidden" name="typ_ladunku" value="{{ dane.typ_ladunku }}">
+        <input type="hidden" name="waga_ladunku" value="{{ dane.waga_ladunku }}">
+        <input type="hidden" name="komentarz" value="{{ dane.komentarz }}">
+        <button type="submit">🔙 Wróć do formularza</button>
+    </form>
+</body>
+</html>
