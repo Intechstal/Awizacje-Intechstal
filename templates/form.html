@@ -2,39 +2,64 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Dodaj awizację</title>
+    <title>Formularz awizacji</title>
 </head>
 <body>
-    <h1>Dodaj nową awizację</h1>
+    <h1>Nowa awizacja</h1>
     <form action="/zapisz" method="post">
-        <label for="firma">Firma:</label><br>
-        <input type="text" id="firma" name="firma" required><br><br>
+        <label>Firma:</label><br>
+        <input type="text" name="firma" required><br><br>
 
-        <label for="rejestracja">Rejestracja:</label><br>
-        <input type="text" id="rejestracja" name="rejestracja" required><br><br>
+        <label>Rejestracja:</label><br>
+        <input type="text" name="rejestracja" required><br><br>
 
-        <label for="kierowca">Kierowca:</label><br>
-        <input type="text" id="kierowca" name="kierowca" required><br><br>
+        <label>Kierowca:</label><br>
+        <input type="text" name="kierowca" required><br><br>
 
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" required><br><br>
+        <label>Email:</label><br>
+        <input type="email" name="email_kierowcy" required><br><br>
 
-        <label for="telefon_kierowcy">Telefon do kierowcy:</label><br>
-        <input type="tel" id="telefon_kierowcy" name="telefon_kierowcy" required><br><br>
+        <label>Telefon do kierowcy:</label><br>
+        <input type="text" name="telefon_kierowcy" required><br><br>
 
-        <label for="data_godzina">Data i godzina:</label><br>
+        <label>Data i godzina (07:30–10:30, 11:00–13:45, 14:15–20:00):</label><br>
         <input type="datetime-local" id="data_godzina" name="data_godzina" required><br><br>
 
-        <label for="typ_ladunku">Typ ładunku:</label><br>
-        <input type="text" id="typ_ladunku" name="typ_ladunku" required><br><br>
+        <label>Typ ładunku:</label><br>
+        <input type="text" name="typ_ladunku" required><br><br>
 
-        <label for="waga_ladunku">Waga ładunku:</label><br>
-        <input type="text" id="waga_ladunku" name="waga_ladunku" required><br><br>
+        <label>Waga ładunku:</label><br>
+        <input type="text" name="waga_ladunku" required><br><br>
 
-        <label for="komentarz">Komentarz:</label><br>
-        <textarea id="komentarz" name="komentarz"></textarea><br><br>
+        <label>Komentarz:</label><br>
+        <textarea name="komentarz"></textarea><br><br>
 
-        <input type="submit" value="Zapisz">
+        <input type="submit" value="Zapisz awizację">
     </form>
+
+    <script>
+    document.getElementById('data_godzina').addEventListener('change', function () {
+        const input = this;
+        const dt = new Date(input.value);
+        const dzien = dt.getDay(); // 0 = niedziela, 6 = sobota
+        const godzina = dt.getHours();
+        const minuty = dt.getMinutes();
+        const minuty_calkowite = godzina * 60 + minuty;
+
+        // Dopuszczalne przedziały
+        const przedzialy = [
+            [450, 630],   // 07:30–10:30
+            [660, 825],   // 11:00–13:45
+            [855, 1200]   // 14:15–20:00
+        ];
+
+        const dozwolony = przedzialy.some(([od, do_]) => minuty_calkowite >= od && minuty_calkowite <= do_);
+
+        if (dzien === 0 || dzien === 6 || !dozwolony) {
+            alert("Dozwolone godziny: 07:30–10:30, 11:00–13:45, 14:15–20:00 (pon–pt)");
+            input.value = "";
+        }
+    });
+    </script>
 </body>
 </html>
