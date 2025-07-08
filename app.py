@@ -47,6 +47,7 @@ def index():
     rekordy = c.fetchall()
     conn.close()
 
+    # Budowanie listy zajętych slotów
     zajete = set()
     for data, status in rekordy:
         if status != "odrzucona":
@@ -54,6 +55,7 @@ def index():
             for i in range(4):  # blok 1h
                 zajete.add((dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M'))
 
+    # Sloty: tylko dni robocze i określone zakresy
     today = datetime.now().replace(hour=0, minute=0)
     dni = []
     d = today
@@ -69,6 +71,7 @@ def index():
             end_dt = datetime.combine(dzien.date(), datetime.strptime(end, "%H:%M").time())
             while start_dt < end_dt:
                 slot_str = start_dt.strftime('%Y-%m-%dT%H:%M')
+                # dodaj tylko jeśli cały blok 1h jest wolny
                 blok = [(start_dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M') for i in range(4)]
                 if all(b not in zajete for b in blok):
                     sloty_dostepne.append(slot_str)
@@ -118,6 +121,7 @@ def admin():
             dni.append(d)
         d += timedelta(days=1)
 
+    # Polskie nazwy dni (pełne)
     dni_polskie = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek']
     dni_i_nazwy = list(zip(dni, dni_polskie))
 
