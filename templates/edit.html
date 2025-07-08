@@ -2,6 +2,55 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
+    <title>Edytuj awizację</title>
+</head>
+<body>
+    <h1>Edytuj awizację</h1>
+    <form action="/admin/edit/{{ awizacja[0] }}" method="post">
+        <label for="firma">Firma:</label><br>
+        <input type="text" id="firma" name="firma" value="{{ awizacja[1] }}" required><br><br>
+
+        <label for="rejestracja">Rejestracja:</label><br>
+        <input type="text" id="rejestracja" name="rejestracja" value="{{ awizacja[2] }}" required><br><br>
+
+        <label for="kierowca">Kierowca:</label><br>
+        <input type="text" id="kierowca" name="kierowca" value="{{ awizacja[3] }}" required><br><br>
+
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" value="{{ awizacja[4] }}" required><br><br>
+
+        <label for="telefon_kierowcy">Telefon do kierowcy:</label><br>
+        <input type="tel" id="telefon_kierowcy" name="telefon_kierowcy" value="{{ awizacja[5] }}" required><br><br>
+
+        <label for="data_godzina">Data i godzina:</label><br>
+        <input type="datetime-local" id="data_godzina" name="data_godzina" value="{{ awizacja[6] }}" required><br><br>
+
+        <label for="typ_ladunku">Typ ładunku:</label><br>
+        <input type="text" id="typ_ladunku" name="typ_ladunku" value="{{ awizacja[7] }}" required><br><br>
+
+        <label for="waga_ladunku">Waga ładunku:</label><br>
+        <input type="text" id="waga_ladunku" name="waga_ladunku" value="{{ awizacja[8] }}" required><br><br>
+
+        <label for="komentarz">Komentarz:</label><br>
+        <textarea id="komentarz" name="komentarz">{{ awizacja[9] }}</textarea><br><br>
+
+        <label for="status">Status:</label><br>
+        <select id="status" name="status">
+            <option value="oczekująca" {% if awizacja[10] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
+            <option value="zaakceptowana" {% if awizacja[10] == 'zaakceptowana' %}selected{% endif %}>Zaakceptowana</option>
+            <option value="odrzucona" {% if awizacja[10] == 'odrzucona' %}selected{% endif %}>Odrzucona</option>
+        </select><br><br>
+
+        <input type="submit" value="Zapisz zmiany">
+    </form>
+    <br>
+    <a href="/admin">Powrót do panelu admina</a>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
     <title>Edytuj Awizację</title>
 </head>
 <body>
