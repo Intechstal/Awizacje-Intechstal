@@ -27,10 +27,18 @@
         .wolny {
             background-color: #f0f0f0; /* jasnoszary */
         }
+        input, select, textarea {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        form {
+            margin: 0;
+        }
     </style>
 </head>
 <body>
     <h1>Panel Admina - Awizacje</h1>
+
     <table>
         <thead>
             <tr>
@@ -78,27 +86,31 @@
         <tbody>
             {% for a in awizacje %}
                 <tr>
-                    <td>{{ a[1] }}</td>
-                    <td>{{ a[2] }}</td>
-                    <td>{{ a[3] }}</td>
-                    <td>{{ a[4] }}</td>
-                    <td>{{ a[5] }}</td>
-                    <td>{{ a[6].replace('T', ' ') }}</td>
-                    <td>{{ a[7] }}</td>
-                    <td>{{ a[8] }}</td>
-                    <td>{{ a[9] }}</td>
-                    <td>{{ a[10] }}</td>
-                    <td>
-                        <a href="/admin/edit/{{ a[0] }}">Edytuj</a> <br><br>
-                        <form method="GET" action="/admin/update_status/{{ a[0] }}" style="margin:0;">
-                            <select name="status" onchange="if(this.value=='odrzuć'){if(confirm('Na pewno usunąć awizację?')){window.location.href='/admin/reject/{{ a[0] }}';} else {this.value='';}} else {window.location.href='/admin/update_status/{{ a[0] }}?status='+this.value;}">
-                                <option value="">Wybierz akcję</option>
-                                <option value="zaakceptowana">Zaakceptuj</option>
-                                <option value="oczekująca">Oczekujące</option>
-                                <option value="odrzuć">Odrzuć</option>
+                    <form method="POST" action="/admin">
+                        <td><input type="text" name="firma" value="{{ a[1] }}" required></td>
+                        <td><input type="text" name="rejestracja" value="{{ a[2] }}" required></td>
+                        <td><input type="text" name="kierowca" value="{{ a[3] }}" required></td>
+                        <td><input type="email" name="email" value="{{ a[4] }}" required></td>
+                        <td><input type="text" name="telefon" value="{{ a[5] }}" required></td>
+                        <td><input type="datetime-local" name="data_godzina" value="{{ a[6] }}" required></td>
+                        <td><input type="text" name="typ_ladunku" value="{{ a[7] }}"></td>
+                        <td><input type="text" name="waga_ladunku" value="{{ a[8] }}"></td>
+                        <td><textarea name="komentarz">{{ a[9] }}</textarea></td>
+                        <td>
+                            <select name="status" required>
+                                <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
+                                <option value="zaakceptowana" {% if a[10] == 'zaakceptowana' %}selected{% endif %}>Zaakceptowana</option>
                             </select>
-                        </form>
-                    </td>
+                        </td>
+                        <td>
+                            <input type="hidden" name="id" value="{{ a[0] }}">
+                            <button type="submit">Zapisz</button>
+                    </form>
+                    <form method="POST" action="/admin" style="display:inline;">
+                        <input type="hidden" name="usun_id" value="{{ a[0] }}">
+                        <button type="submit" onclick="return confirm('Na pewno usunąć awizację?')">Odrzuć</button>
+                    </form>
+                        </td>
                 </tr>
             {% endfor %}
         </tbody>
