@@ -8,7 +8,7 @@ app = Flask(__name__)
 auth = HTTPBasicAuth()
 
 users = {
-    "admin": generate_password_hash("twojehaslo")  # Zmień hasło
+    "admin": generate_password_hash("twojehaslo")  # Zmień hasło!
 }
 
 @auth.verify_password
@@ -45,15 +45,17 @@ def index():
 
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
-    firma = request.form['firma']
-    rejestracja = request.form['rejestracja']
-    kierowca = request.form['kierowca']
-    email = request.form['email']
-    telefon = request.form['telefon']
-    data_godzina = request.form['data_godzina']
-    typ_ladunku = request.form['typ_ladunku']
-    waga_ladunku = request.form['waga_ladunku']
-    komentarz = request.form.get('komentarz', '')
+    dane = (
+        request.form['firma'],
+        request.form['rejestracja'],
+        request.form['kierowca'],
+        request.form['email'],
+        request.form['telefon'],
+        request.form['data_godzina'],
+        request.form['typ_ladunku'],
+        request.form['waga_ladunku'],
+        request.form.get('komentarz', '')
+    )
 
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
@@ -61,11 +63,9 @@ def zapisz():
         INSERT INTO awizacje (firma, rejestracja, kierowca, email, telefon, data_godzina,
                               typ_ladunku, waga_ladunku, komentarz)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (firma, rejestracja, kierowca, email, telefon, data_godzina,
-          typ_ladunku, waga_ladunku, komentarz))
+    ''', dane)
     conn.commit()
     conn.close()
-
     return render_template('success.html')
 
 @app.route('/admin')
@@ -85,7 +85,6 @@ def admin():
             dni.append(d)
         d += timedelta(days=1)
 
-    # Przedziały czasowe: 07:30–09:30, 11:00–13:15, 14:15–20:00 (co 15 min)
     sloty = []
     for start, end in [("07:30", "09:30"), ("11:00", "13:15"), ("14:15", "20:00")]:
         s = datetime.strptime(start, "%H:%M")
@@ -101,7 +100,7 @@ def admin():
         status = a[10]
 
         if status != "odrzucona":
-            for i in range(4):  # blok 1h = 4x15 min
+            for i in range(4):  # blok 1h = 4 sloty
                 blok = dt + timedelta(minutes=15 * i)
                 slot = blok.strftime('%Y-%m-%dT%H:%M')
                 zajete[slot] = {"firma": firma, "status": status}
@@ -114,15 +113,47 @@ def update_status(id):
     status = request.form['status']
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-
     if status == "odrzucona":
         c.execute("DELETE FROM awizacje WHERE id=?", (id,))
     else:
         c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
-
     conn.commit()
     conn.close()
     return redirect('/admin')
+
+@app.route('/admin/edit/<int:id>', methods=['GET', 'POST'])
+@auth.login_required
+def edit_awizacja(id):
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+
+    if request.method == 'POST':
+        dane = (
+            request.form['firma'],
+            request.form['rejestracja'],
+            request.form['kierowca'],
+            request.form['email'],
+            request.form['telefon'],
+            request.form['data_godzina'],
+            request.form['typ_ladunku'],
+            request.form['waga_ladunku'],
+            request.form.get('komentarz', ''),
+            id
+        )
+        c.execute('''
+            UPDATE awizacje
+            SET firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
+                data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
+            WHERE id=?
+        ''', dane)
+        conn.commit()
+        conn.close()
+        return redirect('/admin')
+    else:
+        c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
+        dane = c.fetchone()
+        conn.close()
+        return render_template("edit.html", dane=dane)
 
 if __name__ == '__main__':
     app.run(debug=True)
