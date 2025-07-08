@@ -7,14 +7,13 @@ from datetime import datetime
 app = Flask(__name__)
 auth = HTTPBasicAuth()
 
-# Dane logowania
 users = {
-    "admin": generate_password_hash("twojehaslo")  # Zmień hasło!
+    "admin": generate_password_hash("twojehaslo")  # Zmień na swoje hasło
 }
 
 @auth.verify_password
 def verify_password(username, password):
-    if username in users and check_password_hash(users[username], password):
+    if username in users and check_password_hash(users.get(username), password):
         return username
 
 # Inicjalizacja bazy danych
@@ -43,7 +42,18 @@ init_db()
 
 @app.route('/')
 def index():
-    return render_template('form.html')
+    dane = {
+        'firma': request.args.get('firma', ''),
+        'rejestracja': request.args.get('rejestracja', ''),
+        'kierowca': request.args.get('kierowca', ''),
+        'email_kierowcy': request.args.get('email_kierowcy', ''),
+        'telefon_kierowcy': request.args.get('telefon_kierowcy', ''),
+        'data_godzina': request.args.get('data_godzina', ''),
+        'typ_ladunku': request.args.get('typ_ladunku', ''),
+        'waga_ladunku': request.args.get('waga_ladunku', ''),
+        'komentarz': request.args.get('komentarz', '')
+    }
+    return render_template('form.html', dane=dane)
 
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
@@ -57,11 +67,23 @@ def zapisz():
     waga = request.form['waga_ladunku']
     komentarz = request.form.get('komentarz', '')
 
+    dane = {
+        'firma': firma,
+        'rejestracja': rejestracja,
+        'kierowca': kierowca,
+        'email_kierowcy': email,
+        'telefon_kierowcy': telefon,
+        'data_godzina': data_godzina,
+        'typ_ladunku': typ,
+        'waga_ladunku': waga,
+        'komentarz': komentarz
+    }
+
     try:
         dt = datetime.strptime(data_godzina, '%Y-%m-%dT%H:%M')
 
         if dt.weekday() >= 5:
-            return "Awizacje możliwe tylko w dni robocze (pon–pt)", 400
+            return render_template("error.html", message="Awizacje możliwe tylko w dni robocze (pon–pt).", dane=dane)
 
         start_min = dt.hour * 60 + dt.minute
         end_min = start_min + 60  # Blok 1h
@@ -72,15 +94,9 @@ def zapisz():
             (855, 1200)   # 14:15–20:00
         ]
 
-        valid = False
-        for p_start, p_end in przedzialy:
-            if start_min >= p_start and end_min <= p_end:
-                valid = True
-                break
-        if not valid:
-            return "Blok 1h musi mieścić się w jednym z dozwolonych przedziałów.", 400
+        if not any(start_min >= p1 and end_min <= p2 for (p1, p2) in przedzialy):
+            return render_template("error.html", message="Rezerwacja 1h musi mieścić się w jednym z dozwolonych przedziałów.", dane=dane)
 
-        # Sprawdź kolizje ±60 min
         conn = sqlite3.connect('awizacje.db')
         c = conn.cursor()
         c.execute('SELECT data_godzina FROM awizacje')
@@ -91,10 +107,10 @@ def zapisz():
             istnieje = datetime.strptime(czas, '%Y-%m-%dT%H:%M')
             różnica = abs((dt - istnieje).total_seconds()) / 60
             if różnica < 60:
-                return f"Kolizja z inną awizacją o {istnieje.strftime('%H:%M')}. Odstęp min. 1h.", 400
+                return render_template("error.html", message=f"Kolizja z inną awizacją o {istnieje.strftime('%H:%M')}. Odstęp min. 1h.", dane=dane)
 
     except Exception as e:
-        return f"Błąd daty: {e}", 400
+        return render_template("error.html", message=f"Błąd: {e}", dane=dane)
 
     # Zapis do bazy
     conn = sqlite3.connect('awizacje.db')
