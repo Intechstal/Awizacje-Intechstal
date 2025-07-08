@@ -13,8 +13,8 @@ users = {
 
 @auth.verify_password
 def verify_password(username, password):
-if username in users and check_password_hash(users.get(username), password):
-return username
+    if username in users and check_password_hash(users.get(username), password):
+    return username
 
 def init_db():
 conn = sqlite3.connect('awizacje.db')
