@@ -8,31 +8,31 @@
     <h1>Nowa awizacja</h1>
     <form action="/zapisz" method="post">
         <label>Firma:</label><br>
-        <input type="text" name="firma" required><br><br>
+        <input type="text" name="firma" value="{{ dane.firma }}" required><br><br>
 
         <label>Rejestracja:</label><br>
-        <input type="text" name="rejestracja" required><br><br>
+        <input type="text" name="rejestracja" value="{{ dane.rejestracja }}" required><br><br>
 
         <label>Kierowca:</label><br>
-        <input type="text" name="kierowca" required><br><br>
+        <input type="text" name="kierowca" value="{{ dane.kierowca }}" required><br><br>
 
         <label>Email:</label><br>
-        <input type="email" name="email_kierowcy" required><br><br>
+        <input type="email" name="email_kierowcy" value="{{ dane.email_kierowcy }}" required><br><br>
 
         <label>Telefon do kierowcy:</label><br>
-        <input type="text" name="telefon_kierowcy" required><br><br>
+        <input type="text" name="telefon_kierowcy" value="{{ dane.telefon_kierowcy }}" required><br><br>
 
-        <label>Data i godzina (07:30–10:30, 11:00–13:45, 14:15–20:00):</label><br>
-        <input type="datetime-local" id="data_godzina" name="data_godzina" required><br><br>
+        <label>Data i godzina (1h w przedziale):</label><br>
+        <input type="datetime-local" id="data_godzina" name="data_godzina" value="{{ dane.data_godzina }}" required><br><br>
 
         <label>Typ ładunku:</label><br>
-        <input type="text" name="typ_ladunku" required><br><br>
+        <input type="text" name="typ_ladunku" value="{{ dane.typ_ladunku }}" required><br><br>
 
         <label>Waga ładunku:</label><br>
-        <input type="text" name="waga_ladunku" required><br><br>
+        <input type="text" name="waga_ladunku" value="{{ dane.waga_ladunku }}" required><br><br>
 
         <label>Komentarz:</label><br>
-        <textarea name="komentarz"></textarea><br><br>
+        <textarea name="komentarz">{{ dane.komentarz }}</textarea><br><br>
 
         <input type="submit" value="Zapisz awizację">
     </form>
@@ -41,10 +41,9 @@
     document.getElementById('data_godzina').addEventListener('change', function () {
         const input = this;
         const dt = new Date(input.value);
-        const dzien = dt.getDay(); // 0 = niedziela, 6 = sobota
-        const godzina = dt.getHours();
-        const minuty = dt.getMinutes();
-        const minuty_calkowite = godzina * 60 + minuty;
+        const dzien = dt.getDay();
+        const minuty = dt.getHours() * 60 + dt.getMinutes();
+        const blok_koniec = minuty + 60;
 
         const przedzialy = [
             [450, 630],   // 07:30–10:30
@@ -52,12 +51,10 @@
             [855, 1200]   // 14:15–20:00
         ];
 
-        const dozwolony = przedzialy.some(([od, do_]) => 
-            minuty_calkowite >= od && (minuty_calkowite + 60) <= do_
-        );
+        const ok = przedzialy.some(([od, do_]) => minuty >= od && blok_koniec <= do_);
 
-        if (dzien === 0 || dzien === 6 || !dozwolony) {
-            alert("Dozwolone: pon–pt i godziny: 07:30–10:30, 11:00–13:45, 14:15–20:00 (rezerwacja 1h)");
+        if (dzien === 0 || dzien === 6 || !ok) {
+            alert("Dozwolone: pon–pt, przedziały: 07:30–10:30, 11:00–13:45, 14:15–20:00 (bloki 1h)");
             input.value = "";
         }
     });
