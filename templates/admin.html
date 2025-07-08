@@ -2,193 +2,39 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8" />
-    <title>Panel Admina - Awizacje</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        a {
-            text-decoration: none;
-            color: #0066cc;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        h1 {
-            margin-bottom: 10px;
-        }
-        .top-links {
-            margin-bottom: 15px;
-        }
-        .top-links a {
-            margin-right: 20px;
-            font-weight: bold;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-        }
-
-        th, td {
-            border: 1px solid #ccc;
-            padding: 6px 8px;
-            text-align: center;
-        }
-
-        th {
-            background-color: #f0f0f0;
-        }
-
-        td.slot {
-            width: 60px;
-            cursor: default;
-            user-select: none;
-        }
-
-        td.slot.available {
-            background-color: #e6ffed;
-        }
-
-        td.slot.booked {
-            background-color: #ffdddd;
-            font-weight: bold;
-            font-size: 0.85rem;
-        }
-
-        /* Lista awizacji */
-        table.awizacje {
-            font-size: 1rem;
-            margin-top: 10px;
-        }
-
-        tr.status-oczekująca {
-            background-color: #fff4f4;
-        }
-
-        tr.status-akceptowana {
-            background-color: #e6ffed;
-        }
-
-        tr.status-odrzucona {
-            background-color: #fcebea;
-            color: #a94442;
-        }
-
-        select {
-            padding: 4px;
-            font-size: 1rem;
-        }
-
-        button {
-            padding: 4px 8px;
-            font-size: 1rem;
-            margin-left: 5px;
-            cursor: pointer;
-        }
-
-        .edit-link {
-            font-size: 0.9rem;
-            color: #444;
-            margin-left: 10px;
-        }
-
-        .edit-link:hover {
-            text-decoration: underline;
-        }
-    </style>
+    <title>Panel administratora</title>
 </head>
 <body>
-    <h1>Panel Admina - Awizacje</h1>
-
-    <div class="top-links">
-        <a href="/historia">→ Historia wszystkich awizacji</a>
-        <a href="/">→ Formularz nowej awizacji</a>
-    </div>
-
-    <!-- Kalendarz bloków czasowych -->
-    <table>
+    <h1>Awizacje</h1>
+    <table border="1">
         <thead>
             <tr>
-                <th>Godzina</th>
-                {% for dzien in dni %}
-                    <th>
-                        {{ ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"][dzien.weekday()] }}
-                        <br>{{ dzien.strftime('%d.%m') }}
-                    </th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for godzina in godziny %}
-            <tr>
-                <td>{{ godzina }}</td>
-                {% for dzien in dni %}
-                    {% set datetime_slot = dzien.strftime('%Y-%m-%d') + ' ' + godzina %}
-                    {% if datetime_slot in zajete %}
-                        <td class="slot booked" title="{{ zajete[datetime_slot].firma }} ({{ zajete[datetime_slot].status }})">
-                            {{ zajete[datetime_slot].firma }}
-                        </td>
-                    {% else %}
-                        <td class="slot available"></td>
-                    {% endif %}
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- Lista awizacji -->
-    {% if awizacje %}
-    <table class="awizacje">
-        <thead>
-            <tr>
+                <th>Data</th>
                 <th>Firma</th>
-                <th>Rejestracja</th>
-                <th>Kierowca</th>
-                <th>Email</th>
-                <th>Telefon</th>
-                <th>Data i godzina</th>
-                <th>Typ ładunku</th>
-                <th>Waga ładunku</th>
-                <th>Komentarz</th>
                 <th>Status</th>
                 <th>Akcje</th>
             </tr>
         </thead>
         <tbody>
             {% for a in awizacje %}
-            <tr class="status-{{ a[9]|replace(' ', '') }}">
-                <td>{{ a[0] }}</td>
+            <tr>
+                <td>{{ a[6].replace('T', ' ') }}</td>
                 <td>{{ a[1] }}</td>
-                <td>{{ a[2] }}</td>
-                <td>{{ a[3] }}</td>
-                <td>{{ a[4] }}</td>
-                <td>{{ a[5] }}</td>
-                <td>{{ a[6] }}</td>
-                <td>{{ a[7] }}</td>
-                <td>{{ a[8] }}</td>
-                <td>{{ a[9] }}</td>
+                <td>{{ a[10] }}</td>
                 <td>
-                    <form action="/admin/update_status/{{ a[0] }}" method="POST" style="display:inline;">
+                    <form action="/admin/update_status/{{ a[0] }}" method="post" style="display:inline">
                         <select name="status">
-                            <option value="oczekująca" {% if a[9]=='oczekująca' %}selected{% endif %}>oczekująca</option>
-                            <option value="akceptowana" {% if a[9]=='akceptowana' %}selected{% endif %}>akceptowana</option>
-                            <option value="odrzucona">odrzucona</option>
+                            <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>oczekująca</option>
+                            <option value="zatwierdzona" {% if a[10] == 'zatwierdzona' %}selected{% endif %}>zatwierdzona</option>
+                            <option value="odrzucona" {% if a[10] == 'odrzucona' %}selected{% endif %}>odrzucona</option>
                         </select>
                         <button type="submit">Zmień</button>
                     </form>
-                    <a class="edit-link" href="/admin/edit/{{ a[0] }}" title="Edytuj">✎</a>
+                    <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% else %}
-        <p>Brak aktywnych awizacji do wyświetlenia.</p>
-    {% endif %}
 </body>
 </html>
