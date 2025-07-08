@@ -31,7 +31,8 @@ def init_db():
             typ_ladunku TEXT,
             waga_ladunku TEXT,
             komentarz TEXT,
-            status TEXT DEFAULT 'oczekująca'
+            status TEXT DEFAULT 'oczekująca',
+            usunieta INTEGER DEFAULT 0
         )
     ''')
     conn.commit()
@@ -43,18 +44,18 @@ init_db()
 def index():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    c.execute("SELECT data_godzina, status FROM awizacje")
+    c.execute("SELECT data_godzina, status, usunieta FROM awizacje WHERE usunieta=0")
     rekordy = c.fetchall()
     conn.close()
 
     zajete = set()
-    for data, status in rekordy:
+    for data, status, usunieta in rekordy:
         if status != "odrzucona":
             dt = datetime.strptime(data, '%Y-%m-%dT%H:%M')
-            for i in range(4):
+            for i in range(4):  # blok 1h = 4 sloty 15-minutowe
                 zajete.add((dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M'))
 
-    today = datetime.now().replace(hour=0, minute=0)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     dni = []
     d = today
     while len(dni) < 5:
@@ -68,10 +69,9 @@ def index():
             start_dt = datetime.combine(dzien.date(), datetime.strptime(start, "%H:%M").time())
             end_dt = datetime.combine(dzien.date(), datetime.strptime(end, "%H:%M").time())
             while start_dt < end_dt:
-                slot_str = start_dt.strftime('%Y-%m-%dT%H:%M')
                 blok = [(start_dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M') for i in range(4)]
                 if all(b not in zajete for b in blok):
-                    sloty_dostepne.append(slot_str)
+                    sloty_dostepne.append(start_dt.strftime('%Y-%m-%dT%H:%M'))
                 start_dt += timedelta(minutes=15)
 
     return render_template('form.html', sloty=sloty_dostepne)
@@ -106,12 +106,11 @@ def zapisz():
 def admin():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    # Pobieramy tylko awizacje, które nie są odrzucone
-    c.execute("SELECT * FROM awizacje WHERE status != 'odrzucona' ORDER BY data_godzina ASC")
+    c.execute("SELECT * FROM awizacje WHERE usunieta=0 ORDER BY data_godzina ASC")
     awizacje = c.fetchall()
     conn.close()
 
-    today = datetime.now().replace(hour=0, minute=0)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     dni = []
     d = today
     while len(dni) < 5:
@@ -134,7 +133,7 @@ def admin():
         status = a[10]
 
         if status != "odrzucona":
-            for i in range(4):
+            for i in range(4):  # blok 1h = 4 sloty po 15 min
                 blok = dt + timedelta(minutes=15 * i)
                 slot = blok.strftime('%Y-%m-%dT%H:%M')
                 zajete[slot] = {"firma": firma, "status": status}
@@ -147,8 +146,11 @@ def update_status(id):
     status = request.form['status']
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    # Zmieniamy tylko status, nie usuwamy rekordu
-    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
+    if status == "odrzucona":
+        # zamiast usuwać, oznaczamy jako usuniętą
+        c.execute("UPDATE awizacje SET status=?, usunieta=1 WHERE id=?", (status, id))
+    else:
+        c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
     conn.commit()
     conn.close()
     return redirect('/admin')
@@ -192,11 +194,10 @@ def edit_awizacja(id):
 def historia():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    # Pobieramy wszystkie awizacje, w tym odrzucone
     c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
-    awizacje = c.fetchall()
+    wszystkie = c.fetchall()
     conn.close()
-    return render_template('historia.html', awizacje=awizacje)
+    return render_template("historia.html", awizacje=wszystkie)
 
 if __name__ == '__main__':
     app.run(debug=True)
