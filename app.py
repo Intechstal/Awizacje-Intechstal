@@ -3,12 +3,19 @@ import sqlite3
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+import locale
+
+# Ustawienia języka na polski dla dni tygodnia
+try:
+    locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
+except:
+    pass  # Render może nie obsługiwać
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
 
 users = {
-    "admin": generate_password_hash("twojehaslo")  # Zmień hasło!
+    "admin": generate_password_hash("twojehaslo")  # ← Zmień hasło
 }
 
 @auth.verify_password
@@ -91,7 +98,7 @@ def zapisz():
             (855, 1200)   # 14:15–20:00
         ]
         if not any(start_min >= p1 and end_min <= p2 for (p1, p2) in przedzialy):
-            return render_template("error.html", message="Dozwolone bloki 1h w przedziałach: 07:30–10:30, 11:00–13:45, 14:15–20:00", dane=dane)
+            return render_template("error.html", message="Dozwolone 1-godzinne bloki: 07:30–10:30, 11:00–13:45, 14:15–20:00", dane=dane)
 
         conn = sqlite3.connect('awizacje.db')
         c = conn.cursor()
@@ -132,21 +139,71 @@ def admin():
     zajete = set(a[6] for a in dane)
 
     dni = []
-    start = datetime.now()
-    while len(dni) < 5:
-        start += timedelta(days=1)
-        if start.weekday() < 5:
-            dni.append(start.replace(hour=0, minute=0))
+    dzien = datetime.now().replace(hour=0, minute=0)
+    while len(dni) < 6:
+        if dzien.weekday() < 5:
+            dni.append(dzien)
+        dzien += timedelta(days=1)
 
     godziny = [datetime.strptime(f'{h}:{m:02d}', '%H:%M')
                for h in range(7, 20)
                for m in (30,)]
 
-    return render_template('admin.html',
-                           awizacje=dane,
-                           dni=dni,
-                           godziny=godziny,
-                           zajete=zajete)
+    return render_template('admin.html', awizacje=dane, dni=dni, godziny=godziny, zajete=zajete)
+
+@app.route('/admin/accept/<int:id>')
+@auth.login_required
+def accept_awizacja(id):
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute("UPDATE awizacje SET status = 'zaakceptowana' WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    return redirect('/admin')
+
+@app.route('/admin/reject/<int:id>')
+@auth.login_required
+def reject_awizacja(id):
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute("UPDATE awizacje SET status = 'odrzucona' WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    return redirect('/admin')
+
+@app.route('/admin/edit/<int:id>', methods=['GET', 'POST'])
+@auth.login_required
+def edit_awizacja(id):
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    if request.method == 'POST':
+        dane = (
+            request.form['firma'],
+            request.form['rejestracja'],
+            request.form['kierowca'],
+            request.form['email'],
+            request.form['telefon_kierowcy'],
+            request.form['data_godzina'],
+            request.form['typ_ladunku'],
+            request.form['waga_ladunku'],
+            request.form['komentarz'],
+            request.form['status'],
+            id
+        )
+        c.execute('''
+            UPDATE awizacje SET
+                firma=?, rejestracja=?, kierowca=?, email=?, telefon_do_kierowcy=?,
+                data_godzina=?, typ_ladunku=?, waga_ładunku=?, komentarz=?, status=?
+            WHERE id=?
+        ''', dane)
+        conn.commit()
+        conn.close()
+        return redirect('/admin')
+    else:
+        c.execute('SELECT * FROM awizacje WHERE id = ?', (id,))
+        awizacja = c.fetchone()
+        conn.close()
+        return render_template('edit.html', awizacja=awizacja)
 
 if __name__ == '__main__':
     app.run(debug=True)
