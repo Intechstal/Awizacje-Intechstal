@@ -25,63 +25,77 @@
             margin-right: 20px;
             font-weight: bold;
         }
+
         table {
             border-collapse: collapse;
             width: 100%;
             margin-bottom: 30px;
             font-size: 0.9rem;
         }
+
         th, td {
             border: 1px solid #ccc;
             padding: 6px 8px;
             text-align: center;
         }
+
         th {
             background-color: #f0f0f0;
         }
+
         td.slot {
             width: 60px;
             cursor: default;
             user-select: none;
         }
+
         td.slot.available {
             background-color: #e6ffed;
         }
+
         td.slot.booked {
             background-color: #ffdddd;
-            color: #a94442;
             font-weight: bold;
+            font-size: 0.85rem;
         }
+
         /* Lista awizacji */
         table.awizacje {
             font-size: 1rem;
             margin-top: 10px;
         }
+
         tr.status-oczekująca {
             background-color: #fff4f4;
         }
+
         tr.status-akceptowana {
             background-color: #e6ffed;
         }
+
         tr.status-odrzucona {
             background-color: #fcebea;
             color: #a94442;
         }
+
         select {
             padding: 4px;
             font-size: 1rem;
         }
+
         button {
             padding: 4px 8px;
             font-size: 1rem;
             margin-left: 5px;
             cursor: pointer;
         }
+
         .edit-link {
             font-size: 0.9rem;
             color: #444;
             margin-left: 10px;
         }
+
         .edit-link:hover {
             text-decoration: underline;
         }
@@ -101,7 +115,10 @@
             <tr>
                 <th>Godzina</th>
                 {% for dzien in dni %}
-                    <th>{{ dzien.strftime('%a %d.%m') }}</th>
+                    <th>
+                        {{ ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"][dzien.weekday()] }}
+                        <br>{{ dzien.strftime('%d.%m') }}
+                    </th>
                 {% endfor %}
             </tr>
         </thead>
@@ -110,9 +127,11 @@
             <tr>
                 <td>{{ godzina }}</td>
                 {% for dzien in dni %}
-                    {% set datetime_slot = dzien.strftime('%Y-%m-%d') + godzina %}
+                    {% set datetime_slot = dzien.strftime('%Y-%m-%d') + ' ' + godzina %}
                     {% if datetime_slot in zajete %}
-                        <td class="slot booked" title="{{ zajete[datetime_slot].firma }} ({{ zajete[datetime_slot].status }})">Zajęte</td>
+                        <td class="slot booked" title="{{ zajete[datetime_slot].firma }} ({{ zajete[datetime_slot].status }})">
+                            {{ zajete[datetime_slot].firma }}
+                        </td>
                     {% else %}
                         <td class="slot available"></td>
                     {% endif %}
