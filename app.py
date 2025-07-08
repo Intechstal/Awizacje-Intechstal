@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash, url_for
 import sqlite3
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
+app.secret_key = 'supersecretkey'  # do flash
+
 auth = HTTPBasicAuth()
 
 users = {
@@ -41,7 +43,7 @@ init_db()
 
 @app.route('/')
 def index():
-    dane = {
+    dane_form = {
         'firma': request.args.get('firma', ''),
         'rejestracja': request.args.get('rejestracja', ''),
         'kierowca': request.args.get('kierowca', ''),
@@ -52,7 +54,15 @@ def index():
         'waga_ladunku': request.args.get('waga_ladunku', ''),
         'komentarz': request.args.get('komentarz', '')
     }
-    return render_template('form.html', dane=dane)
+
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    teraz = datetime.now().strftime('%Y-%m-%dT%H:%M')
+    c.execute("SELECT * FROM awizacje WHERE data_godzina >= ? ORDER BY data_godzina ASC LIMIT 5", (teraz,))
+    awizacje = c.fetchall()
+    conn.close()
+
+    return render_template('form.html', dane=dane_form, awizacje=awizacje)
 
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
@@ -123,6 +133,23 @@ def zapisz():
 
     return render_template('success.html')
 
+@app.route('/update_status/<int:id>', methods=['POST'])
+@auth.login_required
+def update_status(id):
+    new_status = request.form.get('status')
+    if new_status not in ['oczekująca', 'zatwierdzona', 'odrzucona']:
+        flash("Nieprawidłowy status!")
+        return redirect('/')
+
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute('UPDATE awizacje SET status = ? WHERE id = ?', (new_status, id))
+    conn.commit()
+    conn.close()
+
+    flash(f'Status awizacji {id} zmieniony na {new_status}.')
+    return redirect('/')
+
 @app.route('/admin')
 @auth.login_required
 def admin():
@@ -132,10 +159,8 @@ def admin():
     dane = c.fetchall()
     conn.close()
 
-    # Zajęte sloty
     zajete = set(a[6] for a in dane)
 
-    # Najbliższe 5 dni roboczych
     dni = []
     start = datetime.now()
     while len(dni) < 5:
@@ -143,7 +168,6 @@ def admin():
         if start.weekday() < 5:
             dni.append(start.replace(hour=0, minute=0))
 
-    # Godziny co godzinę od 07:30 do 19:30
     godziny = [datetime.strptime(f'{h}:{m:02d}', '%H:%M')
                for h in range(7, 20)
                for m in (30,)]
@@ -154,26 +178,44 @@ def admin():
                            godziny=godziny,
                            zajete=zajete)
 
-# Nowa trasa do edycji awizacji
-@app.route('/admin/edytuj/<int:id>', methods=['GET', 'POST'])
+@app.route('/edit_awizacja/<int:id>', methods=['GET', 'POST'])
 @auth.login_required
 def edit_awizacja(id):
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     if request.method == 'POST':
-        status = request.form.get('status')
-        c.execute('UPDATE awizacje SET status = ? WHERE id = ?', (status, id))
+        firma = request.form['firma']
+        rejestracja = request.form['rejestracja']
+        kierowca = request.form['kierowca']
+        email = request.form['email_kierowcy']
+        telefon = request.form['telefon_kierowcy']
+        data_godzina = request.form['data_godzina']
+        typ = request.form['typ_ladunku']
+        waga = request.form['waga_ladunku']
+        komentarz = request.form.get('komentarz', '')
+        status = request.form['status']
+
+        try:
+            dt = datetime.strptime(data_godzina, '%Y-%m-%dT%H:%M')
+        except Exception as e:
+            flash(f'Błąd w dacie i godzinie: {e}')
+            return redirect(url_for('edit_awizacja', id=id))
+
+        c.execute('''
+            UPDATE awizacje SET firma=?, rejestracja=?, kierowca=?, email=?, telefon_do_kierowcy=?,
+                data_godzina=?, typ_ladunku=?, waga_ładunku=?, komentarz=?, status=?
+            WHERE id=?
+        ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ, waga, komentarz, status, id))
         conn.commit()
         conn.close()
+        flash("Awizacja zaktualizowana.")
         return redirect('/admin')
 
-    c.execute('SELECT * FROM awizacje WHERE id = ?', (id,))
+    c.execute('SELECT * FROM awizacje WHERE id=?', (id,))
     awizacja = c.fetchone()
     conn.close()
     if not awizacja:
-        return "Awizacja nie znaleziona", 404
+        flash('Awizacja nie znaleziona.')
+        return redirect('/admin')
 
     return render_template('edit_awizacja.html', awizacja=awizacja)
-
-if __name__ == '__main__':
-    app.run(debug=True)
