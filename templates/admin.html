@@ -18,19 +18,44 @@
         h1 {
             margin-bottom: 10px;
         }
+        .top-links {
+            margin-bottom: 15px;
+        }
+        .top-links a {
+            margin-right: 20px;
+            font-weight: bold;
+        }
         table {
             border-collapse: collapse;
             width: 100%;
-            margin-top: 10px;
             margin-bottom: 30px;
+            font-size: 0.9rem;
         }
         th, td {
             border: 1px solid #ccc;
-            padding: 8px 10px;
-            text-align: left;
+            padding: 6px 8px;
+            text-align: center;
         }
         th {
             background-color: #f0f0f0;
+        }
+        td.slot {
+            width: 60px;
+            cursor: default;
+            user-select: none;
+        }
+        td.slot.available {
+            background-color: #e6ffed;
+        }
+        td.slot.booked {
+            background-color: #ffdddd;
+            color: #a94442;
+            font-weight: bold;
+        }
+        /* Lista awizacji */
+        table.awizacje {
+            font-size: 1rem;
+            margin-top: 10px;
         }
         tr.status-oczekująca {
             background-color: #fff4f4;
@@ -42,9 +67,6 @@
             background-color: #fcebea;
             color: #a94442;
         }
-        form {
-            margin: 0;
-        }
         select {
             padding: 4px;
             font-size: 1rem;
@@ -54,13 +76,6 @@
             font-size: 1rem;
             margin-left: 5px;
             cursor: pointer;
-        }
-        .top-links {
-            margin-bottom: 15px;
-        }
-        .top-links a {
-            margin-right: 20px;
-            font-weight: bold;
         }
         .edit-link {
             font-size: 0.9rem;
@@ -80,8 +95,36 @@
         <a href="/">→ Formularz nowej awizacji</a>
     </div>
 
-    {% if awizacje %}
+    <!-- Kalendarz bloków czasowych -->
     <table>
+        <thead>
+            <tr>
+                <th>Godzina</th>
+                {% for dzien in dni %}
+                    <th>{{ dzien.strftime('%a %d.%m') }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for godzina in godziny %}
+            <tr>
+                <td>{{ godzina }}</td>
+                {% for dzien in dni %}
+                    {% set datetime_slot = dzien.strftime('%Y-%m-%d') + 'T' + godzina %}
+                    {% if datetime_slot in zajete %}
+                        <td class="slot booked" title="{{ zajete[datetime_slot].firma }} ({{ zajete[datetime_slot].status }})">Zajęte</td>
+                    {% else %}
+                        <td class="slot available"></td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Lista awizacji -->
+    {% if awizacje %}
+    <table class="awizacje">
         <thead>
             <tr>
                 <th>ID</th>
