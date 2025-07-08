@@ -1,114 +1,122 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8" />
-    <title>Panel Admina - Awizacje</title>
+    <meta charset="UTF-8">
+    <title>Panel awizacji z kalendarzem</title>
     <style>
-        table.admin-calendar {
+        table {
             border-collapse: collapse;
-            width: 100%;
+            margin-top: 20px;
         }
-        table.admin-calendar th, table.admin-calendar td {
+        th, td {
             border: 1px solid #ccc;
-            padding: 5px 10px;
+            padding: 4px;
             text-align: center;
-            vertical-align: middle;
         }
-        table.admin-calendar th {
-            min-width: 120px; /* 2x szerokość */
+        .oczekująca {
+            background-color: #f9c7c7;
+        }
+        .zaakceptowana {
+            background-color: #c7f0c7;
+        }
+        .odrzucona {
             background-color: #f0f0f0;
-        }
-        table.admin-calendar td.time-column {
-            width: 40px; /* 3x węższa */
-            font-size: 0.8em;
-            white-space: nowrap;
-            background-color: #fafafa;
-        }
-        /* Status colors */
-        td.oczekująca {
-            background-color: #f8d7da; /* jasnoczerwony */
-        }
-        td.akceptowana {
-            background-color: #d4edda; /* jasny zielony */
-        }
-        td.odrzucona {
-            background-color: #f5c6cb; /* czerwony */
+            color: #999;
         }
     </style>
 </head>
 <body>
-    <h1>Panel Admina - Awizacje</h1>
+    <h1>Awizacje</h1>
 
-    <table class="admin-calendar">
-        <thead>
-            <tr>
-                <th>Godzina</th>
-                {% for dzien, nazwa in dni_i_nazwy %}
-                    <th>{{ nazwa }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for godzina in godziny %}
-                <tr>
-                    <td class="time-column">{{ godzina }}</td>
-                    {% for dzien, nazwa in dni_i_nazwy %}
-                        {% set slot = dzien.strftime('%Y-%m-%dT') + godzina %}
-                        {% if zajete.get(slot) %}
-                            <td class="{{ zajete[slot].status }}">{{ zajete[slot].firma }}</td>
-                        {% else %}
-                            <td></td>
-                        {% endif %}
+    <div style="display: flex; gap: 60px;">
+        <!-- Lista awizacji -->
+        <div>
+            <h3>Lista awizacji</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Firma</th>
+                        <th>Rejestracja</th>
+                        <th>Kierowca</th>
+                        <th>Email</th>
+                        <th>Telefon</th>
+                        <th>Data i godzina</th>
+                        <th>Typ ładunku</th>
+                        <th>Waga</th>
+                        <th>Komentarz</th>
+                        <th>Status</th>
+                        <th>Akcja</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in awizacje %}
+                    <tr class="{{ a[10] }}">
+                        <td>{{ a[0] }}</td>
+                        <td>{{ a[1] }}</td>
+                        <td>{{ a[2] }}</td>
+                        <td>{{ a[3] }}</td>
+                        <td>{{ a[4] }}</td>
+                        <td>{{ a[5] }}</td>
+                        <td>{{ a[6] }}</td>
+                        <td>{{ a[7] }}</td>
+                        <td>{{ a[8] }}</td>
+                        <td>{{ a[9] }}</td>
+                        <td>{{ a[10] }}</td>
+                        <td>
+                            <form method="POST" action="/admin/update_status/{{ a[0] }}">
+                                <select name="status">
+                                    <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>oczekująca</option>
+                                    <option value="zaakceptowana" {% if a[10] == 'zaakceptowana' %}selected{% endif %}>zaakceptowana</option>
+                                    <option value="odrzucona">odrzucona</option>
+                                </select>
+                                <input type="submit" value="Zmień">
+                            </form>
+                            <br>
+                            <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
+                        </td>
+                    </tr>
                     {% endfor %}
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                </tbody>
+            </table>
+        </div>
 
-    <h2>Lista awizacji</h2>
-    <table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Firma</th>
-                <th>Rejestracja</th>
-                <th>Kierowca</th>
-                <th>Email</th>
-                <th>Telefon</th>
-                <th>Data i godzina</th>
-                <th>Typ ładunku</th>
-                <th>Waga ładunku</th>
-                <th>Komentarz</th>
-                <th>Status</th>
-                <th>Akcje</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for a in awizacje %}
-            <tr>
-                <td>{{ a[1] }}</td>
-                <td>{{ a[2] }}</td>
-                <td>{{ a[3] }}</td>
-                <td>{{ a[4] }}</td>
-                <td>{{ a[5] }}</td>
-                <td>{{ a[6] }}</td>
-                <td>{{ a[7] }}</td>
-                <td>{{ a[8] }}</td>
-                <td>{{ a[9] }}</td>
-                <td>{{ a[10] }}</td>
-                <td>
-                    <form action="/admin/update_status/{{ a[0] }}" method="post" style="display:inline-block;">
-                        <select name="status" onchange="this.form.submit()">
-                            <option value="oczekująca" {% if a[10]=='oczekująca' %}selected{% endif %}>Oczekująca</option>
-                            <option value="akceptowana" {% if a[10]=='akceptowana' %}selected{% endif %}>Akceptowana</option>
-                            <option value="odrzucona">Odrzucona</option>
-                        </select>
-                    </form>
-                    <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
+        <!-- Kalendarz -->
+        <div>
+            <h3>Kalendarz (kolejne 5 dni roboczych)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Godzina</th>
+                        {% for d in dni %}
+                            <th>
+                                {{ d.strftime('%A<br>%d.%m')
+                                    .replace('Monday','Pon')
+                                    .replace('Tuesday','Wt')
+                                    .replace('Wednesday','Śr')
+                                    .replace('Thursday','Czw')
+                                    .replace('Friday','Pt') | safe }}
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for godzina in godziny %}
+                    <tr>
+                        <td>{{ godzina }}</td>
+                        {% for d in dni %}
+                            {% set slot = d.strftime('%Y-%m-%d') + 'T' + godzina %}
+                            {% if slot in zajete %}
+                                <td class="{{ zajete[slot]['status'] }}">{{ zajete[slot]['firma'] }}</td>
+                            {% else %}
+                                <td></td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>
