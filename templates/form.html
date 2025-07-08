@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Nowa Awizacja</title>
+</head>
+<body>
+    <h1>Formularz Awizacji</h1>
+    <form method="POST" action="/zapisz">
+        <label>Firma:<br><input type="text" name="firma" required></label><br><br>
+        <label>Rejestracja:<br><input type="text" name="rejestracja" required></label><br><br>
+        <label>Kierowca:<br><input type="text" name="kierowca" required></label><br><br>
+        <label>Email kierowcy:<br><input type="email" name="email_kierowcy" required></label><br><br>
+        <label>Telefon kierowcy:<br><input type="tel" name="telefon_kierowcy" required></label><br><br>
+        <label>Data i godzina:<br><input type="datetime-local" name="data_godzina" required></label><br><br>
+        <label>Typ ładunku:<br><input type="text" name="typ_ladunku" required></label><br><br>
+        <label>Komentarz:<br><textarea name="komentarz"></textarea></label><br><br>
+        <button type="submit">Zapisz</button>
+    </form>
+</body>
+</html>
