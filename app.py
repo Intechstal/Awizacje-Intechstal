@@ -25,11 +25,11 @@ def init_db():
             firma TEXT,
             rejestracja TEXT,
             kierowca TEXT,
-            email_ TEXT,
-            telefon_do_kierowcy TEXT,
+            email TEXT,
+            telefon_kierowcy TEXT,
             data_godzina TEXT,
             typ_ladunku TEXT,
-            waga_ładunku TEXT,
+            waga_ladunku TEXT,
             komentarz TEXT,
             status TEXT DEFAULT 'oczekująca'
         )
@@ -48,18 +48,19 @@ def zapisz():
     firma = request.form['firma']
     rejestracja = request.form['rejestracja']
     kierowca = request.form['kierowca']
-    email_kierowcy = request.form['email_kierowcy']
+    email = request.form['email']
     telefon_kierowcy = request.form['telefon_kierowcy']
     data_godzina = request.form['data_godzina']
     typ_ladunku = request.form['typ_ladunku']
+    waga_ladunku = request.form.get('waga_ladunku', '')
     komentarz = request.form.get('komentarz', '')
 
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     c.execute('''
         INSERT INTO awizacje (firma, rejestracja, kierowca, email, telefon_kierowcy, data_godzina, typ_ladunku, waga_ladunku, komentarz)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (firma, rejestracja, kierowca, email, telefon_kierowcy, data_godzina, typ_ladunku, waga_ladunku komentarz))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (firma, rejestracja, kierowca, email, telefon_kierowcy, data_godzina, typ_ladunku, waga_ladunku, komentarz))
     conn.commit()
     conn.close()
 
@@ -94,10 +95,11 @@ def update_awizacja(id):
     firma = request.form['firma']
     rejestracja = request.form['rejestracja']
     kierowca = request.form['kierowca']
-    email_kierowcy = request.form['email_kierowcy']
+    email = request.form['email']
     telefon_kierowcy = request.form['telefon_kierowcy']
     data_godzina = request.form['data_godzina']
     typ_ladunku = request.form['typ_ladunku']
+    waga_ladunku = request.form.get('waga_ladunku', '')
     komentarz = request.form.get('komentarz', '')
     status = request.form.get('status', 'oczekująca')
 
@@ -105,9 +107,9 @@ def update_awizacja(id):
     c = conn.cursor()
     c.execute('''
         UPDATE awizacje
-        SET firma = ?, rejestracja = ?, kierowca = ?, email_kierowcy = ?, telefon_kierowcy = ?, data_godzina = ?, typ_ladunku = ?, komentarz = ?, status = ?
+        SET firma = ?, rejestracja = ?, kierowca = ?, email = ?, telefon_kierowcy = ?, data_godzina = ?, typ_ladunku = ?, waga_ladunku = ?, komentarz = ?, status = ?
         WHERE id = ?
-    ''', (firma, rejestracja, kierowca, email_kierowcy, telefon_kierowcy, data_godzina, typ_ladunku, komentarz, status, id))
+    ''', (firma, rejestracja, kierowca, email, telefon_kierowcy, data_godzina, typ_ladunku, waga_ladunku, komentarz, status, id))
     conn.commit()
     conn.close()
     return redirect('/admin')
