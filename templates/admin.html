@@ -7,32 +7,41 @@
         table {
             border-collapse: collapse;
             width: 100%;
+            table-layout: fixed;
         }
         th, td {
-            padding: 6px;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
             text-align: center;
+            padding: 6px;
+            font-size: 0.9em;
+            overflow-wrap: break-word;
+        }
+        thead th {
+            background-color: #f0f0f0;
         }
         .slot {
-            width: 60px;
             height: 40px;
-            border: 1px solid #ccc;
         }
         .zaakceptowana {
-            background-color: #b7e4c7; /* jasna zieleń */
+            background-color: #c7f0c7; /* jasna zieleń */
+            color: #004d00;
+            font-weight: bold;
         }
-        .oczekująca {
-            background-color: #f8d7da; /* jasny czerwony */
+        .oczekujaca {
+            background-color: #f9c7c7; /* jasna czerwień */
+            color: #660000;
+            font-weight: bold;
         }
         .wolny {
-            background-color: #f0f0f0; /* jasnoszary */
+            background-color: #fff;
         }
-        input, select, textarea {
-            width: 100%;
-            box-sizing: border-box;
+        form.inline {
+            display: inline;
         }
-        form {
-            margin: 0;
+        button {
+            margin: 0 2px;
+            padding: 4px 8px;
+            font-size: 0.85em;
         }
     </style>
 </head>
@@ -42,17 +51,25 @@
     <table>
         <thead>
             <tr>
-                <th>Data \ Godzina</th>
-                {% for godz in godziny %}
-                    <th>{{ godz }}</th>
+                <th>Godzina \ Dzień</th>
+                {% for dzien in dni %}
+                    <th>
+                        {{ dzien.strftime("%d-%m-%Y") }}<br>
+                        {{ dzien.strftime("%A") 
+                            |replace("Monday","Poniedziałek") 
+                            |replace("Tuesday","Wtorek") 
+                            |replace("Wednesday","Środa") 
+                            |replace("Thursday","Czwartek") 
+                            |replace("Friday","Piątek") }}
+                    </th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
-            {% for dzien in dni %}
+            {% for godz in godziny %}
                 <tr>
-                    <td><strong>{{ dzien.strftime("%Y-%m-%d (%a)") }}</strong></td>
-                    {% for godz in godziny %}
+                    <td><strong>{{ godz }}</strong></td>
+                    {% for dzien in dni %}
                         {% set slot = dzien.strftime('%Y-%m-%dT') + godz %}
                         {% if slot in zajete %}
                             {% set info = zajete[slot] %}
@@ -66,7 +83,7 @@
         </tbody>
     </table>
 
-    <h2>Lista Awizacji</h2>
+    <h2>Lista awizacji</h2>
     <table>
         <thead>
             <tr>
@@ -85,35 +102,32 @@
         </thead>
         <tbody>
             {% for a in awizacje %}
-                <tr>
-                    <form method="POST" action="/admin">
-                        <td><input type="text" name="firma" value="{{ a[1] }}" required></td>
-                        <td><input type="text" name="rejestracja" value="{{ a[2] }}" required></td>
-                        <td><input type="text" name="kierowca" value="{{ a[3] }}" required></td>
-                        <td><input type="email" name="email" value="{{ a[4] }}" required></td>
-                        <td><input type="text" name="telefon" value="{{ a[5] }}" required></td>
-                        <td><input type="datetime-local" name="data_godzina" value="{{ a[6] }}" required></td>
-                        <td><input type="text" name="typ_ladunku" value="{{ a[7] }}"></td>
-                        <td><input type="text" name="waga_ladunku" value="{{ a[8] }}"></td>
-                        <td><textarea name="komentarz">{{ a[9] }}</textarea></td>
-                        <td>
-                            <select name="status" required>
-                                <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
-                                <option value="zaakceptowana" {% if a[10] == 'zaakceptowana' %}selected{% endif %}>Zaakceptowana</option>
-                            </select>
-                        </td>
-                        <td>
-                            <input type="hidden" name="id" value="{{ a[0] }}">
-                            <button type="submit">Zapisz</button>
+            <tr>
+                <td>{{ a[1] }}</td>
+                <td>{{ a[2] }}</td>
+                <td>{{ a[3] }}</td>
+                <td>{{ a[4] }}</td>
+                <td>{{ a[5] }}</td>
+                <td>{{ a[6] }}</td>
+                <td>{{ a[7] }}</td>
+                <td>{{ a[8] }}</td>
+                <td>{{ a[9] }}</td>
+                <td>{{ a[10] }}</td>
+                <td>
+                    <form method="POST" action="/admin/update_status/{{ a[0] }}" class="inline">
+                        <select name="status" required>
+                            <option value="">Wybierz</option>
+                            <option value="zaakceptowana" {% if a[10] == "zaakceptowana" %}selected{% endif %}>Akceptuj</option>
+                            <option value="oczekująca" {% if a[10] == "oczekująca" %}selected{% endif %}>Oczekująca</option>
+                            <option value="odrzucona">Odrzuć</option>
+                        </select>
+                        <button type="submit">Zmień</button>
                     </form>
-                    <form method="POST" action="/admin" style="display:inline;">
-                        <input type="hidden" name="usun_id" value="{{ a[0] }}">
-                        <button type="submit" onclick="return confirm('Na pewno usunąć awizację?')">Odrzuć</button>
-                    </form>
-                        </td>
-                </tr>
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
+
 </body>
 </html>
