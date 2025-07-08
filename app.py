@@ -154,5 +154,26 @@ def admin():
                            godziny=godziny,
                            zajete=zajete)
 
+# Nowa trasa do edycji awizacji
+@app.route('/admin/edytuj/<int:id>', methods=['GET', 'POST'])
+@auth.login_required
+def edit_awizacja(id):
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    if request.method == 'POST':
+        status = request.form.get('status')
+        c.execute('UPDATE awizacje SET status = ? WHERE id = ?', (status, id))
+        conn.commit()
+        conn.close()
+        return redirect('/admin')
+
+    c.execute('SELECT * FROM awizacje WHERE id = ?', (id,))
+    awizacja = c.fetchone()
+    conn.close()
+    if not awizacja:
+        return "Awizacja nie znaleziona", 404
+
+    return render_template('edit_awizacja.html', awizacja=awizacja)
+
 if __name__ == '__main__':
     app.run(debug=True)
