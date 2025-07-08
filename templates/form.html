@@ -1,50 +1,26 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <title>Formularz Awizacji</title>
+    <meta charset="UTF-8" />
+    <title>Rezerwacja awizacji</title>
 </head>
 <body>
-    <h1>Formularz Awizacji</h1>
-
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
-
     <form method="POST" action="/zapisz">
-        <label>Firma:</label><br>
-        <input type="text" name="firma" value="{{ dane.firma if dane is defined else '' }}" required><br><br>
+        <!-- inne pola formularza -->
+        
+        <label for="data_godzina">Data i godzina:</label>
+        <select name="data_godzina" id="data_godzina" required>
+            {% for slot in sloty %}
+            <option value="{{ slot }}">{{ slot.replace('T', ' ') }}</option>
+            {% endfor %}
+        </select>
 
-        <label>Numer rejestracyjny:</label><br>
-        <input type="text" name="rejestracja" value="{{ dane.rejestracja if dane is defined else '' }}" required><br><br>
-
-        <label>Imię i nazwisko kierowcy:</label><br>
-        <input type="text" name="kierowca" value="{{ dane.kierowca if dane is defined else '' }}" required><br><br>
-
-        <label>Email:</label><br>
-        <input type="email" name="email" value="{{ dane.email if dane is defined else '' }}" required><br><br>
-
-        <label>Telefon kierowcy:</label><br>
-        <input type="tel" name="telefon" value="{{ dane.telefon if dane is defined else '' }}" required><br><br>
-
-        <label>Wybierz godzinę:</label>
-<select name="data_godzina" required>
-    {% for slot in sloty %}
-        <option value="{{ slot }}">{{ slot.replace('T', ' ') }}</option>
-    {% endfor %}
-</select>
-<br><br>
-
-        <label>Typ ładunku:</label><br>
-        <input type="text" name="typ_ladunku" value="{{ dane.typ_ladunku if dane is defined else '' }}" required><br><br>
-
-        <label>Waga ładunku:</label><br>
-        <input type="text" name="waga_ladunku" value="{{ dane.waga_ladunku if dane is defined else '' }}" required><br><br>
-
-        <label>Komentarz:</label><br>
-        <textarea name="komentarz">{{ dane.komentarz if dane is defined else '' }}</textarea><br><br>
-
-        <input type="submit" value="Wyślij awizację">
+        <!-- jeśli masz input datetime-local zamiast select, np: -->
+        <!--
+        <input type="datetime-local" name="data_godzina" required>
+        -->
+        
+        <button type="submit">Zarezerwuj</button>
     </form>
 </body>
 </html>
