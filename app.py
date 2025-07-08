@@ -66,11 +66,39 @@ def zapisz():
 
     return render_template('success.html')
 
-@app.route('/admin')
+@app.route('/admin', methods=['GET', 'POST'])
 @auth.login_required
 def admin():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
+
+    if request.method == 'POST':
+        # Aktualizacja awizacji z formularza
+        id_awizacji = request.form.get('id')
+        if id_awizacji:
+            firma = request.form.get('firma')
+            rejestracja = request.form.get('rejestracja')
+            kierowca = request.form.get('kierowca')
+            email = request.form.get('email')
+            telefon = request.form.get('telefon')
+            data_godzina = request.form.get('data_godzina')
+            typ_ladunku = request.form.get('typ_ladunku')
+            waga_ladunku = request.form.get('waga_ladunku')
+            komentarz = request.form.get('komentarz')
+            status = request.form.get('status')
+
+            c.execute('''
+                UPDATE awizacje
+                SET firma=?, rejestracja=?, kierowca=?, email=?, telefon=?, data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?, status=?
+                WHERE id=?
+            ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ_ladunku, waga_ladunku, komentarz, status, id_awizacji))
+            conn.commit()
+
+        # Obsługa usunięcia
+        if 'usun_id' in request.form:
+            c.execute("DELETE FROM awizacje WHERE id=?", (request.form['usun_id'],))
+            conn.commit()
+
     c.execute("SELECT * FROM awizacje ORDER BY data_godzina ASC")
     awizacje = c.fetchall()
     conn.close()
@@ -79,7 +107,7 @@ def admin():
     dni = []
     d = today
     while len(dni) < 6:
-        if d.weekday() < 5:  # tylko dni robocze
+        if d.weekday() < 5:
             dni.append(d)
         d += timedelta(days=1)
 
@@ -102,68 +130,10 @@ def admin():
         firma = a[1]
         status = a[10]
 
-        # Blokowanie 1h (4 sloty po 15min)
+        # Blokada slotów na 1h (4 sloty)
         for i in range(4):
             blok = start_dt + timedelta(minutes=15*i)
             slot = blok.strftime('%Y-%m-%dT%H:%M')
             zajete[slot] = {"firma": firma, "status": status}
 
     return render_template("admin.html", dni=dni, godziny=sloty, zajete=zajete, awizacje=awizacje)
-
-@app.route('/admin/update_status/<int:id>')
-@auth.login_required
-def update_status(id):
-    status = request.args.get('status')
-    if status in ['zaakceptowana', 'oczekująca']:
-        conn = sqlite3.connect('awizacje.db')
-        c = conn.cursor()
-        c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
-        conn.commit()
-        conn.close()
-    return redirect('/admin')
-
-@app.route('/admin/reject/<int:id>')
-@auth.login_required
-def reject_awizacja(id):
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute("DELETE FROM awizacje WHERE id=?", (id,))
-    conn.commit()
-    conn.close()
-    return redirect('/admin')
-
-@app.route('/admin/edit/<int:id>', methods=['GET', 'POST'])
-@auth.login_required
-def edit_awizacja(id):
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    if request.method == 'POST':
-        firma = request.form['firma']
-        rejestracja = request.form['rejestracja']
-        kierowca = request.form['kierowca']
-        email = request.form['email']
-        telefon = request.form['telefon']
-        data_godzina = request.form['data_godzina']
-        typ_ladunku = request.form['typ_ladunku']
-        waga_ladunku = request.form['waga_ladunku']
-        komentarz = request.form.get('komentarz', '')
-        status = request.form.get('status', 'oczekująca')
-
-        c.execute('''
-            UPDATE awizacje
-            SET firma=?, rejestracja=?, kierowca=?, email=?, telefon=?, data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?, status=?
-            WHERE id=?
-        ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ_ladunku, waga_ladunku, komentarz, status, id))
-        conn.commit()
-        conn.close()
-        return redirect('/admin')
-
-    c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
-    awizacja = c.fetchone()
-    conn.close()
-    if not awizacja:
-        return "Awizacja nie znaleziona", 404
-    return render_template('edit_awizacja.html', awizacja=awizacja)
-
-if __name__ == '__main__':
-    app.run(debug=True)
