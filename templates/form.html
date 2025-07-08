@@ -46,17 +46,18 @@
         const minuty = dt.getMinutes();
         const minuty_calkowite = godzina * 60 + minuty;
 
-        // Dopuszczalne przedziały
         const przedzialy = [
             [450, 630],   // 07:30–10:30
             [660, 825],   // 11:00–13:45
             [855, 1200]   // 14:15–20:00
         ];
 
-        const dozwolony = przedzialy.some(([od, do_]) => minuty_calkowite >= od && minuty_calkowite <= do_);
+        const dozwolony = przedzialy.some(([od, do_]) => 
+            minuty_calkowite >= od && (minuty_calkowite + 60) <= do_
+        );
 
         if (dzien === 0 || dzien === 6 || !dozwolony) {
-            alert("Dozwolone godziny: 07:30–10:30, 11:00–13:45, 14:15–20:00 (pon–pt)");
+            alert("Dozwolone: pon–pt i godziny: 07:30–10:30, 11:00–13:45, 14:15–20:00 (rezerwacja 1h)");
             input.value = "";
         }
     });
