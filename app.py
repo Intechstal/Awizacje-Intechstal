@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+efrom flask import Flask, render_template, request, redirect
 import sqlite3
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -136,7 +136,7 @@ def admin():
     dane = c.fetchall()
     conn.close()
 
-    zajete = { row[6]: row[1] for row in awizacje }  # data_godzina : firma
+    zajete = { row[6]: row[1] for row in dane }  # data_godzina : firma
 
     dni = []
     dzien = datetime.now().replace(hour=0, minute=0)
