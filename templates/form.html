@@ -1,63 +1,67 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <title>Formularz awizacji</title>
+  <meta charset="utf-8">
+  <title>Dodaj Awizację</title>
 </head>
 <body>
-    <h1>Nowa awizacja</h1>
-    <form action="/zapisz" method="post">
-        <label>Firma:</label><br>
-        <input type="text" name="firma" value="{{ dane.firma }}" required><br><br>
+  <h1>Dodaj nową awizację</h1>
+  <form method="post" action="/zapisz">
+    <label>Firma:<br><input type="text" name="firma" value="{{ dane.firma }}"></label><br>
+    <label>Rejestracja:<br><input type="text" name="rejestracja" value="{{ dane.rejestracja }}"></label><br>
+    <label>Kierowca:<br><input type="text" name="kierowca" value="{{ dane.kierowca }}"></label><br>
+    <label>Email kierowcy:<br><input type="email" name="email_kierowcy" value="{{ dane.email_kierowcy }}"></label><br>
+    <label>Telefon kierowcy:<br><input type="text" name="telefon_kierowcy" value="{{ dane.telefon_kierowcy }}"></label><br>
+    <label>Data i godzina:<br><input type="datetime-local" name="data_godzina" value="{{ dane.data_godzina }}"></label><br>
+    <label>Typ ładunku:<br><input type="text" name="typ_ladunku" value="{{ dane.typ_ladunku }}"></label><br>
+    <label>Waga ładunku:<br><input type="text" name="waga_ladunku" value="{{ dane.waga_ladunku }}"></label><br>
+    <label>Komentarz:<br><textarea name="komentarz">{{ dane.komentarz }}</textarea></label><br>
+    <button type="submit">Dodaj awizację</button>
+  </form>
 
-        <label>Rejestracja:</label><br>
-        <input type="text" name="rejestracja" value="{{ dane.rejestracja }}" required><br><br>
+  <h2>Ostatnie awizacje</h2>
+  {% if awizacje %}
+    <table border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <th>ID</th><th>Firma</th><th>Rejestracja</th><th>Data i godzina</th><th>Status</th><th>Zmień status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in awizacje %}
+        <tr>
+          <td>{{ a[0] }}</td>
+          <td>{{ a[1] }}</td>
+          <td>{{ a[2] }}</td>
+          <td>{{ a[6] }}</td>
+          <td>{{ a[9] }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('update_status', id=a[0]) }}">
+              <select name="status">
+                <option value="oczekująca" {% if a[9] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
+                <option value="zatwierdzona" {% if a[9] == 'zatwierdzona' %}selected{% endif %}>Zatwierdzona</option>
+                <option value="odrzucona" {% if a[9] == 'odrzucona' %}selected{% endif %}>Odrzucona</option>
+              </select>
+              <button type="submit">Zapisz</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Brak awizacji do wyświetlenia.</p>
+  {% endif %}
 
-        <label>Kierowca:</label><br>
-        <input type="text" name="kierowca" value="{{ dane.kierowca }}" required><br><br>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul>
+        {% for message in messages %}
+          <li style="color: green;">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
 
-        <label>Email:</label><br>
-        <input type="email" name="email_kierowcy" value="{{ dane.email_kierowcy }}" required><br><br>
-
-        <label>Telefon do kierowcy:</label><br>
-        <input type="text" name="telefon_kierowcy" value="{{ dane.telefon_kierowcy }}" required><br><br>
-
-        <label>Data i godzina (1h w przedziale):</label><br>
-        <input type="datetime-local" id="data_godzina" name="data_godzina" value="{{ dane.data_godzina }}" required><br><br>
-
-        <label>Typ ładunku:</label><br>
-        <input type="text" name="typ_ladunku" value="{{ dane.typ_ladunku }}" required><br><br>
-
-        <label>Waga ładunku:</label><br>
-        <input type="text" name="waga_ladunku" value="{{ dane.waga_ladunku }}" required><br><br>
-
-        <label>Komentarz:</label><br>
-        <textarea name="komentarz">{{ dane.komentarz }}</textarea><br><br>
-
-        <input type="submit" value="Zapisz awizację">
-    </form>
-
-    <script>
-    document.getElementById('data_godzina').addEventListener('change', function () {
-        const input = this;
-        const dt = new Date(input.value);
-        const dzien = dt.getDay();
-        const minuty = dt.getHours() * 60 + dt.getMinutes();
-        const blok_koniec = minuty + 60;
-
-        const przedzialy = [
-            [450, 630],   // 07:30–10:30
-            [660, 825],   // 11:00–13:45
-            [855, 1200]   // 14:15–20:00
-        ];
-
-        const ok = przedzialy.some(([od, do_]) => minuty >= od && blok_koniec <= do_);
-
-        if (dzien === 0 || dzien === 6 || !ok) {
-            alert("Dozwolone: pon–pt, przedziały: 07:30–10:30, 11:00–13:45, 14:15–20:00 (bloki 1h)");
-            input.value = "";
-        }
-    });
-    </script>
 </body>
 </html>
