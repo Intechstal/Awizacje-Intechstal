@@ -12,7 +12,7 @@
             border: 1px solid #ccc;
             padding: 4px;
             text-align: center;
-            min-width: 80px;
+            min-width: 90px;
         }
         .zajete {
             background-color: #f8cccc;
@@ -56,9 +56,14 @@
                 <th>Godzina</th>
                 {% for d in dni %}
                     <th>
-                        {{ d.strftime('%A').replace('Monday','Poniedziałek').replace('Tuesday','Wtorek').replace('Wednesday','Środa')
-                           .replace('Thursday','Czwartek').replace('Friday','Piątek').replace('Saturday','Sobota')
-                           .replace('Sunday','Niedziela') }}<br>
+                        {{ d.strftime('%A')
+                            .replace('Monday','Poniedziałek')
+                            .replace('Tuesday','Wtorek')
+                            .replace('Wednesday','Środa')
+                            .replace('Thursday','Czwartek')
+                            .replace('Friday','Piątek')
+                            .replace('Saturday','Sobota')
+                            .replace('Sunday','Niedziela') }}<br>
                         {{ d.strftime('%d.%m') }}
                     </th>
                 {% endfor %}
