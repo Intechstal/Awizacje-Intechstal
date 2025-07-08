@@ -1,91 +1,30 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <title>Panel awizacji z kalendarzem</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 4px;
-            text-align: center;
-            min-width: 90px;
-        }
-        .zajete {
-            background-color: #f8cccc;
-        }
-        .zaakceptowana {
-            background-color: #ccffcc;
-        }
-    </style>
-</head>
-<body>
-    <h1>Awizacje</h1>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Firma</th>
-                <th>Rejestracja</th>
-                <th>Data</th>
-                <th>Status</th>
-                <th>Akcje</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for a in awizacje %}
-            <tr>
-                <td>{{ a[1] }}</td>
-                <td>{{ a[2] }}</td>
-                <td>{{ a[6] }}</td>
-                <td>{{ a[10] }}</td>
-                <td>
-                    <a href="/admin/accept/{{ a[0] }}">Akceptuj</a> |
-                    <a href="/admin/reject/{{ a[0] }}">Odrzuć</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <h3>Kalendarz (dziś + 5 dni roboczych)</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Godzina</th>
-                {% for d in dni %}
-                    <th>
-                        {{ d.strftime('%A')
-                            .replace('Monday','Poniedziałek')
-                            .replace('Tuesday','Wtorek')
-                            .replace('Wednesday','Środa')
-                            .replace('Thursday','Czwartek')
-                            .replace('Friday','Piątek') }}<br>
-                        {{ d.strftime('%d.%m') }}
-                    </th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for h in godziny %}
-            <tr>
-                <td>{{ h.strftime('%H:%M') }}</td>
-                {% for d in dni %}
-                    {% set slot = d.strftime('%Y-%m-%d') + 'T' + h.strftime('%H:%M') %}
-                    {% if slot in zajete %}
-                        <td class="{% if zajete[slot].status == 'zaakceptowana' %}zaakceptowana{% else %}zajete{% endif %}">
-                            {{ zajete[slot].firma }}
-                        </td>
-                    {% else %}
-                        <td></td>
-                    {% endif %}
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</body>
-</html>
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Firma</th>
+        <th>Status</th>
+        <th>Komentarz</th>
+        <th>Akcje</th>
+    </tr>
+    {% for a in awizacje %}
+    <tr>
+        <td>{{ a[0] }}</td>
+        <td>{{ a[1] }}</td>
+        <td>
+            <form method="post" style="display:inline;">
+                <input type="hidden" name="id" value="{{ a[0] }}">
+                <select name="status">
+                    <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
+                    <option value="zaakceptowana" {% if a[10] == 'zaakceptowana' %}selected{% endif %}>Zaakceptowana</option>
+                </select>
+        </td>
+        <td>
+                <input type="text" name="komentarz" value="{{ a[9] }}">
+        </td>
+        <td>
+                <button type="submit">Zapisz</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
