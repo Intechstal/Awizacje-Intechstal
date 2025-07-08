@@ -110,7 +110,6 @@ def zapisz():
 @app.route('/admin')
 @auth.login_required
 def admin():
-    locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
 
     # Pobierz awizacje
     conn = sqlite3.connect('awizacje.db')
