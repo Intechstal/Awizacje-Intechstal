@@ -105,7 +105,7 @@
                     <tr>
                         <td>{{ godzina }}</td>
                         {% for d in dni %}
-                            {% set slot = d.strftime('%Y-%m-%d') + 'T' + godzina %}
+                            {% set slot = d.strftime('%Y-%m-%d') + godzina %}
                             {% if slot in zajete %}
                                 <td class="{{ zajete[slot]['status'] }}">{{ zajete[slot]['firma'] }}</td>
                             {% else %}
