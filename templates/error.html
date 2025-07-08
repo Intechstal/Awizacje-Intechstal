@@ -7,7 +7,6 @@
 <body>
     <h1>Błąd</h1>
     <p style="color: red;">{{ message }}</p>
-
     <form action="/" method="get">
         {% for key, value in dane.items() %}
         <input type="hidden" name="{{ key }}" value="{{ value }}">
