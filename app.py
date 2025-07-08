@@ -127,17 +127,16 @@ def admin():
             s += timedelta(minutes=15)
 
     zajete = {}
-    for a in awizacje:
-        dt = datetime.strptime(a[6], '%Y-%m-%dT%H:%M')
-        firma = a[1]
-        status = a[10]
+   for a in awizacje:
+    dt = datetime.strptime(a[6], '%Y-%m-%d %H:%M')
+    firma = a[1]
+    status = a[10]
 
-        if status != "odrzucona":
-            for i in range(4):  # blok 1h = 4 sloty po 15 min
-                blok = dt + timedelta(minutes=15 * i)
-                slot = blok.strftime('%Y-%m-%dT%H:%M')
-                zajete[slot] = {"firma": firma, "status": status}
-
+    if status != "odrzucona":
+        for i in range(4):  # blok 1h = 4 sloty
+            blok = dt + timedelta(minutes=15 * i)
+            slot = blok.strftime('%Y-%m-%d %H:%M')  # spacja zamiast T
+            zajete[slot] = {"firma": firma, "status": status}
     return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=sloty, zajete=zajete)
 
 @app.route('/admin/update_status/<int:id>', methods=['POST'])
