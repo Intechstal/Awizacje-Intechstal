@@ -87,7 +87,7 @@ def admin():
     przedzialy = [
         ("07:30", "09:30"),
         ("11:00", "13:15"),
-        ("14:30", "20:00"),
+        ("14:15", "20:00"),
     ]
     for start, end in przedzialy:
         s = datetime.strptime(start, "%H:%M")
@@ -96,31 +96,19 @@ def admin():
             sloty.append(s)
             s += timedelta(minutes=15)
 
-    # Unikalne godziny w formacie HH:MM
-    godziny_unikalne = []
-    for slot in sloty:
-        godz = slot.strftime("%H:%M")
-        if godz not in godziny_unikalne:
-            godziny_unikalne.append(godz)
-
     zajete = {}
     for a in awizacje:
         start_dt = datetime.strptime(a[6], "%Y-%m-%dT%H:%M")
         firma = a[1]
         status = a[10]
 
-        if status == "zaakceptowana":
-            for i in range(4):  # blok 1h (4 sloty po 15 min)
+        if status in ("zaakceptowana", "oczekująca"):
+            for i in range(4):  # blok 1h (4 sloty po 15min)
                 blok = start_dt + timedelta(minutes=15*i)
                 slot = blok.strftime('%Y-%m-%dT%H:%M')
-                zajete[slot] = {"firma": firma, "status": "zaakceptowana"}
-        elif status == "oczekująca":
-            for i in range(4):
-                blok = start_dt + timedelta(minutes=15*i)
-                slot = blok.strftime('%Y-%m-%dT%H:%M')
-                zajete[slot] = {"firma": firma, "status": "oczekująca"}
+                zajete[slot] = {"firma": firma, "status": status}
 
-    return render_template("admin.html", dni=dni, godziny=sloty, godziny_unikalne=godziny_unikalne, zajete=zajete, awizacje=awizacje)
+    return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=sloty, zajete=zajete)
 
 @app.route('/admin/accept/<int:id>')
 @auth.login_required
@@ -140,6 +128,31 @@ def reject_awizacja(id):
     c.execute("DELETE FROM awizacje WHERE id=?", (id,))
     conn.commit()
     conn.close()
+    return redirect('/admin')
+
+@app.route('/admin/edit/<int:id>', methods=['POST'])
+@auth.login_required
+def edit_awizacja(id):
+    firma = request.form['firma']
+    rejestracja = request.form['rejestracja']
+    kierowca = request.form['kierowca']
+    email = request.form['email']
+    telefon = request.form['telefon']
+    data_godzina = request.form['data_godzina']
+    typ_ladunku = request.form['typ_ladunku']
+    waga_ladunku = request.form['waga_ladunku']
+    komentarz = request.form.get('komentarz', '')
+    status = request.form.get('status', 'oczekująca')
+
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute('''
+        UPDATE awizacje SET firma=?, rejestracja=?, kierowca=?, email=?, telefon=?, data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?, status=?
+        WHERE id=?
+    ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ_ladunku, waga_ladunku, komentarz, status, id))
+    conn.commit()
+    conn.close()
+
     return redirect('/admin')
 
 if __name__ == '__main__':
