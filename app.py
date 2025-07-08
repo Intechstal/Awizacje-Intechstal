@@ -7,9 +7,9 @@ from datetime import datetime
 app = Flask(__name__)
 auth = HTTPBasicAuth()
 
-# Użytkownicy admina (prosty auth)
+# Dane logowania
 users = {
-    "sk": generate_password_hash("123")  # Zmień hasło!
+    "admin": generate_password_hash("twojehaslo")  # Zmień hasło!
 }
 
 @auth.verify_password
@@ -57,17 +57,42 @@ def zapisz():
     waga = request.form['waga_ladunku']
     komentarz = request.form.get('komentarz', '')
 
-    # Walidacja godzin i dni roboczych
     try:
         dt = datetime.strptime(data_godzina, '%Y-%m-%dT%H:%M')
+
         if dt.weekday() >= 5:
             return "Awizacje możliwe tylko w dni robocze (pon–pt)", 400
 
-        minuta = dt.hour * 60 + dt.minute
-        przedzialy = [(450, 630), (660, 825), (855, 1200)]
+        start_min = dt.hour * 60 + dt.minute
+        end_min = start_min + 60  # Blok 1h
 
-        if not any(start <= minuta <= end for start, end in przedzialy):
-            return "Godzina poza dozwolonymi przedziałami.", 400
+        przedzialy = [
+            (450, 630),   # 07:30–10:30
+            (660, 825),   # 11:00–13:45
+            (855, 1200)   # 14:15–20:00
+        ]
+
+        valid = False
+        for p_start, p_end in przedzialy:
+            if start_min >= p_start and end_min <= p_end:
+                valid = True
+                break
+        if not valid:
+            return "Blok 1h musi mieścić się w jednym z dozwolonych przedziałów.", 400
+
+        # Sprawdź kolizje ±60 min
+        conn = sqlite3.connect('awizacje.db')
+        c = conn.cursor()
+        c.execute('SELECT data_godzina FROM awizacje')
+        kolizje = c.fetchall()
+        conn.close()
+
+        for [czas] in kolizje:
+            istnieje = datetime.strptime(czas, '%Y-%m-%dT%H:%M')
+            różnica = abs((dt - istnieje).total_seconds()) / 60
+            if różnica < 60:
+                return f"Kolizja z inną awizacją o {istnieje.strftime('%H:%M')}. Odstęp min. 1h.", 400
+
     except Exception as e:
         return f"Błąd daty: {e}", 400
 
@@ -75,7 +100,8 @@ def zapisz():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     c.execute('''
-        INSERT INTO awizacje (firma, rejestracja, kierowca, email, telefon_do_kierowcy, data_godzina, typ_ladunku, waga_ładunku, komentarz)
+        INSERT INTO awizacje (firma, rejestracja, kierowca, email, telefon_do_kierowcy,
+                              data_godzina, typ_ladunku, waga_ładunku, komentarz)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ, waga, komentarz))
     conn.commit()
