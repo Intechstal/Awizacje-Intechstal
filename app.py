@@ -41,7 +41,44 @@ init_db()
 
 @app.route('/')
 def index():
-    return render_template('form.html')
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute("SELECT data_godzina, status FROM awizacje")
+    rekordy = c.fetchall()
+    conn.close()
+
+    # Budowanie listy zajętych slotów (blok 1h = 4 sloty po 15min)
+    zajete = set()
+    for data, status in rekordy:
+        if status != "odrzucona":
+            dt = datetime.strptime(data, '%Y-%m-%dT%H:%M')
+            for i in range(4):
+                zajete.add((dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M'))
+
+    # Tworzenie listy dni roboczych (5 kolejnych)
+    today = datetime.now().replace(hour=0, minute=0)
+    dni = []
+    d = today
+    while len(dni) < 5:
+        if d.weekday() < 5:
+            dni.append(d)
+        d += timedelta(days=1)
+
+    # Definicja slotów czasowych do wyboru
+    sloty_dostepne = []
+    for dzien in dni:
+        for start, end in [("07:30", "09:30"), ("11:00", "13:15"), ("14:15", "20:00")]:
+            start_dt = datetime.combine(dzien.date(), datetime.strptime(start, "%H:%M").time())
+            end_dt = datetime.combine(dzien.date(), datetime.strptime(end, "%H:%M").time())
+            while start_dt < end_dt:
+                slot_str = start_dt.strftime('%Y-%m-%dT%H:%M')
+                # Sprawdzamy, czy cały blok 1h (4 sloty) jest wolny
+                blok = [(start_dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M') for i in range(4)]
+                if all(b not in zajete for b in blok):
+                    sloty_dostepne.append(slot_str)
+                start_dt += timedelta(minutes=15)
+
+    return render_template('form.html', sloty=sloty_dostepne)
 
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
