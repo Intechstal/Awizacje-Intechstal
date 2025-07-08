@@ -16,7 +16,6 @@ def verify_password(username, password):
     if username in users and check_password_hash(users.get(username), password):
         return username
 
-# Inicjalizacja bazy
 def init_db():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
@@ -67,11 +66,24 @@ def zapisz():
 
     return render_template('success.html')
 
-@app.route('/admin')
+@app.route('/admin', methods=['GET', 'POST'])
 @auth.login_required
 def admin():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
+
+    if request.method == 'POST':
+        # Obsługa edycji awizacji
+        id = request.form.get('id')
+        status = request.form.get('status')
+        komentarz = request.form.get('komentarz', '')
+
+        if id and status:
+            c.execute("UPDATE awizacje SET status=?, komentarz=? WHERE id=?", (status, komentarz, id))
+            conn.commit()
+
+        return redirect('/admin')
+
     c.execute("SELECT * FROM awizacje ORDER BY data_godzina ASC")
     awizacje = c.fetchall()
     conn.close()
@@ -101,14 +113,14 @@ def admin():
     for a in awizacje:
         start_dt = datetime.strptime(a[6], "%Y-%m-%dT%H:%M")
         firma = a[1]
-        status = a[10]
+        status_a = a[10]
 
-        if status == "zaakceptowana":
+        if status_a == "zaakceptowana":
             for i in range(4):  # blok 1h
                 blok = start_dt + timedelta(minutes=15*i)
                 slot = blok.strftime('%Y-%m-%dT%H:%M')
                 zajete[slot] = {"firma": firma, "status": "zaakceptowana"}
-        elif status == "oczekująca":
+        elif status_a == "oczekująca":
             for i in range(4):
                 blok = start_dt + timedelta(minutes=15*i)
                 slot = blok.strftime('%Y-%m-%dT%H:%M')
@@ -135,3 +147,6 @@ def reject_awizacja(id):
     conn.commit()
     conn.close()
     return redirect('/admin')
+
+if __name__ == '__main__':
+    app.run(debug=True)
