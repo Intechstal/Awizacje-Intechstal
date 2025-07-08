@@ -15,16 +15,16 @@
             vertical-align: middle;
         }
         table.admin-calendar th {
-            min-width: 120px; /* 2x szerokość */
+            min-width: 120px; /* dwukrotnie większa szerokość nagłówków dni */
             background-color: #f0f0f0;
         }
         table.admin-calendar td.time-column {
-            width: 40px; /* 3x węższa */
+            width: 40px; /* trzykrotnie mniejsza szerokość kolumny godzin */
             font-size: 0.8em;
             white-space: nowrap;
             background-color: #fafafa;
         }
-        /* Status colors */
+        /* Kolory statusów */
         td.oczekująca {
             background-color: #f8d7da; /* jasnoczerwony */
         }
@@ -64,6 +64,8 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Lista awizacji i akcje pozostają BEZ zmian - np: edycja, statusy, linki -->
 
     <h2>Lista awizacji</h2>
     <table border="1" cellpadding="5" cellspacing="0">
