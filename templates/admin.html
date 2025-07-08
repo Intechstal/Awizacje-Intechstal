@@ -1,112 +1,107 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Panel Admina - Awizacje</title>
-<style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-  th { background-color: #eee; }
-  input, select { width: 100%; box-sizing: border-box; }
-  button { padding: 5px 10px; margin: 2px; }
-  a { margin: 0 5px; text-decoration: none; color: blue; }
-  a:hover { text-decoration: underline; }
-
-  /* Kolory slotów w kalendarzu */
-  .slot {
-    display: inline-block;
-    width: 100px;
-    padding: 5px;
-    margin: 2px;
-    border: 1px solid #aaa;
-    border-radius: 4px;
-    font-size: 0.9em;
-    cursor: default;
-  }
-  .slot.free {
-    background-color: #f9f9f9;
-    color: #555;
-  }
-  .slot.occupied-oczekujaca {
-    background-color: #f8d7da; /* jasny czerwony */
-    color: #721c24;
-  }
-  .slot.occupied-zaakceptowana {
-    background-color: #d4edda; /* jasny zielony */
-    color: #155724;
-  }
-</style>
+    <meta charset="UTF-8" />
+    <title>Panel Admina - Awizacje</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            padding: 6px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .slot {
+            width: 60px;
+            height: 40px;
+            border: 1px solid #ccc;
+        }
+        .zaakceptowana {
+            background-color: #b7e4c7; /* jasna zieleń */
+        }
+        .oczekująca {
+            background-color: #f8d7da; /* jasny czerwony */
+        }
+        .wolny {
+            background-color: #f0f0f0; /* jasnoszary */
+        }
+    </style>
 </head>
 <body>
+    <h1>Panel Admina - Awizacje</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Data \ Godzina</th>
+                {% for godz in godziny %}
+                    <th>{{ godz }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for dzien in dni %}
+                <tr>
+                    <td><strong>{{ dzien.strftime("%Y-%m-%d (%a)") }}</strong></td>
+                    {% for godz in godziny %}
+                        {% set slot = dzien.strftime('%Y-%m-%dT') + godz %}
+                        {% if slot in zajete %}
+                            {% set info = zajete[slot] %}
+                            <td class="slot {{ info.status }}" title="{{ info.firma }}">{{ info.firma }}</td>
+                        {% else %}
+                            <td class="slot wolny"></td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-<h1>Panel Admina - Awizacje</h1>
-
-<h2>Kalendarz awizacji (sloty co 15 min)</h2>
-
-{% for dzien in dni %}
-  <h3>{{ dzien.strftime("%A, %d.%m.%Y") }}</h3>
-  <div>
-    {% for godz in godziny %}
-      {% set full_dt = dzien.strftime("%Y-%m-%d") + 'T' + godz.strftime("%H:%M") %}
-      {% if full_dt in zajete %}
-        {% set z = zajete[full_dt] %}
-        <div class="slot occupied-{{ z.status }}">{{ godz.strftime("%H:%M") }}<br>{{ z.firma }}</div>
-      {% else %}
-        <div class="slot free">{{ godz.strftime("%H:%M") }}</div>
-      {% endif %}
-    {% endfor %}
-  </div>
-{% endfor %}
-
-<h2>Lista awizacji</h2>
-
-<table>
-  <thead>
-    <tr>
-      <th>Firma</th>
-      <th>Rejestracja</th>
-      <th>Kierowca</th>
-      <th>Email</th>
-      <th>Telefon</th>
-      <th>Data i godzina</th>
-      <th>Typ ładunku</th>
-      <th>Waga ładunku</th>
-      <th>Komentarz</th>
-      <th>Status</th>
-      <th>Akcje</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for a in awizacje %}
-    <tr>
-      <form method="POST" action="/admin/edit/{{ a[0] }}">
-        <td><input type="text" name="firma" value="{{ a[1] }}" required></td>
-        <td><input type="text" name="rejestracja" value="{{ a[2] }}" required></td>
-        <td><input type="text" name="kierowca" value="{{ a[3] }}" required></td>
-        <td><input type="email" name="email" value="{{ a[4] }}"></td>
-        <td><input type="text" name="telefon" value="{{ a[5] }}"></td>
-        <td><input type="datetime-local" name="data_godzina" value="{{ a[6] }}"></td>
-        <td><input type="text" name="typ_ladunku" value="{{ a[7] }}"></td>
-        <td><input type="text" name="waga_ladunku" value="{{ a[8] }}"></td>
-        <td><input type="text" name="komentarz" value="{{ a[9] }}"></td>
-        <td>
-          <select name="status">
-            <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
-            <option value="zaakceptowana" {% if a[10] == 'zaakceptowana' %}selected{% endif %}>Zaakceptowana</option>
-          </select>
-        </td>
-        <td>
-          <button type="submit">Zapisz</button><br>
-          <a href="/admin/accept/{{ a[0] }}">Zaakceptuj</a> | 
-          <a href="/admin/reject/{{ a[0] }}" onclick="return confirm('Na pewno usunąć awizację?')">Usuń</a>
-        </td>
-      </form>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-
+    <h2>Lista Awizacji</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Firma</th>
+                <th>Rejestracja</th>
+                <th>Kierowca</th>
+                <th>Email</th>
+                <th>Telefon</th>
+                <th>Data i godzina</th>
+                <th>Typ ładunku</th>
+                <th>Waga ładunku</th>
+                <th>Komentarz</th>
+                <th>Status</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in awizacje %}
+                <tr>
+                    <td>{{ a[1] }}</td>
+                    <td>{{ a[2] }}</td>
+                    <td>{{ a[3] }}</td>
+                    <td>{{ a[4] }}</td>
+                    <td>{{ a[5] }}</td>
+                    <td>{{ a[6].replace('T', ' ') }}</td>
+                    <td>{{ a[7] }}</td>
+                    <td>{{ a[8] }}</td>
+                    <td>{{ a[9] }}</td>
+                    <td>{{ a[10] }}</td>
+                    <td>
+                        <a href="/admin/edit/{{ a[0] }}">Edytuj</a> <br><br>
+                        <form method="GET" action="/admin/update_status/{{ a[0] }}" style="margin:0;">
+                            <select name="status" onchange="if(this.value=='odrzuć'){if(confirm('Na pewno usunąć awizację?')){window.location.href='/admin/reject/{{ a[0] }}';} else {this.value='';}} else {window.location.href='/admin/update_status/{{ a[0] }}?status='+this.value;}">
+                                <option value="">Wybierz akcję</option>
+                                <option value="zaakceptowana">Zaakceptuj</option>
+                                <option value="oczekująca">Oczekujące</option>
+                                <option value="odrzuć">Odrzuć</option>
+                            </select>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>
