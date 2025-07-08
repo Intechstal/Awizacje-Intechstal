@@ -1,22 +1,40 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Edytuj awizację</title>
 </head>
 <body>
-    <h2>Edytuj awizację</h2>
+    <h1>Edytuj awizację</h1>
     <form method="POST">
-        Firma: <input type="text" name="firma" value="{{ dane[1] }}" required><br><br>
-        Rejestracja: <input type="text" name="rejestracja" value="{{ dane[2] }}" required><br><br>
-        Kierowca: <input type="text" name="kierowca" value="{{ dane[3] }}" required><br><br>
-        Email: <input type="email" name="email" value="{{ dane[4] }}" required><br><br>
-        Telefon: <input type="text" name="telefon" value="{{ dane[5] }}" required><br><br>
-        Data i godzina: <input type="datetime-local" name="data_godzina" value="{{ dane[6] }}" required><br><br>
-        Typ ładunku: <input type="text" name="typ_ladunku" value="{{ dane[7] }}"><br><br>
-        Waga ładunku: <input type="text" name="waga_ladunku" value="{{ dane[8] }}"><br><br>
-        Komentarz: <textarea name="komentarz">{{ dane[9] }}</textarea><br><br>
-        <input type="submit" value="Zapisz zmiany">
+        <label for="firma">Firma:</label>
+        <input type="text" name="firma" id="firma" value="{{ dane[1] }}" required><br>
+
+        <label for="rejestracja">Rejestracja:</label>
+        <input type="text" name="rejestracja" id="rejestracja" value="{{ dane[2] }}" required><br>
+
+        <label for="kierowca">Kierowca:</label>
+        <input type="text" name="kierowca" id="kierowca" value="{{ dane[3] }}" required><br>
+
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email" value="{{ dane[4] }}" required><br>
+
+        <label for="telefon">Telefon:</label>
+        <input type="text" name="telefon" id="telefon" value="{{ dane[5] }}" required><br>
+
+        <label for="data_godzina">Data i godzina:</label>
+        <input type="datetime-local" name="data_godzina" id="data_godzina" value="{{ dane[6].replace(' ', 'T') }}" required><br>
+
+        <label for="typ_ladunku">Typ ładunku:</label>
+        <input type="text" name="typ_ladunku" id="typ_ladunku" value="{{ dane[7] }}"><br>
+
+        <label for="waga_ladunku">Waga ładunku:</label>
+        <input type="text" name="waga_ladunku" id="waga_ladunku" value="{{ dane[8] }}"><br>
+
+        <label for="komentarz">Komentarz:</label>
+        <textarea name="komentarz" id="komentarz">{{ dane[9] }}</textarea><br>
+
+        <button type="submit">Zapisz</button>
     </form>
 </body>
 </html>
