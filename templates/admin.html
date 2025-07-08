@@ -4,118 +4,92 @@
     <meta charset="UTF-8" />
     <title>Panel Admina - Awizacje</title>
     <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 4px;
-            text-align: center;
-            vertical-align: middle;
-        }
-        th {
-            background: #eee;
-        }
-        .slot-zaakceptowana {
-            background-color: #b2fab4; /* jasna zieleń */
-        }
-        .slot-oczekujaca {
-            background-color: #fab2b2; /* jasnoczerwony */
-        }
-        .slot-wolna {
-            background-color: #f9f9f9; /* jasnoszary */
-        }
-        .buttons a {
-            margin: 0 5px;
-            padding: 3px 8px;
-            background: #007BFF;
-            color: white;
-            text-decoration: none;
-            border-radius: 3px;
-            font-size: 12px;
-        }
-        .buttons a.reject {
-            background: #dc3545;
-        }
-        .buttons a:hover {
-            opacity: 0.8;
-        }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+        th { background: #eee; }
+        .slot-zaakceptowana { background-color: #b2fab4; } /* jasna zieleń */
+        .slot-oczekujaca { background-color: #fab2b2; }  /* jasna czerwień */
+        .slot-wolna { background-color: #fff; }
+        a { text-decoration: none; color: blue; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <h1>Panel Admina - Awizacje</h1>
+
     <table>
         <thead>
             <tr>
-                <th>Godzina / Dzień</th>
+                <th>Godzina \ Dzień</th>
                 {% for dzien in dni %}
-                    <th>{{ dzien.strftime("%a %d-%m-%Y") }}</th>
+                    <th>{{ dzien.strftime("%a %d.%m") }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
-            {% set godziny_unikalne = [] %}
-            {% for slot in godziny %}
-                {% set godz = slot.strftime("%H:%M") %}
-                {% if godz not in godziny_unikalne %}
-                    {% do godziny_unikalne.append(godz) %}
-                {% endif %}
-            {% endfor %}
-
             {% for godz in godziny_unikalne %}
-                <tr>
-                    <td><strong>{{ godz }}</strong></td>
-                    {% for dzien in dni %}
-                        {% set key = dzien.strftime("%Y-%m-%d") + "T" + godz %}
-                        {% if key in zajete %}
-                            {% set status = zajete[key]["status"] %}
-                            {% set firma = zajete[key]["firma"] %}
-                            {% if status == "zaakceptowana" %}
-                                <td class="slot-zaakceptowana">{{ firma }}</td>
-                            {% elif status == "oczekująca" %}
-                                <td class="slot-oczekujaca">{{ firma }}</td>
-                            {% else %}
-                                <td class="slot-wolna"></td>
-                            {% endif %}
+            <tr>
+                <td><strong>{{ godz }}</strong></td>
+                {% for dzien in dni %}
+                    {% set key = dzien.strftime("%Y-%m-%d") + "T" + godz %}
+                    {% if key in zajete %}
+                        {% set status = zajete[key]["status"] %}
+                        {% set firma = zajete[key]["firma"] %}
+                        {% if status == "zaakceptowana" %}
+                            <td class="slot-zaakceptowana">{{ firma }}</td>
+                        {% elif status == "oczekująca" %}
+                            <td class="slot-oczekujaca">{{ firma }}</td>
                         {% else %}
                             <td class="slot-wolna"></td>
                         {% endif %}
-                    {% endfor %}
-                </tr>
+                    {% else %}
+                        <td class="slot-wolna"></td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
             {% endfor %}
         </tbody>
     </table>
 
     <h2>Lista Awizacji</h2>
-    <table>
+    <table border="1" cellpadding="5" cellspacing="0">
         <thead>
             <tr>
                 <th>Firma</th>
+                <th>Rejestracja</th>
+                <th>Kierowca</th>
+                <th>Email</th>
+                <th>Telefon</th>
                 <th>Data i godzina</th>
+                <th>Typ ładunku</th>
+                <th>Waga ładunku</th>
+                <th>Komentarz</th>
                 <th>Status</th>
                 <th>Akcje</th>
             </tr>
         </thead>
         <tbody>
             {% for a in awizacje %}
-                {% set id = a[0] %}
-                {% set firma = a[1] %}
-                {% set data_godzina = a[6] %}
-                {% set status = a[10] %}
-                <tr>
-                    <td>{{ firma }}</td>
-                    <td>{{ data_godzina.replace('T', ' ') }}</td>
-                    <td>{{ status }}</td>
-                    <td class="buttons">
-                        {% if status != "zaakceptowana" %}
-                            <a href="/admin/accept/{{ id }}">Zaakceptuj</a>
-                        {% endif %}
-                        <a href="/admin/reject/{{ id }}" class="reject" onclick="return confirm('Na pewno usunąć awizację?')">Odrzuć</a>
-                    </td>
-                </tr>
+            <tr>
+                <td>{{ a[1] }}</td>
+                <td>{{ a[2] }}</td>
+                <td>{{ a[3] }}</td>
+                <td>{{ a[4] }}</td>
+                <td>{{ a[5] }}</td>
+                <td>{{ a[6].replace("T", " ") }}</td>
+                <td>{{ a[7] }}</td>
+                <td>{{ a[8] }}</td>
+                <td>{{ a[9] }}</td>
+                <td>{{ a[10] }}</td>
+                <td>
+                    {% if a[10] == 'oczekująca' %}
+                    <a href="/admin/accept/{{ a[0] }}">Akceptuj</a> |
+                    <a href="/admin/reject/{{ a[0] }}">Odrzuć</a>
+                    {% elif a[10] == 'zaakceptowana' %}
+                    <a href="/admin/reject/{{ a[0] }}">Usuń</a>
+                    {% endif %}
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
