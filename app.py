@@ -93,7 +93,7 @@ def admin():
         s = datetime.strptime(start, "%H:%M")
         e = datetime.strptime(end, "%H:%M")
         while s < e:
-            sloty.append(s)
+            sloty.append(s.strftime('%H:%M'))
             s += timedelta(minutes=15)
 
     zajete = {}
@@ -102,22 +102,24 @@ def admin():
         firma = a[1]
         status = a[10]
 
-        if status in ("zaakceptowana", "oczekująca"):
-            for i in range(4):  # blok 1h (4 sloty po 15min)
-                blok = start_dt + timedelta(minutes=15*i)
-                slot = blok.strftime('%Y-%m-%dT%H:%M')
-                zajete[slot] = {"firma": firma, "status": status}
+        # Blokowanie 1h (4 sloty po 15min)
+        for i in range(4):
+            blok = start_dt + timedelta(minutes=15*i)
+            slot = blok.strftime('%Y-%m-%dT%H:%M')
+            zajete[slot] = {"firma": firma, "status": status}
 
-    return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=sloty, zajete=zajete)
+    return render_template("admin.html", dni=dni, godziny=sloty, zajete=zajete, awizacje=awizacje)
 
-@app.route('/admin/accept/<int:id>')
+@app.route('/admin/update_status/<int:id>')
 @auth.login_required
-def accept_awizacja(id):
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute("UPDATE awizacje SET status='zaakceptowana' WHERE id=?", (id,))
-    conn.commit()
-    conn.close()
+def update_status(id):
+    status = request.args.get('status')
+    if status in ['zaakceptowana', 'oczekująca']:
+        conn = sqlite3.connect('awizacje.db')
+        c = conn.cursor()
+        c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
+        conn.commit()
+        conn.close()
     return redirect('/admin')
 
 @app.route('/admin/reject/<int:id>')
@@ -130,30 +132,38 @@ def reject_awizacja(id):
     conn.close()
     return redirect('/admin')
 
-@app.route('/admin/edit/<int:id>', methods=['POST'])
+@app.route('/admin/edit/<int:id>', methods=['GET', 'POST'])
 @auth.login_required
 def edit_awizacja(id):
-    firma = request.form['firma']
-    rejestracja = request.form['rejestracja']
-    kierowca = request.form['kierowca']
-    email = request.form['email']
-    telefon = request.form['telefon']
-    data_godzina = request.form['data_godzina']
-    typ_ladunku = request.form['typ_ladunku']
-    waga_ladunku = request.form['waga_ladunku']
-    komentarz = request.form.get('komentarz', '')
-    status = request.form.get('status', 'oczekująca')
-
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    c.execute('''
-        UPDATE awizacje SET firma=?, rejestracja=?, kierowca=?, email=?, telefon=?, data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?, status=?
-        WHERE id=?
-    ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ_ladunku, waga_ladunku, komentarz, status, id))
-    conn.commit()
-    conn.close()
+    if request.method == 'POST':
+        firma = request.form['firma']
+        rejestracja = request.form['rejestracja']
+        kierowca = request.form['kierowca']
+        email = request.form['email']
+        telefon = request.form['telefon']
+        data_godzina = request.form['data_godzina']
+        typ_ladunku = request.form['typ_ladunku']
+        waga_ladunku = request.form['waga_ladunku']
+        komentarz = request.form.get('komentarz', '')
+        status = request.form.get('status', 'oczekująca')
 
-    return redirect('/admin')
+        c.execute('''
+            UPDATE awizacje
+            SET firma=?, rejestracja=?, kierowca=?, email=?, telefon=?, data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?, status=?
+            WHERE id=?
+        ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ_ladunku, waga_ladunku, komentarz, status, id))
+        conn.commit()
+        conn.close()
+        return redirect('/admin')
+
+    c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
+    awizacja = c.fetchone()
+    conn.close()
+    if not awizacja:
+        return "Awizacja nie znaleziona", 404
+    return render_template('edit_awizacja.html', awizacja=awizacja)
 
 if __name__ == '__main__':
     app.run(debug=True)
