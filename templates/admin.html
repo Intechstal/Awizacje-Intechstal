@@ -17,6 +17,9 @@
         .zajete {
             background-color: #f8cccc;
         }
+        .zaakceptowana {
+            background-color: #ccffcc;
+        }
     </style>
 </head>
 <body>
@@ -41,8 +44,7 @@
                 <td>{{ a[10] }}</td>
                 <td>
                     <a href="/admin/accept/{{ a[0] }}">Akceptuj</a> |
-                    <a href="/admin/reject/{{ a[0] }}">Odrzuć</a> |
-                    <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
+                    <a href="/admin/reject/{{ a[0] }}">Odrzuć</a>
                 </td>
             </tr>
             {% endfor %}
@@ -61,9 +63,7 @@
                             .replace('Tuesday','Wtorek')
                             .replace('Wednesday','Środa')
                             .replace('Thursday','Czwartek')
-                            .replace('Friday','Piątek')
-                            .replace('Saturday','Sobota')
-                            .replace('Sunday','Niedziela') }}<br>
+                            .replace('Friday','Piątek') }}<br>
                         {{ d.strftime('%d.%m') }}
                     </th>
                 {% endfor %}
@@ -76,7 +76,9 @@
                 {% for d in dni %}
                     {% set slot = d.strftime('%Y-%m-%d') + 'T' + h.strftime('%H:%M') %}
                     {% if slot in zajete %}
-                        <td class="zajete">{{ zajete[slot] }}</td>
+                        <td class="{% if zajete[slot].status == 'zaakceptowana' %}zaakceptowana{% else %}zajete{% endif %}">
+                            {{ zajete[slot].firma }}
+                        </td>
                     {% else %}
                         <td></td>
                     {% endif %}
