@@ -2,17 +2,19 @@ from flask import Flask, render_template, request, redirect
 import sqlite3
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
 
+# Użytkownicy admina (prosty auth)
 users = {
-    "admin": generate_password_hash("twojehaslo")  # ← Zmień hasło na swoje
+    "sk": generate_password_hash("123")  # Zmień hasło!
 }
 
 @auth.verify_password
 def verify_password(username, password):
-    if username in users and check_password_hash(users.get(username), password):
+    if username in users and check_password_hash(users[username], password):
         return username
 
 # Inicjalizacja bazy danych
@@ -26,10 +28,10 @@ def init_db():
             rejestracja TEXT,
             kierowca TEXT,
             email TEXT,
-            telefon_kierowcy TEXT,
+            telefon_do_kierowcy TEXT,
             data_godzina TEXT,
             typ_ladunku TEXT,
-            waga_ladunku TEXT,
+            waga_ładunku TEXT,
             komentarz TEXT,
             status TEXT DEFAULT 'oczekująca'
         )
@@ -48,19 +50,34 @@ def zapisz():
     firma = request.form['firma']
     rejestracja = request.form['rejestracja']
     kierowca = request.form['kierowca']
-    email = request.form['email']
-    telefon_kierowcy = request.form['telefon_kierowcy']
+    email = request.form['email_kierowcy']
+    telefon = request.form['telefon_kierowcy']
     data_godzina = request.form['data_godzina']
-    typ_ladunku = request.form['typ_ladunku']
-    waga_ladunku = request.form.get('waga_ladunku', '')
+    typ = request.form['typ_ladunku']
+    waga = request.form['waga_ladunku']
     komentarz = request.form.get('komentarz', '')
 
+    # Walidacja godzin i dni roboczych
+    try:
+        dt = datetime.strptime(data_godzina, '%Y-%m-%dT%H:%M')
+        if dt.weekday() >= 5:
+            return "Awizacje możliwe tylko w dni robocze (pon–pt)", 400
+
+        minuta = dt.hour * 60 + dt.minute
+        przedzialy = [(450, 630), (660, 825), (855, 1200)]
+
+        if not any(start <= minuta <= end for start, end in przedzialy):
+            return "Godzina poza dozwolonymi przedziałami.", 400
+    except Exception as e:
+        return f"Błąd daty: {e}", 400
+
+    # Zapis do bazy
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     c.execute('''
-        INSERT INTO awizacje (firma, rejestracja, kierowca, email, telefon_kierowcy, data_godzina, typ_ladunku, waga_ladunku, komentarz)
+        INSERT INTO awizacje (firma, rejestracja, kierowca, email, telefon_do_kierowcy, data_godzina, typ_ladunku, waga_ładunku, komentarz)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (firma, rejestracja, kierowca, email, telefon_kierowcy, data_godzina, typ_ladunku, waga_ladunku, komentarz))
+    ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ, waga, komentarz))
     conn.commit()
     conn.close()
 
@@ -75,44 +92,6 @@ def admin():
     dane = c.fetchall()
     conn.close()
     return render_template('admin.html', awizacje=dane)
-
-@app.route('/admin/edit/<int:id>', methods=['GET'])
-@auth.login_required
-def edit_awizacja(id):
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute('SELECT * FROM awizacje WHERE id = ?', (id,))
-    awizacja = c.fetchone()
-    conn.close()
-    if awizacja:
-        return render_template('edit.html', awizacja=awizacja)
-    else:
-        return "Awizacja nie znaleziona", 404
-
-@app.route('/admin/edit/<int:id>', methods=['POST'])
-@auth.login_required
-def update_awizacja(id):
-    firma = request.form['firma']
-    rejestracja = request.form['rejestracja']
-    kierowca = request.form['kierowca']
-    email = request.form['email']
-    telefon_kierowcy = request.form['telefon_kierowcy']
-    data_godzina = request.form['data_godzina']
-    typ_ladunku = request.form['typ_ladunku']
-    waga_ladunku = request.form.get('waga_ladunku', '')
-    komentarz = request.form.get('komentarz', '')
-    status = request.form.get('status', 'oczekująca')
-
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute('''
-        UPDATE awizacje
-        SET firma = ?, rejestracja = ?, kierowca = ?, email = ?, telefon_kierowcy = ?, data_godzina = ?, typ_ladunku = ?, waga_ladunku = ?, komentarz = ?, status = ?
-        WHERE id = ?
-    ''', (firma, rejestracja, kierowca, email, telefon_kierowcy, data_godzina, typ_ladunku, waga_ladunku, komentarz, status, id))
-    conn.commit()
-    conn.close()
-    return redirect('/admin')
 
 if __name__ == '__main__':
     app.run(debug=True)
