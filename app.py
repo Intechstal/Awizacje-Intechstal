@@ -47,7 +47,6 @@ def index():
     rekordy = c.fetchall()
     conn.close()
 
-    # Budowanie listy zajętych slotów (blok 1h = 4 sloty po 15min)
     zajete = set()
     for data, status in rekordy:
         if status != "odrzucona":
@@ -55,7 +54,6 @@ def index():
             for i in range(4):
                 zajete.add((dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M'))
 
-    # Tworzenie listy dni roboczych (5 kolejnych)
     today = datetime.now().replace(hour=0, minute=0)
     dni = []
     d = today
@@ -64,7 +62,6 @@ def index():
             dni.append(d)
         d += timedelta(days=1)
 
-    # Definicja slotów czasowych do wyboru
     sloty_dostepne = []
     for dzien in dni:
         for start, end in [("07:30", "09:30"), ("11:00", "13:15"), ("14:15", "20:00")]:
@@ -72,7 +69,6 @@ def index():
             end_dt = datetime.combine(dzien.date(), datetime.strptime(end, "%H:%M").time())
             while start_dt < end_dt:
                 slot_str = start_dt.strftime('%Y-%m-%dT%H:%M')
-                # Sprawdzamy, czy cały blok 1h (4 sloty) jest wolny
                 blok = [(start_dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M') for i in range(4)]
                 if all(b not in zajete for b in blok):
                     sloty_dostepne.append(slot_str)
@@ -110,7 +106,8 @@ def zapisz():
 def admin():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM awizacje ORDER BY data_godzina ASC")
+    # Pobieramy tylko awizacje, które nie są odrzucone
+    c.execute("SELECT * FROM awizacje WHERE status != 'odrzucona' ORDER BY data_godzina ASC")
     awizacje = c.fetchall()
     conn.close()
 
@@ -137,7 +134,7 @@ def admin():
         status = a[10]
 
         if status != "odrzucona":
-            for i in range(4):  # blok 1h = 4 sloty
+            for i in range(4):
                 blok = dt + timedelta(minutes=15 * i)
                 slot = blok.strftime('%Y-%m-%dT%H:%M')
                 zajete[slot] = {"firma": firma, "status": status}
@@ -150,10 +147,8 @@ def update_status(id):
     status = request.form['status']
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    if status == "odrzucona":
-        c.execute("DELETE FROM awizacje WHERE id=?", (id,))
-    else:
-        c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
+    # Zmieniamy tylko status, nie usuwamy rekordu
+    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
     conn.commit()
     conn.close()
     return redirect('/admin')
@@ -191,6 +186,17 @@ def edit_awizacja(id):
         dane = c.fetchone()
         conn.close()
         return render_template("edit.html", dane=dane)
+
+@app.route('/historia')
+@auth.login_required
+def historia():
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    # Pobieramy wszystkie awizacje, w tym odrzucone
+    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
+    awizacje = c.fetchall()
+    conn.close()
+    return render_template('historia.html', awizacje=awizacje)
 
 if __name__ == '__main__':
     app.run(debug=True)
