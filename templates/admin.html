@@ -2,15 +2,82 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8" />
-    <title>Panel administratora</title>
+    <title>Panel Admina - Awizacje</title>
+    <style>
+        table.admin-calendar {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table.admin-calendar th, table.admin-calendar td {
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        table.admin-calendar th {
+            min-width: 120px; /* 2x szerokość */
+            background-color: #f0f0f0;
+        }
+        table.admin-calendar td.time-column {
+            width: 40px; /* 3x węższa */
+            font-size: 0.8em;
+            white-space: nowrap;
+            background-color: #fafafa;
+        }
+        /* Status colors */
+        td.oczekująca {
+            background-color: #f8d7da; /* jasnoczerwony */
+        }
+        td.akceptowana {
+            background-color: #d4edda; /* jasny zielony */
+        }
+        td.odrzucona {
+            background-color: #f5c6cb; /* czerwony */
+        }
+    </style>
 </head>
 <body>
-    <h1>Awizacje</h1>
-    <table border="1">
+    <h1>Panel Admina - Awizacje</h1>
+
+    <table class="admin-calendar">
         <thead>
             <tr>
-                <th>Data</th>
+                <th>Godzina</th>
+                {% for dzien, nazwa in dni_i_nazwy %}
+                    <th>{{ nazwa }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for godzina in godziny %}
+                <tr>
+                    <td class="time-column">{{ godzina }}</td>
+                    {% for dzien, nazwa in dni_i_nazwy %}
+                        {% set slot = dzien.strftime('%Y-%m-%dT') + godzina %}
+                        {% if zajete.get(slot) %}
+                            <td class="{{ zajete[slot].status }}">{{ zajete[slot].firma }}</td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Lista awizacji</h2>
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
                 <th>Firma</th>
+                <th>Rejestracja</th>
+                <th>Kierowca</th>
+                <th>Email</th>
+                <th>Telefon</th>
+                <th>Data i godzina</th>
+                <th>Typ ładunku</th>
+                <th>Waga ładunku</th>
+                <th>Komentarz</th>
                 <th>Status</th>
                 <th>Akcje</th>
             </tr>
@@ -18,17 +85,23 @@
         <tbody>
             {% for a in awizacje %}
             <tr>
-                <td>{{ a[6].replace('T', ' ') }}</td>
                 <td>{{ a[1] }}</td>
+                <td>{{ a[2] }}</td>
+                <td>{{ a[3] }}</td>
+                <td>{{ a[4] }}</td>
+                <td>{{ a[5] }}</td>
+                <td>{{ a[6] }}</td>
+                <td>{{ a[7] }}</td>
+                <td>{{ a[8] }}</td>
+                <td>{{ a[9] }}</td>
                 <td>{{ a[10] }}</td>
                 <td>
-                    <form action="/admin/update_status/{{ a[0] }}" method="post" style="display:inline">
-                        <select name="status">
-                            <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>oczekująca</option>
-                            <option value="zatwierdzona" {% if a[10] == 'zatwierdzona' %}selected{% endif %}>zatwierdzona</option>
-                            <option value="odrzucona" {% if a[10] == 'odrzucona' %}selected{% endif %}>odrzucona</option>
+                    <form action="/admin/update_status/{{ a[0] }}" method="post" style="display:inline-block;">
+                        <select name="status" onchange="this.form.submit()">
+                            <option value="oczekująca" {% if a[10]=='oczekująca' %}selected{% endif %}>Oczekująca</option>
+                            <option value="akceptowana" {% if a[10]=='akceptowana' %}selected{% endif %}>Akceptowana</option>
+                            <option value="odrzucona">Odrzucona</option>
                         </select>
-                        <button type="submit">Zmień</button>
                     </form>
                     <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
                 </td>
@@ -36,5 +109,6 @@
             {% endfor %}
         </tbody>
     </table>
+
 </body>
 </html>
