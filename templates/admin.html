@@ -5,65 +5,39 @@
     <title>Panel Admina - Awizacje</title>
     <style>
         table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-        th { background: #eee; }
-        .slot-zaakceptowana { background-color: #b2fab4; } /* jasna zieleń */
-        .slot-oczekujaca { background-color: #fab2b2; }  /* jasna czerwień */
-        .slot-wolna { background-color: #fff; }
-        a { text-decoration: none; color: blue; }
-        a:hover { text-decoration: underline; }
+        th, td { border: 1px solid #aaa; padding: 6px; text-align: center; }
+        .slot {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 1px;
+            display: inline-block;
+            min-width: 120px;
+        }
+        .accepted { background-color: #b2fab4; }  /* jasna zieleń */
+        .pending { background-color: #fab4b4; }   /* jasna czerwień */
+        .free { background-color: #eee; }
+        a.button {
+            padding: 4px 8px;
+            background: #444;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            margin: 0 3px;
+        }
+        a.button:hover { background: #666; }
     </style>
 </head>
 <body>
     <h1>Panel Admina - Awizacje</h1>
 
+    <h2>Lista awizacji</h2>
     <table>
-        <thead>
-            <tr>
-                <th>Godzina \ Dzień</th>
-                {% for dzien in dni %}
-                    <th>{{ dzien.strftime("%a %d.%m") }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for godz in godziny_unikalne %}
-            <tr>
-                <td><strong>{{ godz }}</strong></td>
-                {% for dzien in dni %}
-                    {% set key = dzien.strftime("%Y-%m-%d") + "T" + godz %}
-                    {% if key in zajete %}
-                        {% set status = zajete[key]["status"] %}
-                        {% set firma = zajete[key]["firma"] %}
-                        {% if status == "zaakceptowana" %}
-                            <td class="slot-zaakceptowana">{{ firma }}</td>
-                        {% elif status == "oczekująca" %}
-                            <td class="slot-oczekujaca">{{ firma }}</td>
-                        {% else %}
-                            <td class="slot-wolna"></td>
-                        {% endif %}
-                    {% else %}
-                        <td class="slot-wolna"></td>
-                    {% endif %}
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <h2>Lista Awizacji</h2>
-    <table border="1" cellpadding="5" cellspacing="0">
         <thead>
             <tr>
                 <th>Firma</th>
                 <th>Rejestracja</th>
                 <th>Kierowca</th>
-                <th>Email</th>
-                <th>Telefon</th>
                 <th>Data i godzina</th>
-                <th>Typ ładunku</th>
-                <th>Waga ładunku</th>
-                <th>Komentarz</th>
                 <th>Status</th>
                 <th>Akcje</th>
             </tr>
@@ -74,24 +48,49 @@
                 <td>{{ a[1] }}</td>
                 <td>{{ a[2] }}</td>
                 <td>{{ a[3] }}</td>
-                <td>{{ a[4] }}</td>
-                <td>{{ a[5] }}</td>
-                <td>{{ a[6].replace("T", " ") }}</td>
-                <td>{{ a[7] }}</td>
-                <td>{{ a[8] }}</td>
-                <td>{{ a[9] }}</td>
+                <td>{{ a[6].replace('T', ' ') }}</td>
                 <td>{{ a[10] }}</td>
                 <td>
-                    {% if a[10] == 'oczekująca' %}
-                    <a href="/admin/accept/{{ a[0] }}">Akceptuj</a> |
-                    <a href="/admin/reject/{{ a[0] }}">Odrzuć</a>
-                    {% elif a[10] == 'zaakceptowana' %}
-                    <a href="/admin/reject/{{ a[0] }}">Usuń</a>
-                    {% endif %}
+                    <a class="button" href="/admin/accept/{{ a[0] }}">Zaakceptuj</a>
+                    <a class="button" href="/admin/reject/{{ a[0] }}" onclick="return confirm('Na pewno usunąć?')">Usuń</a>
+                    <a class="button" href="/admin/edit/{{ a[0] }}">Edytuj</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <h2>Kalendarz awizacji (zablokowane sloty)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Data/Godzina</th>
+                {% for dzien in dni %}
+                    <th>{{ dzien.strftime('%Y-%m-%d (%a)') }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for godzina in godziny %}
+            <tr>
+                <td>{{ godzina.strftime('%H:%M') }}</td>
+                {% for dzien in dni %}
+                    {% set slot_key = dzien.strftime('%Y-%m-%d') + 'T' + godzina.strftime('%H:%M') %}
+                    {% if slot_key in zajete %}
+                        {% set entry = zajete[slot_key] %}
+                        {% if entry.status == 'zaakceptowana' %}
+                            <td class="slot accepted">{{ entry.firma }}</td>
+                        {% else %}
+                            <td class="slot pending">{{ entry.firma }}</td>
+                        {% endif %}
+                    {% else %}
+                        <td class="slot free"></td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
 </body>
 </html>
