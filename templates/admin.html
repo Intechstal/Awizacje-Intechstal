@@ -1,135 +1,62 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8" />
-    <title>Panel Admina - Awizacje</title>
+    <meta charset="UTF-8">
+    <title>Panel awizacji z kalendarzem</title>
     <style>
         table {
             border-collapse: collapse;
-            width: 100%;
+            margin-top: 20px;
         }
         th, td {
-            padding: 8px 12px;
             border: 1px solid #ccc;
-            text-align: left;
-        }
-        th {
-            background-color: #f4f4f4;
-        }
-        a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h1 {
-            margin-bottom: 20px;
-        }
-        .slots {
-            margin-top: 40px;
-            padding: 10px;
-            background: #f9f9f9;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .slots h2 {
-            margin-bottom: 15px;
-        }
-        .slot-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 8px;
-        }
-        .slot-box {
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 14px;
+            padding: 4px;
             text-align: center;
-            user-select: none;
-            border: 1px solid #bbb;
         }
-        .slot-zajety {
-            background-color: #ffcccc;
-            color: #900;
-            font-weight: bold;
-        }
-        .slot-wolny {
-            background-color: #ccffcc;
-            color: #090;
-            font-weight: bold;
-        }
-        .day-title {
-            margin-top: 30px;
-            margin-bottom: 10px;
-            font-weight: bold;
-            font-size: 16px;
-            color: #333;
+        .zajete {
+            background-color: #f8cccc;
         }
     </style>
 </head>
 <body>
-    <h1>Panel Admina - Lista Awizacji</h1>
-    {% if awizacje %}
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Firma</th>
-                    <th>Rejestracja</th>
-                    <th>Kierowca</th>
-                    <th>Email</th>
-                    <th>Telefon</th>
-                    <th>Data i godzina</th>
-                    <th>Typ ładunku</th>
-                    <th>Waga ładunku</th>
-                    <th>Status</th>
-                    <th>Akcje</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for a in awizacje %}
-                <tr>
-                    <td>{{ a[0] }}</td>
-                    <td>{{ a[1] }}</td>
-                    <td>{{ a[2] }}</td>
-                    <td>{{ a[3] }}</td>
-                    <td>{{ a[4] }}</td>
-                    <td>{{ a[5] }}</td>
-                    <td>{{ a[6] }}</td>
-                    <td>{{ a[7] }}</td>
-                    <td>{{ a[8] }}</td>
-                    <td>{{ a[10] }}</td> <!-- Status jest na indeksie 10 -->
-                    <td>
-                        <a href="{{ url_for('edit_awizacja', id=a[0]) }}">Edytuj awizację</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>Brak awizacji do wyświetlenia.</p>
-    {% endif %}
+    <h1>Awizacje</h1>
 
-    <div class="slots">
-        <h2>Zajęte sloty w najbliższych 5 dniach roboczych</h2>
-        {% for dzien in dni %}
-            <div class="day-title">{{ dzien.strftime('%A, %d.%m.%Y') }}</div>
-            <div class="slot-grid">
-            {% for godzina in godziny %}
-                {% set slot = dzien.replace(hour=godzina.hour, minute=godzina.minute).strftime('%Y-%m-%dT%H:%M') %}
-                {% if slot in zajete %}
-                    <div class="slot-box slot-zajety">{{ godzina.strftime('%H:%M') }} - zajęty</div>
-                {% else %}
-                    <div class="slot-box slot-wolny">{{ godzina.strftime('%H:%M') }} - wolny</div>
-                {% endif %}
-            {% endfor %}
-            </div>
-        {% endfor %}
+    <div style="display: flex; gap: 60px;">
+        <div>
+            <h3>Lista awizacji</h3>
+            <ul>
+                {% for a in awizacje %}
+                <li>
+                    <b>{{ a[1] }}</b> - {{ a[6] }} - {{ a[4] }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div>
+            <h3>Kalendarz (następny tydzień roboczy)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Godzina</th>
+                        {% for d in dni %}
+                            <th>{{ d.strftime('%A<br>%d.%m') }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in godziny %}
+                    <tr>
+                        <td>{{ h.strftime('%H:%M') }}</td>
+                        {% for d in dni %}
+                            {% set slot = d.strftime('%Y-%m-%d') + 'T' + h.strftime('%H:%M') %}
+                            <td class="{% if slot in zajete %}zajete{% endif %}"></td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </body>
 </html>
