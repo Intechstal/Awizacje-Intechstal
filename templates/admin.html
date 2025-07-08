@@ -30,6 +30,46 @@
         h1 {
             margin-bottom: 20px;
         }
+        .slots {
+            margin-top: 40px;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .slots h2 {
+            margin-bottom: 15px;
+        }
+        .slot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+        }
+        .slot-box {
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+            user-select: none;
+            border: 1px solid #bbb;
+        }
+        .slot-zajety {
+            background-color: #ffcccc;
+            color: #900;
+            font-weight: bold;
+        }
+        .slot-wolny {
+            background-color: #ccffcc;
+            color: #090;
+            font-weight: bold;
+        }
+        .day-title {
+            margin-top: 30px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -63,7 +103,7 @@
                     <td>{{ a[6] }}</td>
                     <td>{{ a[7] }}</td>
                     <td>{{ a[8] }}</td>
-                    <td>{{ a[9] }}</td>
+                    <td>{{ a[10] }}</td> <!-- Status jest na indeksie 10 -->
                     <td>
                         <a href="{{ url_for('edit_awizacja', id=a[0]) }}">Edytuj awizację</a>
                     </td>
@@ -74,5 +114,22 @@
     {% else %}
         <p>Brak awizacji do wyświetlenia.</p>
     {% endif %}
+
+    <div class="slots">
+        <h2>Zajęte sloty w najbliższych 5 dniach roboczych</h2>
+        {% for dzien in dni %}
+            <div class="day-title">{{ dzien.strftime('%A, %d.%m.%Y') }}</div>
+            <div class="slot-grid">
+            {% for godzina in godziny %}
+                {% set slot = dzien.replace(hour=godzina.hour, minute=godzina.minute).strftime('%Y-%m-%dT%H:%M') %}
+                {% if slot in zajete %}
+                    <div class="slot-box slot-zajety">{{ godzina.strftime('%H:%M') }} - zajęty</div>
+                {% else %}
+                    <div class="slot-box slot-wolny">{{ godzina.strftime('%H:%M') }} - wolny</div>
+                {% endif %}
+            {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
 </body>
 </html>
