@@ -2,13 +2,13 @@ from flask import Flask, render_template, request, redirect
 import sqlite3
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
 
 users = {
-    "admin": generate_password_hash("twojehaslo")  # Zmień na swoje hasło
+    "admin": generate_password_hash("twojehaslo")  # Zmień hasło
 }
 
 @auth.verify_password
@@ -16,7 +16,6 @@ def verify_password(username, password):
     if username in users and check_password_hash(users.get(username), password):
         return username
 
-# Inicjalizacja bazy danych
 def init_db():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
@@ -83,10 +82,10 @@ def zapisz():
         dt = datetime.strptime(data_godzina, '%Y-%m-%dT%H:%M')
 
         if dt.weekday() >= 5:
-            return render_template("error.html", message="Awizacje możliwe tylko w dni robocze (pon–pt).", dane=dane)
+            return render_template("error.html", message="Awizacje tylko pon–pt.", dane=dane)
 
         start_min = dt.hour * 60 + dt.minute
-        end_min = start_min + 60  # Blok 1h
+        end_min = start_min + 60
 
         przedzialy = [
             (450, 630),   # 07:30–10:30
@@ -95,7 +94,7 @@ def zapisz():
         ]
 
         if not any(start_min >= p1 and end_min <= p2 for (p1, p2) in przedzialy):
-            return render_template("error.html", message="Rezerwacja 1h musi mieścić się w jednym z dozwolonych przedziałów.", dane=dane)
+            return render_template("error.html", message="Dozwolone bloki 1h w przedziałach: 07:30–10:30, 11:00–13:45, 14:15–20:00", dane=dane)
 
         conn = sqlite3.connect('awizacje.db')
         c = conn.cursor()
@@ -107,12 +106,11 @@ def zapisz():
             istnieje = datetime.strptime(czas, '%Y-%m-%dT%H:%M')
             różnica = abs((dt - istnieje).total_seconds()) / 60
             if różnica < 60:
-                return render_template("error.html", message=f"Kolizja z inną awizacją o {istnieje.strftime('%H:%M')}. Odstęp min. 1h.", dane=dane)
+                return render_template("error.html", message=f"Kolizja z awizacją o {istnieje.strftime('%H:%M')}. Zachowaj odstęp 1h.", dane=dane)
 
     except Exception as e:
         return render_template("error.html", message=f"Błąd: {e}", dane=dane)
 
-    # Zapis do bazy
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     c.execute('''
@@ -133,7 +131,28 @@ def admin():
     c.execute('SELECT * FROM awizacje ORDER BY data_godzina ASC')
     dane = c.fetchall()
     conn.close()
-    return render_template('admin.html', awizacje=dane)
+
+    # Zajęte sloty
+    zajete = set(a[6] for a in dane)
+
+    # Najbliższe 5 dni roboczych
+    dni = []
+    start = datetime.now()
+    while len(dni) < 5:
+        start += timedelta(days=1)
+        if start.weekday() < 5:
+            dni.append(start.replace(hour=0, minute=0))
+
+    # Godziny co godzinę od 07:30 do 19:30
+    godziny = [datetime.strptime(f'{h}:{m:02d}', '%H:%M')
+               for h in range(7, 20)
+               for m in (30,)]
+
+    return render_template('admin.html',
+                           awizacje=dane,
+                           dni=dni,
+                           godziny=godziny,
+                           zajete=zajete)
 
 if __name__ == '__main__':
     app.run(debug=True)
