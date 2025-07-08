@@ -110,7 +110,7 @@
             <tr>
                 <td>{{ godzina }}</td>
                 {% for dzien in dni %}
-                    {% set datetime_slot = dzien.strftime('%Y-%m-%d') + 'T' + godzina %}
+                    {% set datetime_slot = dzien.strftime('%Y-%m-%d') + godzina %}
                     {% if datetime_slot in zajete %}
                         <td class="slot booked" title="{{ zajete[datetime_slot].firma }} ({{ zajete[datetime_slot].status }})">Zajęte</td>
                     {% else %}
@@ -127,7 +127,6 @@
     <table class="awizacje">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Firma</th>
                 <th>Rejestracja</th>
                 <th>Kierowca</th>
@@ -143,7 +142,7 @@
         </thead>
         <tbody>
             {% for a in awizacje %}
-            <tr class="status-{{ a[10]|replace(' ', '') }}">
+            <tr class="status-{{ a[9]|replace(' ', '') }}">
                 <td>{{ a[0] }}</td>
                 <td>{{ a[1] }}</td>
                 <td>{{ a[2] }}</td>
@@ -154,12 +153,11 @@
                 <td>{{ a[7] }}</td>
                 <td>{{ a[8] }}</td>
                 <td>{{ a[9] }}</td>
-                <td>{{ a[10] }}</td>
                 <td>
                     <form action="/admin/update_status/{{ a[0] }}" method="POST" style="display:inline;">
                         <select name="status">
-                            <option value="oczekująca" {% if a[10]=='oczekująca' %}selected{% endif %}>oczekująca</option>
-                            <option value="akceptowana" {% if a[10]=='akceptowana' %}selected{% endif %}>akceptowana</option>
+                            <option value="oczekująca" {% if a[9]=='oczekująca' %}selected{% endif %}>oczekująca</option>
+                            <option value="akceptowana" {% if a[9]=='akceptowana' %}selected{% endif %}>akceptowana</option>
                             <option value="odrzucona">odrzucona</option>
                         </select>
                         <button type="submit">Zmień</button>
