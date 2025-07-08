@@ -25,10 +25,11 @@ def init_db():
             firma TEXT,
             rejestracja TEXT,
             kierowca TEXT,
-            email_kierowcy TEXT,
-            telefon_kierowcy TEXT,
+            email_ TEXT,
+            telefon_do_kierowcy TEXT,
             data_godzina TEXT,
             typ_ladunku TEXT,
+            waga_ładunku TEXT,
             komentarz TEXT,
             status TEXT DEFAULT 'oczekująca'
         )
@@ -56,9 +57,9 @@ def zapisz():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     c.execute('''
-        INSERT INTO awizacje (firma, rejestracja, kierowca, email_kierowcy, telefon_kierowcy, data_godzina, typ_ladunku, komentarz)
+        INSERT INTO awizacje (firma, rejestracja, kierowca, email, telefon_kierowcy, data_godzina, typ_ladunku, waga_ladunku, komentarz)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (firma, rejestracja, kierowca, email_kierowcy, telefon_kierowcy, data_godzina, typ_ladunku, komentarz))
+    ''', (firma, rejestracja, kierowca, email, telefon_kierowcy, data_godzina, typ_ladunku, waga_ladunku komentarz))
     conn.commit()
     conn.close()
 
