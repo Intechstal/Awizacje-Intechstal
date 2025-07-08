@@ -1,30 +1,76 @@
-<table border="1">
-    <tr>
-        <th>ID</th>
-        <th>Firma</th>
-        <th>Status</th>
-        <th>Komentarz</th>
-        <th>Akcje</th>
-    </tr>
-    {% for a in awizacje %}
-    <tr>
-        <td>{{ a[0] }}</td>
-        <td>{{ a[1] }}</td>
-        <td>
-            <form method="post" style="display:inline;">
-                <input type="hidden" name="id" value="{{ a[0] }}">
-                <select name="status">
-                    <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
-                    <option value="zaakceptowana" {% if a[10] == 'zaakceptowana' %}selected{% endif %}>Zaakceptowana</option>
-                </select>
-        </td>
-        <td>
-                <input type="text" name="komentarz" value="{{ a[9] }}">
-        </td>
-        <td>
-                <button type="submit">Zapisz</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <title>Panel Admina - Edycja Awizacji</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 8px;
+            text-align: left;
+        }
+        form {
+            margin: 0;
+        }
+        button {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Panel Admina - Lista Awizacji</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Firma</th>
+                <th>Rejestracja</th>
+                <th>Kierowca</th>
+                <th>Email</th>
+                <th>Telefon</th>
+                <th>Data i godzina</th>
+                <th>Typ ładunku</th>
+                <th>Waga ładunku</th>
+                <th>Status</th>
+                <th>Komentarz</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in awizacje %}
+            <tr>
+                <td>{{ a[0] }}</td>
+                <td>{{ a[1] }}</td>
+                <td>{{ a[2] }}</td>
+                <td>{{ a[3] }}</td>
+                <td>{{ a[4] }}</td>
+                <td>{{ a[5] }}</td>
+                <td>{{ a[6] }}</td>
+                <td>{{ a[7] }}</td>
+                <td>{{ a[8] }}</td>
+                <td>
+                    <form method="post" style="display:inline;">
+                        <input type="hidden" name="id" value="{{ a[0] }}">
+                        <select name="status">
+                            <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>Oczekująca</option>
+                            <option value="zaakceptowana" {% if a[10] == 'zaakceptowana' %}selected{% endif %}>Zaakceptowana</option>
+                        </select>
+                </td>
+                <td>
+                        <input type="text" name="komentarz" value="{{ a[9] }}" style="width: 100%;">
+                </td>
+                <td>
+                        <button type="submit">Zapisz</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
