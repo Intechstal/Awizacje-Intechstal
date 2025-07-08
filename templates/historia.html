@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <title>Historia Awizacji</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: Arial, sans-serif;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #eee;
+        }
+        .status-oczekująca { background-color: #ffdddd; }
+        .status-akceptowana { background-color: #ddffdd; }
+        .status-odrzucona { background-color: #f2dede; color: #a94442; }
+    </style>
+</head>
+<body>
+    <h1>Historia wszystkich awizacji</h1>
+    <p><a href="/admin">← Powrót do panelu admina</a></p>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Firma</th>
+                <th>Rejestracja</th>
+                <th>Kierowca</th>
+                <th>Email</th>
+                <th>Telefon</th>
+                <th>Data i godzina</th>
+                <th>Typ ładunku</th>
+                <th>Waga ładunku</th>
+                <th>Komentarz</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in awizacje %}
+            <tr class="status-{{ a[10]|replace(' ', '') }}">
+                <td>{{ a[0] }}</td>
+                <td>{{ a[1] }}</td>
+                <td>{{ a[2] }}</td>
+                <td>{{ a[3] }}</td>
+                <td>{{ a[4] }}</td>
+                <td>{{ a[5] }}</td>
+                <td>{{ a[6] }}</td>
+                <td>{{ a[7] }}</td>
+                <td>{{ a[8] }}</td>
+                <td>{{ a[9] }}</td>
+                <td>{{ a[10] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
