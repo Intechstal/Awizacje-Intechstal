@@ -1,30 +1,31 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8" />
-    <title>Historia Awizacji</title>
+    <meta charset="UTF-8">
+    <title>Historia awizacji</title>
     <style>
         table {
             border-collapse: collapse;
+            margin-top: 20px;
             width: 100%;
-            font-family: Arial, sans-serif;
         }
         th, td {
             border: 1px solid #ccc;
-            padding: 6px 8px;
-            text-align: left;
+            padding: 6px;
+            text-align: center;
         }
-        th {
-            background-color: #eee;
+        .zaakceptowana {
+            background-color: #c7f0c7;
         }
-        .status-oczekująca { background-color: #ffdddd; }
-        .status-akceptowana { background-color: #ddffdd; }
-        .status-odrzucona { background-color: #f2dede; color: #a94442; }
+        .odrzucona {
+            background-color: #f3c1c1;
+        }
     </style>
 </head>
 <body>
-    <h1>Historia wszystkich awizacji</h1>
-    <p><a href="/admin">← Powrót do panelu admina</a></p>
+    <h1>Historia awizacji</h1>
+    <p><a href="/admin">← Wróć do panelu</a></p>
+
     <table>
         <thead>
             <tr>
@@ -43,14 +44,14 @@
         </thead>
         <tbody>
             {% for a in awizacje %}
-            <tr class="status-{{ a[10]|replace(' ', '') }}">
+            <tr class="{{ a[10] }}">
                 <td>{{ a[0] }}</td>
                 <td>{{ a[1] }}</td>
                 <td>{{ a[2] }}</td>
                 <td>{{ a[3] }}</td>
                 <td>{{ a[4] }}</td>
                 <td>{{ a[5] }}</td>
-                <td>{{ a[6] }}</td>
+                <td>{{ a[6].replace('T', ' ') }}</td>
                 <td>{{ a[7] }}</td>
                 <td>{{ a[8] }}</td>
                 <td>{{ a[9] }}</td>
