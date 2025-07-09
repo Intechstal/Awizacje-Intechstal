@@ -2,110 +2,57 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Panel awizacji z kalendarzem</title>
+    <title>Panel administratora</title>
     <style>
         table {
             border-collapse: collapse;
             margin-top: 20px;
+            width: 100%;
         }
         th, td {
             border: 1px solid #ccc;
-            padding: 4px;
+            padding: 6px;
             text-align: center;
         }
-        .zajete {
-            background-color: #f8cccc;
+        .oczekująca {
+            background-color: #fffcc0;
         }
         .zaakceptowana {
             background-color: #c7f0c7;
         }
-        .oczekująca {
-            background-color: #f9c7c7;
+        .odrzucona {
+            background-color: #f3c1c1;
         }
     </style>
 </head>
 <body>
-    <h1>Awizacje</h1>
-    <p><a href="/admin/historia">Zobacz historię awizacji</a></p>
+    <h1>Panel administratora</h1>
+    <p><a href="/">← Wróć do formularza</a></p>
 
-    <div style="display: flex; gap: 60px;">
-        <div>
-            <h3>Lista awizacji</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Firma</th>
-                        <th>Rejestracja</th>
-                        <th>Kierowca</th>
-                        <th>Email</th>
-                        <th>Telefon</th>
-                        <th>Data i godzina</th>
-                        <th>Typ ładunku</th>
-                        <th>Waga ładunku</th>
-                        <th>Komentarz</th>
-                        <th>Status</th>
-                        <th>Akcja</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for a in awizacje %}
-                    <tr class="{{ a[10] }}">
-                        <td>{{ a[0] }}</td>
-                        <td>{{ a[1] }}</td>
-                        <td>{{ a[2] }}</td>
-                        <td>{{ a[3] }}</td>
-                        <td>{{ a[4] }}</td>
-                        <td>{{ a[5] }}</td>
-                        <td>{{ a[6] }}</td>
-                        <td>{{ a[7] }}</td>
-                        <td>{{ a[8] }}</td>
-                        <td>{{ a[9] }}</td>
-                        <td>{{ a[10] }}</td>
-                        <td>
-                            <form method="POST" action="/admin/update_status/{{ a[0] }}">
-                                <select name="status">
-                                    <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>oczekująca</option>
-                                    <option value="zaakceptowana" {% if a[10] == 'zaakceptowana' %}selected{% endif %}>zaakceptowana</option>
-                                    <option value="odrzucona">odrzucona</option>
-                                </select>
-                                <input type="submit" value="Zmień">
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div>
-            <h3>Kalendarz (kolejne 5 dni roboczych)</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Godzina</th>
-                        {% for d in dni %}
-                            <th>{{ d.strftime('%A<br>%d.%m').replace('Monday','Pon').replace('Tuesday','Wt').replace('Wednesday','Śr').replace('Thursday','Czw').replace('Friday','Pt') }}</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for h in godziny %}
-                    <tr>
-                        <td>{{ h }}</td>
-                        {% for d in dni %}
-                            {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
-                            {% if slot in zajete %}
-                                <td class="{{ zajete[slot]['status'] }}">{{ zajete[slot]['firma'] }}</td>
-                            {% else %}
-                                <td></td>
-                            {% endif %}
-                        {% endfor %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Godzina</th>
+                {% for d in dni %}
+                    <th>{{ d.strftime('%A<br>%d.%m').replace('Monday','Pon').replace('Tuesday','Wt').replace('Wednesday','Śr').replace('Thursday','Czw').replace('Friday','Pt')|safe }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in godziny %}
+            <tr>
+                <td>{{ h }}</td>
+                {% for d in dni %}
+                    {% set slot = d.strftime('%Y-%m-%dT') + h %}
+                    {% if slot in zajete %}
+                        <td class="{{ zajete[slot]['status'] }}">{{ zajete[slot]['firma'] }}</td>
+                    {% else %}
+                        <td></td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>
