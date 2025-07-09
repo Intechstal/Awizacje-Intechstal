@@ -26,6 +26,7 @@
 </head>
 <body>
     <h1>Awizacje</h1>
+    <p><a href="/admin/historia">Zobacz historię awizacji</a></p>
 
     <div style="display: flex; gap: 60px;">
         <div>
@@ -56,7 +57,7 @@
                         <td>{{ a[3] }}</td>
                         <td>{{ a[4] }}</td>
                         <td>{{ a[5] }}</td>
-                        <td>{{ a[6].replace('T', ' ') }}</td>
+                        <td>{{ a[6] }}</td>
                         <td>{{ a[7] }}</td>
                         <td>{{ a[8] }}</td>
                         <td>{{ a[9] }}</td>
@@ -70,8 +71,6 @@
                                 </select>
                                 <input type="submit" value="Zmień">
                             </form>
-                            <br>
-                            <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -86,16 +85,7 @@
                     <tr>
                         <th>Godzina</th>
                         {% for d in dni %}
-                            <th>
-                                {{
-                                    d.strftime('%A<br>%d.%m')
-                                    .replace('Monday','Pon')
-                                    .replace('Tuesday','Wt')
-                                    .replace('Wednesday','Śr')
-                                    .replace('Thursday','Czw')
-                                    .replace('Friday','Pt')
-                                }}
-                            </th>
+                            <th>{{ d.strftime('%A<br>%d.%m').replace('Monday','Pon').replace('Tuesday','Wt').replace('Wednesday','Śr').replace('Thursday','Czw').replace('Friday','Pt') }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
