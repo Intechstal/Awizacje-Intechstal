@@ -6,22 +6,54 @@
 </head>
 <body>
     <h1>Formularz awizacji</h1>
-    <form action="/zapisz" method="post">
-        Firma: <input type="text" name="firma" required><br><br>
-        Rejestracja: <input type="text" name="rejestracja" required><br><br>
-        Kierowca: <input type="text" name="kierowca" required><br><br>
-        Email: <input type="email" name="email" required><br><br>
-        Telefon: <input type="text" name="telefon" required><br><br>
-        Data i godzina:
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" action="/zapisz">
+        <label for="firma">Firma:</label><br>
+        <input type="text" id="firma" name="firma" value="{{ dane.firma if dane }}" required><br><br>
+
+        <label for="rejestracja">Numer rejestracyjny:</label><br>
+        <input type="text" id="rejestracja" name="rejestracja" value="{{ dane.rejestracja if dane }}" required><br><br>
+
+        <label for="kierowca">Imię i nazwisko kierowcy:</label><br>
+        <input type="text" id="kierowca" name="kierowca" value="{{ dane.kierowca if dane }}" required><br><br>
+
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" value="{{ dane.email if dane }}" required><br><br>
+
+        <label for="telefon">Telefon:</label><br>
+        <input type="text" id="telefon" name="telefon" value="{{ dane.telefon if dane }}" required><br><br>
+
+        <label for="typ_ladunku">Typ ładunku:</label><br>
+        <input type="text" id="typ_ladunku" name="typ_ladunku" value="{{ dane.typ_ladunku if dane }}" required><br><br>
+
+        <label for="waga_ladunku">Waga ładunku:</label><br>
+        <input type="text" id="waga_ladunku" name="waga_ladunku" value="{{ dane.waga_ladunku if dane }}" required><br><br>
+
+        <label for="data_godzina">Data i godzina:</label><br>
         <select name="data_godzina" required>
-            {% for slot in sloty %}
-                <option value="{{ slot }}">{{ slot.replace('T', ' ') }}</option>
+            {% for d in dni %}
+                <optgroup label="{{ d.strftime('%A %d.%m').replace('Monday','Pon').replace('Tuesday','Wt').replace('Wednesday','Śr').replace('Thursday','Czw').replace('Friday','Pt') }}">
+                {% for h in godziny %}
+                    {% set slot = d.strftime('%Y-%m-%dT') + h %}
+                    {% if slot not in zajete %}
+                        <option value="{{ slot }}"
+                            {% if dane and dane.data_godzina == slot %}selected{% endif %}>
+                            {{ d.strftime('%d.%m') }} {{ h }}
+                        </option>
+                    {% endif %}
+                {% endfor %}
+                </optgroup>
             {% endfor %}
         </select><br><br>
-        Typ ładunku: <input type="text" name="typ_ladunku" required><br><br>
-        Waga ładunku: <input type="text" name="waga_ladunku"><br><br>
-        Komentarz: <textarea name="komentarz"></textarea><br><br>
-        <input type="submit" value="Zapisz">
+
+        <label for="komentarz">Komentarz:</label><br>
+        <textarea id="komentarz" name="komentarz">{{ dane.komentarz if dane }}</textarea><br><br>
+
+        <input type="submit" value="Zapisz awizację">
     </form>
 </body>
 </html>
