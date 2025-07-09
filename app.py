@@ -32,12 +32,12 @@ def generate_zajete(awizacje):
     return zajete
 
 @app.route('/')
-def formularz():
+def form():
     dni = generate_next_workdays(5)
     godziny = generate_hours()
     awizacje = pobierz_awizacje_aktualne()
     zajete = generate_zajete(awizacje)
-    return render_template('formularz.html', dni=dni, godziny=godziny, zajete=zajete, error=None, dane=None)
+    return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, error=None, dane=None)
 
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
@@ -52,7 +52,7 @@ def zapisz():
         if slot in zajete:
             dni = generate_next_workdays(5)
             godziny = generate_hours()
-            return render_template('formularz.html', dni=dni, godziny=godziny, zajete=zajete, error=f"Wybrany termin koliduje z innym zgłoszeniem ({slot})", dane=dane)
+            return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, error=f"Wybrany termin koliduje z innym zgłoszeniem ({slot})", dane=dane)
 
     dodaj_awizacje(
         dane['firma'], dane['rejestracja'], dane['kierowca'],
