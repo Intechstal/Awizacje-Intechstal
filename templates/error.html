@@ -2,15 +2,11 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Błąd awizacji</title>
+    <title>Błąd</title>
 </head>
 <body>
-    <h1>Błąd</h1>
-    <p style="color: red;">{{ message }}</p>
+    <h2 style="color:red;">{{ komunikat }}</h2>
     <form action="/" method="get">
-        {% for key, value in dane.items() %}
-        <input type="hidden" name="{{ key }}" value="{{ value }}">
-        {% endfor %}
         <button type="submit">Wróć do formularza</button>
     </form>
 </body>
