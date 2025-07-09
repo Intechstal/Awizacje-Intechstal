@@ -1,26 +1,27 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8" />
-    <title>Rezerwacja awizacji</title>
+    <meta charset="UTF-8">
+    <title>Formularz awizacji</title>
 </head>
 <body>
-    <form method="POST" action="/zapisz">
-        <!-- inne pola formularza -->
-        
-        <label for="data_godzina">Data i godzina:</label>
-        <select name="data_godzina" id="data_godzina" required>
+    <h1>Formularz awizacji</h1>
+    <form action="/zapisz" method="post">
+        Firma: <input type="text" name="firma" required><br><br>
+        Rejestracja: <input type="text" name="rejestracja" required><br><br>
+        Kierowca: <input type="text" name="kierowca" required><br><br>
+        Email: <input type="email" name="email" required><br><br>
+        Telefon: <input type="text" name="telefon" required><br><br>
+        Data i godzina:
+        <select name="data_godzina" required>
             {% for slot in sloty %}
-            <option value="{{ slot }}">{{ slot.replace('T', ' ') }}</option>
+                <option value="{{ slot }}">{{ slot.replace('T', ' ') }}</option>
             {% endfor %}
-        </select>
-
-        <!-- jeśli masz input datetime-local zamiast select, np: -->
-        <!--
-        <input type="datetime-local" name="data_godzina" required>
-        -->
-        
-        <button type="submit">Zarezerwuj</button>
+        </select><br><br>
+        Typ ładunku: <input type="text" name="typ_ladunku" required><br><br>
+        Waga ładunku: <input type="text" name="waga_ladunku"><br><br>
+        Komentarz: <textarea name="komentarz"></textarea><br><br>
+        <input type="submit" value="Zapisz">
     </form>
 </body>
 </html>
