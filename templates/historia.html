@@ -4,54 +4,34 @@
     <meta charset="UTF-8">
     <title>Historia awizacji</title>
     <style>
-        table {
-            border-collapse: collapse;
-            margin-top: 20px;
-            width: 100%;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 6px;
-            text-align: center;
-        }
-        .zaakceptowana {
-            background-color: #c7f0c7;
-        }
-        .odrzucona {
-            background-color: #f3c1c1;
-        }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width:100%; }
+        th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+        th { background:#f2f2f2; }
+        .odrzucona td { background:#f3c1c1; }
     </style>
 </head>
 <body>
-    <h1>Historia awizacji</h1>
+    <h1>Historia (odrzucone awizacje)</h1>
     <p><a href="/admin">← Wróć do panelu</a></p>
 
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Firma</th>
-                <th>Rejestracja</th>
-                <th>Kierowca</th>
-                <th>Email</th>
-                <th>Telefon</th>
-                <th>Data i godzina</th>
-                <th>Typ ładunku</th>
-                <th>Waga ładunku</th>
-                <th>Komentarz</th>
-                <th>Status</th>
+                <th>ID</th><th>Firma</th><th>Rejestracja</th><th>Kierowca</th><th>Email</th><th>Telefon</th>
+                <th>Data i godzina</th><th>Typ</th><th>Waga</th><th>Komentarz</th><th>Status</th>
             </tr>
         </thead>
         <tbody>
             {% for a in awizacje %}
-            <tr class="{{ a[10] }}">
+            <tr class="odrzucona">
                 <td>{{ a[0] }}</td>
                 <td>{{ a[1] }}</td>
                 <td>{{ a[2] }}</td>
                 <td>{{ a[3] }}</td>
                 <td>{{ a[4] }}</td>
                 <td>{{ a[5] }}</td>
-                <td>{{ a[6].replace('T', ' ') }}</td>
+                <td>{{ a[6].replace('T',' ') }}</td>
                 <td>{{ a[7] }}</td>
                 <td>{{ a[8] }}</td>
                 <td>{{ a[9] }}</td>
