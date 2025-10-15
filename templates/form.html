@@ -2,58 +2,70 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Formularz awizacji</title>
+    <title>Awizacja - Intechstal</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        form { max-width: 520px; }
+        label { display:block; margin-top:8px; margin-bottom:4px; font-weight:600; }
+        input[type="text"], input[type="email"], select, textarea {
+            width: 100%; padding:8px; box-sizing: border-box;
+            margin-bottom:10px;
+        }
+        input[type="submit"] { padding:8px 14px; }
+        .error { color: #b00020; margin-bottom:10px; }
+    </style>
 </head>
 <body>
-    <h1>Formularz awizacji</h1>
+    <h1>Formularz awizacji - Intechstal</h1>
 
     {% if error %}
-        <p style="color: red;">{{ error }}</p>
+        <div class="error">{{ error }}</div>
     {% endif %}
 
-    <form method="POST" action="/zapisz">
-        <label for="firma">Firma:</label><br>
-        <input type="text" id="firma" name="firma" value="{{ dane.firma if dane }}" required><br><br>
+    <form action="/zapisz" method="post">
+        <label for="firma">Firma *</label>
+        <input id="firma" type="text" name="firma" value="{{ dane.firma or '' }}" required>
 
-        <label for="rejestracja">Numer rejestracyjny:</label><br>
-        <input type="text" id="rejestracja" name="rejestracja" value="{{ dane.rejestracja if dane }}" required><br><br>
+        <label for="rejestracja">Rejestracja *</label>
+        <input id="rejestracja" type="text" name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
 
-        <label for="kierowca">Imię i nazwisko kierowcy:</label><br>
-        <input type="text" id="kierowca" name="kierowca" value="{{ dane.kierowca if dane }}" required><br><br>
+        <label for="kierowca">Kierowca *</label>
+        <input id="kierowca" type="text" name="kierowca" value="{{ dane.kierowca or '' }}" required>
 
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" value="{{ dane.email if dane }}" required><br><br>
+        <label for="email">Email</label>
+        <input id="email" type="email" name="email" value="{{ dane.email or '' }}">
 
-        <label for="telefon">Telefon:</label><br>
-        <input type="text" id="telefon" name="telefon" value="{{ dane.telefon if dane }}" required><br><br>
+        <label for="telefon">Telefon *</label>
+        <input id="telefon" type="text" name="telefon" value="{{ dane.telefon or '' }}" required>
 
-        <label for="typ_ladunku">Typ ładunku:</label><br>
-        <input type="text" id="typ_ladunku" name="typ_ladunku" value="{{ dane.typ_ladunku if dane }}" required><br><br>
+        <label for="typ_ladunku">Typ ładunku</label>
+        <input id="typ_ladunku" type="text" name="typ_ladunku" value="{{ dane.typ_ladunku or '' }}">
 
-        <label for="waga_ladunku">Waga ładunku:</label><br>
-        <input type="text" id="waga_ladunku" name="waga_ladunku" value="{{ dane.waga_ladunku if dane }}" required><br><br>
+        <label for="waga_ladunku">Waga ładunku</label>
+        <input id="waga_ladunku" type="text" name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
 
-        <label for="data_godzina">Data i godzina:</label><br>
-        <select name="data_godzina" required>
+        <label for="komentarz">Komentarz</label>
+        <textarea id="komentarz" name="komentarz">{{ dane.komentarz or '' }}</textarea>
+
+        <label for="data_godzina">Data i godzina (wolne terminy)</label>
+        <select id="data_godzina" name="data_godzina" required>
             {% for d in dni %}
-                <optgroup label="{{ d.strftime('%A %d.%m').replace('Monday','Pon').replace('Tuesday','Wt').replace('Wednesday','Śr').replace('Thursday','Czw').replace('Friday','Pt') }}">
+                <optgroup label="{{ d.strftime('%A %d.%m') }}">
                 {% for h in godziny %}
-                    {% set slot = d.strftime('%Y-%m-%dT') + h %}
+                    {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+                    {# Wyświetl tylko dostępne sloty (te, które nie są w zajete) #}
                     {% if slot not in zajete %}
                         <option value="{{ slot }}"
-                            {% if dane and dane.data_godzina == slot %}selected{% endif %}>
+                            {% if dane.data_godzina == slot %}selected{% endif %}>
                             {{ d.strftime('%d.%m') }} {{ h }}
                         </option>
                     {% endif %}
                 {% endfor %}
                 </optgroup>
             {% endfor %}
-        </select><br><br>
+        </select>
 
-        <label for="komentarz">Komentarz:</label><br>
-        <textarea id="komentarz" name="komentarz">{{ dane.komentarz if dane }}</textarea><br><br>
-
-        <input type="submit" value="Zapisz awizację">
+        <input type="submit" value="Wyślij awizację">
     </form>
 </body>
 </html>
