@@ -1,40 +1,64 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <title>Edytuj awizację</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        label { display:block; margin-top:8px; margin-bottom:4px; font-weight:600; }
+        input[type="text"], input[type="email"], select, textarea {
+            width: 420px; padding:8px; margin-bottom:10px; box-sizing: border-box;
+        }
+        input[type="submit"] { padding:8px 12px; }
+        .note { font-size: 13px; color:#555; margin-bottom:10px; }
+    </style>
 </head>
 <body>
-    <h1>Edytuj awizację</h1>
+    <h1>Edytuj awizację #{{ awizacja[0] }}</h1>
     <form method="POST">
-        <label for="firma">Firma:</label>
-        <input type="text" name="firma" id="firma" value="{{ dane[1] }}" required><br>
+        <label for="firma">Firma</label>
+        <input id="firma" name="firma" type="text" value="{{ awizacja[1] }}" required>
 
-        <label for="rejestracja">Rejestracja:</label>
-        <input type="text" name="rejestracja" id="rejestracja" value="{{ dane[2] }}" required><br>
+        <label for="rejestracja">Rejestracja</label>
+        <input id="rejestracja" name="rejestracja" type="text" value="{{ awizacja[2] }}" required>
 
-        <label for="kierowca">Kierowca:</label>
-        <input type="text" name="kierowca" id="kierowca" value="{{ dane[3] }}" required><br>
+        <label for="kierowca">Kierowca</label>
+        <input id="kierowca" name="kierowca" type="text" value="{{ awizacja[3] }}" required>
 
-        <label for="email">Email:</label>
-        <input type="email" name="email" id="email" value="{{ dane[4] }}" required><br>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" value="{{ awizacja[4] }}">
 
-        <label for="telefon">Telefon:</label>
-        <input type="text" name="telefon" id="telefon" value="{{ dane[5] }}" required><br>
+        <label for="telefon">Telefon</label>
+        <input id="telefon" name="telefon" type="text" value="{{ awizacja[5] }}" required>
 
-        <label for="data_godzina">Data i godzina:</label>
-        <input type="datetime-local" name="data_godzina" id="data_godzina" value="{{ dane[6].replace(' ', 'T') }}" required><br>
+        <label for="typ_ladunku">Typ ładunku</label>
+        <input id="typ_ladunku" name="typ_ladunku" type="text" value="{{ awizacja[7] }}">
 
-        <label for="typ_ladunku">Typ ładunku:</label>
-        <input type="text" name="typ_ladunku" id="typ_ladunku" value="{{ dane[7] }}"><br>
+        <label for="waga_ladunku">Waga ładunku</label>
+        <input id="waga_ladunku" name="waga_ladunku" type="text" value="{{ awizacja[8] }}">
 
-        <label for="waga_ladunku">Waga ładunku:</label>
-        <input type="text" name="waga_ladunku" id="waga_ladunku" value="{{ dane[8] }}"><br>
+        <label for="komentarz">Komentarz</label>
+        <textarea id="komentarz" name="komentarz">{{ awizacja[9] }}</textarea>
 
-        <label for="komentarz">Komentarz:</label>
-        <textarea name="komentarz" id="komentarz">{{ dane[9] }}</textarea><br>
+        <p class="note">Wybierz datę/godzinę. Zajęte sloty są oznaczone, ale admin może wybrać dowolny termin.</p>
+        <label for="data_godzina">Data i godzina</label>
+        <select id="data_godzina" name="data_godzina" required>
+            {% for d in dni %}
+                <optgroup label="{{ d.strftime('%A %d.%m') }}">
+                {% for h in godziny %}
+                    {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+                    <option value="{{ slot }}" {% if awizacja[6] == slot %}selected{% endif %}>
+                        {{ d.strftime('%d.%m') }} {{ h }}{% if slot in zajete %} — {{ zajete[slot]['firma'] }}{% endif %}
+                    </option>
+                {% endfor %}
+                </optgroup>
+            {% endfor %}
+        </select>
 
-        <button type="submit">Zapisz</button>
+        <br>
+        <input type="submit" value="Zapisz zmiany">
     </form>
+
+    <p><a href="/admin">← Wróć do panelu</a></p>
 </body>
 </html>
