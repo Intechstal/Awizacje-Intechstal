@@ -32,7 +32,20 @@
         <input id="telefon" name="telefon" type="text" value="{{ awizacja[5] }}" required>
 
         <label for="typ_ladunku">Typ ładunku</label>
-        <input id="typ_ladunku" name="typ_ladunku" type="text" value="{{ awizacja[7] }}">
+        <select id="typ_ladunku" name="typ_ladunku" required>
+            {% set opcje = [
+                "Odbiór złomu",
+                "Odbiór zamówienia",
+                "Dostawa materiału",
+                "Odbiór zamówienia i dostawa materiału powierzonego",
+                "Dostawa palet"
+            ] %}
+            {% for opcja in opcje %}
+                <option value="{{ opcja }}" {% if awizacja[7] == opcja %}selected{% endif %}>
+                    {{ opcja }}
+                </option>
+            {% endfor %}
+        </select>
 
         <label for="waga_ladunku">Waga ładunku</label>
         <input id="waga_ladunku" name="waga_ladunku" type="text" value="{{ awizacja[8] }}">
