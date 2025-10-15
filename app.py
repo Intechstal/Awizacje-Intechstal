@@ -117,7 +117,7 @@ def zapisz():
     }
 
     # walidacja podstawowa
-    if not firma or not rejestracja or not kierowca or not telefon or not data_godzina or not email or not typ ladunku or not waga ladunku:
+    if not firma or not rejestracja or not kierowca or not telefon or not data_godzina:
         dni, godziny, zajete = get_days_and_slots()
         return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, dane=dane,
                                error="Wypełnij wszystkie wymagane pola.")
