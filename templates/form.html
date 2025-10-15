@@ -33,7 +33,7 @@
         <input id="kierowca" type="text" name="kierowca" value="{{ dane.kierowca or '' }}" required>
 
         <label for="email">Email</label>
-        <input id="email" type="email" name="email" value="{{ dane.email or '' }}">
+        <input id="email" type="email" name="email" value="{{ dane.email or '' }}" required>
 
         <label for="telefon">Telefon *</label>
         <input id="telefon" type="text" name="telefon" value="{{ dane.telefon or '' }}" required>
@@ -45,7 +45,8 @@
                 "Odbiór zamówienia",
                 "Dostawa materiału",
                 "Odbiór zamówienia i dostawa materiału powierzonego",
-                "Dostawa palet"
+                "Dostawa palet",
+                "Dostawa materiału powierzonego (klient)"
             ] %}
             {% for opcja in opcje %}
                 <option value="{{ opcja }}" {% if dane.typ_ladunku == opcja %}selected{% endif %}>
