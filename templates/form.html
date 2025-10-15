@@ -33,16 +33,16 @@
         <input id="kierowca" type="text" name="kierowca" value="{{ dane.kierowca or '' }}" required>
 
         <label for="email">Email</label>
-        <input id="email" type="email" name="email" value="{{ dane.email or '' }}" required>
+        <input id="email" type="email" name="email" value="{{ dane.email or '' }}">
 
         <label for="telefon">Telefon *</label>
         <input id="telefon" type="text" name="telefon" value="{{ dane.telefon or '' }}" required>
 
         <label for="typ_ladunku">Typ ładunku</label>
-        <input id="typ_ladunku" type="text" name="typ_ladunku" value="{{ dane.typ_ladunku or '' }}" required>
+        <input id="typ_ladunku" type="text" name="typ_ladunku" value="{{ dane.typ_ladunku or '' }}">
 
         <label for="waga_ladunku">Waga ładunku</label>
-        <input id="waga_ladunku" type="text" name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}" required>
+        <input id="waga_ladunku" type="text" name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
 
         <label for="komentarz">Komentarz</label>
         <textarea id="komentarz" name="komentarz">{{ dane.komentarz or '' }}</textarea>
