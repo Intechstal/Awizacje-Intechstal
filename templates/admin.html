@@ -2,110 +2,102 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Panel awizacji z kalendarzem</title>
+    <title>Panel Admina - Awizacje</title>
     <style>
-        table {
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 4px;
-            text-align: center;
-        }
-        .zajete {
-            background-color: #f8cccc;
-        }
-        .zaakceptowana {
-            background-color: #c7f0c7;
-        }
-        .oczekująca {
-            background-color: #f9c7c7;
-        }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { margin-bottom: 8px; }
+        a.button { display:inline-block; padding:6px 10px; background:#2d6cdf; color:white; text-decoration:none; border-radius:4px; margin-bottom:10px; }
+        table { border-collapse: separate; border-spacing: 0 8px; width:100%; }
+        th, td { padding:8px; border:1px solid #ddd; background:white; vertical-align: middle; }
+        th { background:#f0f0f0; }
+        tr.pending td { background:#f9c7c7; } /* odstęp koloru całego wiersza */
+        tr.accepted td { background:#c7f0c7; }
+        .actions form { display:inline-block; margin-right:6px; }
+        .calendar { margin-top: 20px; }
+        .slot { padding:6px; min-width:80px; }
+        .slot.zaakceptowana { background:#c7f0c7; }
+        .slot.oczekująca { background:#f9c7c7; }
+        /* estetyka: zaokrąglenie tabeli wierszy */
+        tbody tr td { border-radius: 6px; }
     </style>
 </head>
 <body>
-    <h1>Awizacje</h1>
-    <p><a href="/admin/historia">Zobacz historię awizacji</a></p>
+    <h1>Panel administratora</h1>
+    <a class="button" href="/admin/historia">Pokaż historię odrzuconych</a>
 
-    <div style="display: flex; gap: 60px;">
-        <div>
-            <h3>Lista awizacji</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Firma</th>
-                        <th>Rejestracja</th>
-                        <th>Kierowca</th>
-                        <th>Email</th>
-                        <th>Telefon</th>
-                        <th>Data i godzina</th>
-                        <th>Typ ładunku</th>
-                        <th>Waga ładunku</th>
-                        <th>Komentarz</th>
-                        <th>Status</th>
-                        <th>Akcja</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for a in awizacje %}
-                    <tr class="{{ a[10] }}">
-                        <td>{{ a[0] }}</td>
-                        <td>{{ a[1] }}</td>
-                        <td>{{ a[2] }}</td>
-                        <td>{{ a[3] }}</td>
-                        <td>{{ a[4] }}</td>
-                        <td>{{ a[5] }}</td>
-                        <td>{{ a[6] }}</td>
-                        <td>{{ a[7] }}</td>
-                        <td>{{ a[8] }}</td>
-                        <td>{{ a[9] }}</td>
-                        <td>{{ a[10] }}</td>
-                        <td>
-                            <form method="POST" action="/admin/update_status/{{ a[0] }}">
-                                <select name="status">
-                                    <option value="oczekująca" {% if a[10] == 'oczekująca' %}selected{% endif %}>oczekująca</option>
-                                    <option value="zaakceptowana" {% if a[10] == 'zaakceptowana' %}selected{% endif %}>zaakceptowana</option>
-                                    <option value="odrzucona">odrzucona</option>
-                                </select>
-                                <input type="submit" value="Zmień">
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Firma</th>
+                <th>Rejestracja</th>
+                <th>Kierowca</th>
+                <th>Email</th>
+                <th>Telefon</th>
+                <th>Data i godzina</th>
+                <th>Typ ładunku</th>
+                <th>Waga</th>
+                <th>Komentarz</th>
+                <th>Status</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in awizacje %}
+            <tr class="{{ 'accepted' if a[10]=='zaakceptowana' else 'pending' }}">
+                <td>{{ a[0] }}</td>
+                <td>{{ a[1] }}</td>
+                <td>{{ a[2] }}</td>
+                <td>{{ a[3] }}</td>
+                <td>{{ a[4] }}</td>
+                <td>{{ a[5] }}</td>
+                <td>{{ a[6].replace('T',' ') }}</td>
+                <td>{{ a[7] }}</td>
+                <td>{{ a[8] }}</td>
+                <td>{{ a[9] }}</td>
+                <td>{{ a[10] }}</td>
+                <td class="actions">
+                    <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
+                    <form method="POST" action="/admin/update_status/{{ a[0] }}" style="display:inline-block;">
+                        <select name="status" onchange="this.form.submit()">
+                            <option value="oczekująca" {% if a[10]=='oczekująca' %}selected{% endif %}>oczekująca</option>
+                            <option value="zaakceptowana" {% if a[10]=='zaakceptowana' %}selected{% endif %}>zaakceptowana</option>
+                            <option value="odrzucona">odrzucona</option>
+                        </select>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
-        <div>
-            <h3>Kalendarz (kolejne 5 dni roboczych)</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Godzina</th>
-                        {% for d in dni %}
-                            <th>{{ d.strftime('%A<br>%d.%m').replace('Monday','Pon').replace('Tuesday','Wt').replace('Wednesday','Śr').replace('Thursday','Czw').replace('Friday','Pt') }}</th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for h in godziny %}
-                    <tr>
-                        <td>{{ h }}</td>
-                        {% for d in dni %}
-                            {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
-                            {% if slot in zajete %}
-                                <td class="{{ zajete[slot]['status'] }}">{{ zajete[slot]['firma'] }}</td>
-                            {% else %}
-                                <td></td>
-                            {% endif %}
-                        {% endfor %}
-                    </tr>
+    <div class="calendar">
+        <h2>Kalendarz (dziś + 4 kolejne dni robocze)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Godzina</th>
+                    {% for d in dni %}
+                        <th>{{ d.strftime('%a %d.%m') }}</th>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in godziny %}
+                <tr>
+                    <td>{{ h }}</td>
+                    {% for d in dni %}
+                        {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+                        {% if slot in zajete %}
+                            <td class="slot {{ zajete[slot]['status'] }}">{{ zajete[slot]['firma'] }}</td>
+                        {% else %}
+                            <td class="slot"></td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </body>
 </html>
