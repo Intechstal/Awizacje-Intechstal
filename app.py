@@ -1,23 +1,19 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, session, url_for
 import sqlite3
 from datetime import datetime, timedelta
-from flask_httpauth import HTTPBasicAuth
-from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-auth = HTTPBasicAuth()
+app.secret_key = "supersekretnyklucz123"  # zmień na coś swojego
 
-# -- Ustawienia użytkowników admina (zmień hasło) --
-users = {
-    "admin": generate_password_hash("twojehaslo")
-}
+# --- dane logowania ---
+ADMIN_LOGIN = "admin"
+ADMIN_HASLO = "1234"  # zmień!
 
-@auth.verify_password
-def verify_password(username, password):
-    if username in users and check_password_hash(users.get(username), password):
-        return username
+# --- sprawdzanie logowania ---
+def is_logged():
+    return session.get("logged_in")
 
-# -- Inicjalizacja bazy --
+# --- baza ---
 def init_db():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
@@ -41,28 +37,25 @@ def init_db():
 
 init_db()
 
-# -- Pomocniczka: dni robocze (dziś + 5 dni roboczych) i sloty godzinowe --
+# --- dni i sloty ---
 def get_days_and_slots():
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now().replace(hour=0, minute=0)
     dni = []
     d = today
-    # chcemy 5 dni roboczych (dziś + kolejne tak wiele, pomijając weekendy)
+
     while len(dni) < 5:
         if d.weekday() < 5:
             dni.append(d)
         d += timedelta(days=1)
 
-    # sloty co 15 minut w przedziałach:
     godziny = []
-    przedzialy = [("07:30", "09:30"), ("11:00", "13:15"), ("14:15", "20:00")]
-    for start, end in przedzialy:
+    for start, end in [("07:30", "09:30"), ("11:00", "13:15"), ("14:15", "20:00")]:
         s = datetime.strptime(start, "%H:%M")
         e = datetime.strptime(end, "%H:%M")
         while s < e:
             godziny.append(s.strftime('%H:%M'))
             s += timedelta(minutes=15)
 
-    # zajete słownik: klucz = 'YYYY-MM-DDTHH:MM' -> {"firma":..., "status":...}
     zajete = {}
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
@@ -70,71 +63,55 @@ def get_days_and_slots():
     rows = c.fetchall()
     conn.close()
 
-    # dla klienta traktujemy, że każdy zapis blokuje 3 sloty przed i 3 po (czyli admin decided: block -3..+3)
     for data_godzina, firma, status in rows:
-        try:
-            dt = datetime.strptime(data_godzina, '%Y-%m-%dT%H:%M')
-        except Exception:
-            continue
-        for i in range(-3, 4):  # -3, -2, -1, 0, 1, 2, 3
-            blok = dt + timedelta(minutes=15 * i)
-            key = blok.strftime('%Y-%m-%dT%H:%M')
-            zajete[key] = {"firma": firma, "status": status}
+        dt = datetime.strptime(data_godzina, '%Y-%m-%dT%H:%M')
+        for i in range(-3, 4):
+            blok = dt + timedelta(minutes=15*i)
+            zajete[blok.strftime('%Y-%m-%dT%H:%M')] = {"firma": firma, "status": status}
+
     return dni, godziny, zajete
 
-# ------------------ Strony ------------------
+# ------------------- LOGIN -------------------
 
-# formularz główny - tylko dostępne sloty (klient)
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        login = request.form['login']
+        haslo = request.form['haslo']
+
+        if login == ADMIN_LOGIN and haslo == ADMIN_HASLO:
+            session['logged_in'] = True
+            return redirect('/admin')
+        else:
+            error = "Nieprawidłowe dane"
+
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
+# ------------------- FORM -------------------
+
 @app.route('/')
 def index():
     dni, godziny, zajete = get_days_and_slots()
-    # przekaż też aktualne dane (puste) i brak błędu
     return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, dane={}, error=None)
 
-# zapis awizacji (klient)
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
-    firma = request.form.get('firma', '').strip()
-    rejestracja = request.form.get('rejestracja', '').strip()
-    kierowca = request.form.get('kierowca', '').strip()
-    email = request.form.get('email', '').strip()
-    telefon = request.form.get('telefon', '').strip()
-    data_godzina = request.form.get('data_godzina', '').strip()
-    typ_ladunku = request.form.get('typ_ladunku', '').strip()
-    waga_ladunku = request.form.get('waga_ladunku', '').strip()
-    komentarz = request.form.get('komentarz', '').strip()
+    dane = request.form.to_dict()
+    data_godzina = dane.get("data_godzina")
 
-    dane = {
-        'firma': firma,
-        'rejestracja': rejestracja,
-        'kierowca': kierowca,
-        'email': email,
-        'telefon': telefon,
-        'typ_ladunku': typ_ladunku,
-        'waga_ladunku': waga_ladunku,
-        'komentarz': komentarz,
-        'data_godzina': data_godzina
-    }
+    dt = datetime.strptime(data_godzina, "%Y-%m-%dT%H:%M")
 
-    # walidacja podstawowa
-    if not firma or not rejestracja or not kierowca or not telefon or not data_godzina:
+    if dt < datetime.now():
         dni, godziny, zajete = get_days_and_slots()
         return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, dane=dane,
-                               error="Wypełnij wszystkie wymagane pola.")
+                               error="Nie można w przeszłość")
 
-    # nie można wstecz
-    try:
-        wybrany = datetime.strptime(data_godzina, "%Y-%m-%dT%H:%M")
-    except Exception:
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, dane=dane,
-                               error="Nieprawidłowy format daty/godziny.")
-    if wybrany < datetime.now():
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, dane=dane,
-                               error="Nie można awizować w przeszłość.")
-
-    # sprawdź kolizje: blok -3..+3 względem istniejących (klienci nie mogą zarezerwować jeśli jakikolwiek z tych bloków zajęty)
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     c.execute("SELECT data_godzina FROM awizacje WHERE status != 'odrzucona'")
@@ -142,54 +119,55 @@ def zapisz():
     conn.close()
 
     zajete_set = set()
-    for (d_str,) in rows:
-        try:
-            dt = datetime.strptime(d_str, '%Y-%m-%dT%H:%M')
-        except Exception:
-            continue
+    for (d,) in rows:
+        base = datetime.strptime(d, '%Y-%m-%dT%H:%M')
         for i in range(-3, 4):
-            blok = dt + timedelta(minutes=15 * i)
-            zajete_set.add(blok.strftime('%Y-%m-%dT%H:%M'))
+            zajete_set.add((base + timedelta(minutes=15*i)).strftime('%Y-%m-%dT%H:%M'))
 
     if data_godzina in zajete_set:
         dni, godziny, zajete = get_days_and_slots()
         return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, dane=dane,
-                               error="Wybrany termin jest już zajęty lub zablokowany. Wybierz inny.")
+                               error="Termin zajęty")
 
-    # zapis do bazy
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     c.execute('''
         INSERT INTO awizacje (firma, rejestracja, kierowca, email, telefon, data_godzina,
-                              typ_ladunku, waga_ladunku, komentarz)
+        typ_ladunku, waga_ladunku, komentarz)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ_ladunku, waga_ladunku, komentarz))
+    ''', (
+        dane['firma'], dane['rejestracja'], dane['kierowca'],
+        dane['email'], dane['telefon'], data_godzina,
+        dane['typ_ladunku'], dane['waga_ladunku'], dane.get('komentarz','')
+    ))
     conn.commit()
     conn.close()
 
     return render_template('success.html')
 
-# panel admina (lista + kalendarz). nie pokazujemy odrzuconych w głównej liście
+# ------------------- ADMIN -------------------
+
 @app.route('/admin')
-@auth.login_required
 def admin():
+    if not is_logged():
+        return redirect('/login')
+
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM awizacje WHERE status != 'odrzucona' ORDER BY data_godzina ASC")
+    c.execute("SELECT * FROM awizacje WHERE status != 'odrzucona'")
     awizacje = c.fetchall()
     conn.close()
 
     dni, godziny, zajete = get_days_and_slots()
-    # zajete już zawiera -3..+3 blokowanie i statusy
-    return render_template('admin.html', awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete)
 
-# aktualizacja statusu (akceptuj/odrzuć/oczekująca)
+    return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete)
+
 @app.route('/admin/update_status/<int:id>', methods=['POST'])
-@auth.login_required
 def update_status(id):
-    status = request.form.get('status')
-    if status not in ('oczekująca', 'zaakceptowana', 'odrzucona'):
-        return redirect('/admin')
+    if not is_logged():
+        return redirect('/login')
+
+    status = request.form['status']
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
@@ -197,50 +175,48 @@ def update_status(id):
     conn.close()
     return redirect('/admin')
 
-# edycja awizacji (admin) — ADMIN MOŻE ZMIENIĆ WSZYSTKIE POLA (BEZ BLOKAD)
-@app.route('/admin/edit/<int:id>', methods=['GET', 'POST'])
-@auth.login_required
+@app.route('/admin/edit/<int:id>', methods=['GET','POST'])
 def edit_awizacja(id):
+    if not is_logged():
+        return redirect('/login')
+
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    if request.method == 'POST':
-        firma = request.form.get('firma', '').strip()
-        rejestracja = request.form.get('rejestracja', '').strip()
-        kierowca = request.form.get('kierowca', '').strip()
-        email = request.form.get('email', '').strip()
-        telefon = request.form.get('telefon', '').strip()
-        data_godzina = request.form.get('data_godzina', '').strip()
-        typ_ladunku = request.form.get('typ_ladunku', '').strip()
-        waga_ladunku = request.form.get('waga_ladunku', '').strip()
-        komentarz = request.form.get('komentarz', '').strip()
 
+    if request.method == 'POST':
+        dane = request.form.to_dict()
         c.execute('''
-            UPDATE awizacje
-            SET firma=?, rejestracja=?, kierowca=?, email=?, telefon=?, data_godzina=?,
-                typ_ladunku=?, waga_ladunku=?, komentarz=?
+            UPDATE awizacje SET firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
+            data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
             WHERE id=?
-        ''', (firma, rejestracja, kierowca, email, telefon, data_godzina, typ_ladunku, waga_ladunku, komentarz, id))
+        ''', (
+            dane['firma'], dane['rejestracja'], dane['kierowca'],
+            dane['email'], dane['telefon'], dane['data_godzina'],
+            dane['typ_ladunku'], dane['waga_ladunku'], dane.get('komentarz',''), id
+        ))
         conn.commit()
         conn.close()
         return redirect('/admin')
-    else:
-        c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
-        awizacja = c.fetchone()
-        conn.close()
-        dni, godziny, zajete = get_days_and_slots()
-        # przy edycji admin widzi wszystkie sloty (zajęte oznaczone), ale może wybrać dowolny
-        return render_template('edit.html', awizacja=awizacja, dni=dni, godziny=godziny, zajete=zajete)
 
-# historia odrzuconych
+    c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
+    awizacja = c.fetchone()
+    conn.close()
+
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template("edit.html", awizacja=awizacja, dni=dni, godziny=godziny, zajete=zajete)
+
 @app.route('/admin/historia')
-@auth.login_required
 def historia():
+    if not is_logged():
+        return redirect('/login')
+
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM awizacje WHERE status = 'odrzucona' ORDER BY data_godzina DESC")
-    awizacje = c.fetchall()
+    c.execute("SELECT * FROM awizacje WHERE status='odrzucona'")
+    dane = c.fetchall()
     conn.close()
-    return render_template('historia.html', awizacje=awizacje)
+
+    return render_template("historia.html", awizacje=dane)
 
 if __name__ == '__main__':
     app.run(debug=True)
