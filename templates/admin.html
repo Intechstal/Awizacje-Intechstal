@@ -4,56 +4,6 @@
 <meta charset="UTF-8">
 <title>Panel logistyczny</title>
 <link rel="stylesheet" href="/static/style.css">
-
-<style>
-.calendar-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.calendar-table th {
-    background: #0f172a;
-    color: white;
-    padding: 10px;
-}
-
-.calendar-table td {
-    border: 1px solid #e2e8f0;
-    padding: 10px;
-    text-align: center;
-    vertical-align: middle;
-    min-width: 130px;
-}
-
-.time {
-    background: #f1f5f9;
-    font-weight: 600;
-}
-
-.slot {
-    padding: 6px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 13px;
-}
-
-.oczekująca { background: #fef9c3; }
-.zaakceptowana { background: #dcfce7; }
-.odrzucona { background: #fee2e2; }
-
-.future {
-    background: #e2e8f0;
-}
-.small {
-    font-size: 11px;
-    font-weight: 400;
-    margin-top: 3px;
-    color: #334155;
-}
-</style>
 </head>
 
 <body>
@@ -74,9 +24,11 @@
     </div>
 </div>
 
+<div class="container">
+
 <h2>Awizacje</h2>
 
-<table>
+<table class="table">
 <tr>
     <th>ID</th>
     <th>Firma</th>
@@ -97,13 +49,10 @@
     <td>{{ a[2] }}</td>
     <td>{{ a[3] }}</td>
     <td>{{ a[6] }}</td>
-
     <td>{{ a[7] }}</td>
     <td>{{ a[8] }}</td>
     <td>{{ a[9] }}</td>
-
-    <td>{{ a[10] }}</td>
-
+    <td class="{{ a[10] }}">{{ a[10] }}</td>
     <td>
         <form action="/admin/update_status/{{ a[0] }}" method="post">
             <select name="status">
@@ -111,10 +60,10 @@
                 <option value="zaakceptowana">zaakceptowana</option>
                 <option value="odrzucona">odrzucona</option>
             </select>
-            <button>OK</button>
+            <button class="btn">OK</button>
         </form>
 
-        <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
+        <a class="link" href="/admin/edit/{{ a[0] }}">Edytuj</a>
     </td>
 </tr>
 {% endfor %}
@@ -122,8 +71,7 @@
 
 <h2>Kalendarz</h2>
 
-<table class="calendar-table">
-
+<table class="calendar">
 <tr>
     <th>Godzina</th>
     {% for d in dni %}
@@ -133,7 +81,6 @@
 
 {% for h in godziny %}
 <tr>
-
     <td class="time">{{ h }}</td>
 
     {% for d in dni %}
@@ -146,40 +93,33 @@
                 <div class="slot {{ data.status }}">
                     {{ data.firma }}
 
-                    <div class="small">
-                        {{ data.typ_ladunku if data.typ_ladunku is defined else "" }}
-                    </div>
-
-                    <div class="small">
-                        {{ data.waga if data.waga is defined else "" }}
-                    </div>
-
-                    <div class="small">
-                        {{ data.komentarz if data.komentarz is defined else "" }}
-                    </div>
+                    <div class="small">{{ data.typ_ladunku }}</div>
+                    <div class="small">{{ data.waga }}</div>
+                    <div class="small">{{ data.komentarz }}</div>
                 </div>
             </td>
 
         {% elif data and data.future_block %}
 
-            <td class="future">
-                <div class="slot">
+            <!-- +1 do +3 = TEN SAM KOLOR CO ZAAKCEPTOWANE -->
+            <td>
+                <div class="slot zaakceptowana">
                     {{ data.firma }}
                 </div>
             </td>
 
         {% else %}
 
-            <td style="color:#94a3b8;">—</td>
+            <td class="empty">—</td>
 
         {% endif %}
-
     {% endfor %}
-
 </tr>
 {% endfor %}
 
 </table>
+
+</div>
 
 </body>
 </html>
