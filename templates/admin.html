@@ -3,39 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <title>Panel admina</title>
+
     <style>
         body {
-            font-family: Arial;
+            font-family: system-ui, Arial;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
         }
+
+        h1, h2 {
+            margin-bottom: 10px;
+        }
+
+        .topbar a {
+            margin-right: 10px;
+            text-decoration: none;
+            padding: 6px 10px;
+            background: #333;
+            color: white;
+            border-radius: 6px;
+        }
+
+        .topbar a:hover {
+            background: #555;
+        }
+
         table {
             border-collapse: collapse;
+            width: 100%;
+            background: white;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            border-radius: 12px;
+            overflow: hidden;
             margin-bottom: 30px;
         }
-        td, th {
-            padding: 6px 10px;
-            border: 1px solid #ccc;
+
+        th {
+            background: #1f2937;
+            color: white;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 10px;
             text-align: center;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
         }
-        .oczekujaca {
-            background-color: #ffcccc;
+
+        tr:hover {
+            background: #f1f5f9;
         }
-        .zaakceptowana {
-            background-color: #ccffcc;
+
+        /* STATUSY */
+        .oczekująca td {
+            background: #fff3cd;
         }
+
+        .zaakceptowana td {
+            background: #d1e7dd;
+        }
+
+        .odrzucona td {
+            background: #f8d7da;
+        }
+
+        select, button {
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
         .kalendarz td {
             width: 90px;
             height: 30px;
+            font-size: 11px;
+        }
+
+        .kalendarz th {
             font-size: 12px;
         }
     </style>
 </head>
+
 <body>
 
-<h1>Panel administratora</h1>
+<h1>🚚 Panel administratora</h1>
 
-<a href="/logout">Wyloguj</a> |
-<a href="/admin/logi">Logi</a> |
-<a href="/admin/historia">Historia</a>
+<div class="topbar">
+    <a href="/logout">Wyloguj</a>
+    <a href="/admin/logi">Logi</a>
+    <a href="/admin/historia">Historia</a>
+</div>
 
 <h2>Lista awizacji</h2>
 
@@ -65,7 +137,7 @@
     <td>{{ a[6] }}</td>
     <td>{{ a[7] }}</td>
     <td>{{ a[8] }}</td>
-    <td>{{ a[10] }}</td>
+    <td><b>{{ a[10] }}</b></td>
     <td>
         <form action="/admin/update_status/{{ a[0] }}" method="post" style="display:inline;">
             <select name="status">
@@ -82,7 +154,7 @@
 {% endfor %}
 </table>
 
-<h2>Kalendarz (5 dni roboczych)</h2>
+<h2>📅 Kalendarz (5 dni roboczych)</h2>
 
 <table class="kalendarz">
 <tr>
@@ -95,15 +167,16 @@
 {% for h in godziny %}
 <tr>
     <td>{{ h }}</td>
+
     {% for d in dni %}
         {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+
         {% if slot in zajete %}
             {% set status = zajete[slot]['status'] %}
             <td style="
-                {% if status == 'oczekująca' %}
-                    background-color: #ffcccc;
-                {% elif status == 'zaakceptowana' %}
-                    background-color: #ccffcc;
+                {% if status == 'oczekująca' %}background:#fff3cd;
+                {% elif status == 'zaakceptowana' %}background:#d1e7dd;
+                {% elif status == 'odrzucona' %}background:#f8d7da;
                 {% endif %}
             ">
                 {{ zajete[slot]['firma'] }}
