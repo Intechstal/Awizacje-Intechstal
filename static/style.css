@@ -4,7 +4,6 @@
     --gray: #f1f5f9;
     --gray-2: #e2e8f0;
     --white: #ffffff;
-    --black: #0b0f19;
 }
 
 /* =========================
@@ -16,51 +15,57 @@ body {
     background: var(--gray);
     margin: 0;
     padding: 20px;
-    color: var(--black);
+    color: #0b0f19;
 }
 
 /* =========================
-   DARK MODE
+   HEADER BAR
 ========================= */
 
-body.dark {
-    background: #0b1220;
-    color: #e5e7eb;
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--navy);
+    color: white;
+    padding: 12px 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
 }
 
-/* karty */
-body.dark .box,
-body.dark table,
-body.dark .day {
-    background: #111827;
-    color: #e5e7eb;
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-/* inputy */
-body.dark input,
-body.dark select,
-body.dark textarea {
-    background: #0f172a;
-    color: #e5e7eb;
-    border: 1px solid #334155;
+.logo {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    border-radius: 6px;
 }
 
-/* header */
-body.dark .header {
-    background: #020617;
-}
-
-/* sloty */
-body.dark .slot {
-    background: #0f172a;
+.dark-btn {
+    background: var(--navy-2);
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
 /* =========================
-   TYPOGRAFIA
+   BOX (FORM)
 ========================= */
 
-h1, h2 {
-    color: var(--navy);
+.box {
+    max-width: 650px;
+    margin: auto;
+    background: white;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
 /* =========================
@@ -73,7 +78,6 @@ input, select, textarea {
     margin: 6px 0 14px;
     border-radius: 8px;
     border: 1px solid var(--gray-2);
-    background: white;
 }
 
 input:focus, select:focus, textarea:focus {
@@ -82,17 +86,17 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* =========================
-   BUTTONY
+   BUTTON
 ========================= */
 
 button {
     background: var(--navy);
     color: white;
     border: none;
-    padding: 10px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
+    padding: 12px;
+    width: 100%;
+    border-radius: 10px;
+    font-weight: bold;
 }
 
 button:hover {
@@ -100,58 +104,19 @@ button:hover {
 }
 
 /* =========================
-   LINKI
+   ERROR
 ========================= */
 
-a {
-    color: var(--navy);
-    text-decoration: none;
-}
-
-/* =========================
-   HEADER ADMIN
-========================= */
-
-.header {
-    background: var(--navy);
-    color: white;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-
-.header a {
-    color: white;
-    margin-right: 10px;
-}
-
-/* =========================
-   TABELA ADMIN
-========================= */
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 30px;
-}
-
-th {
-    background: var(--navy);
-    color: white;
+.error {
+    background: #fee2e2;
+    color: #7f1d1d;
     padding: 10px;
-}
-
-td {
-    padding: 10px;
-    border-bottom: 1px solid var(--gray-2);
-    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 10px;
 }
 
 /* =========================
-   STATUSY (BADGE STYLE)
+   STATUS BADGES
 ========================= */
 
 .oczekująca,
@@ -164,7 +129,6 @@ td {
     font-weight: 600;
 }
 
-/* kolory */
 .oczekująca {
     background: #fef9c3;
     color: #854d0e;
@@ -181,58 +145,34 @@ td {
 }
 
 /* =========================
-   FORM BOX
+   DARK MODE
 ========================= */
 
-.box {
-    max-width: 650px;
-    margin: auto;
-    background: white;
-    padding: 25px;
-    border-radius: 14px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+body.dark {
+    background: #0b1220;
+    color: #e5e7eb;
 }
 
-/* =========================
-   ERROR
-========================= */
-
-.error {
-    background: #fee2e2;
-    color: #7f1d1d;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 10px;
+body.dark .box {
+    background: #111827;
 }
 
-/* =========================
-   KALENDARZ
-========================= */
-
-.calendar {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 12px;
+body.dark input,
+body.dark select,
+body.dark textarea {
+    background: #0f172a;
+    color: #e5e7eb;
+    border: 1px solid #334155;
 }
 
-.day {
-    background: white;
-    border-radius: 12px;
-    padding: 10px;
+body.dark .topbar {
+    background: #020617;
 }
 
-.day-title {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: var(--navy);
+body.dark button {
+    background: #1e293b;
 }
 
-.slot {
-    font-size: 11px;
-    padding: 6px;
-    margin: 3px 0;
-    border-radius: 6px;
-    text-align: center;
-    background: #f1f5f9;
+body.dark .dark-btn {
+    background: #111827;
 }
