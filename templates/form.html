@@ -3,83 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <title>Awizacja - Intechstal</title>
+
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        form { max-width: 520px; }
-        label { display:block; margin-top:8px; margin-bottom:4px; font-weight:600; }
-        input[type="text"], input[type="email"], select, textarea {
-            width: 100%; padding:8px; box-sizing: border-box;
-            margin-bottom:10px;
+        body {
+            font-family: system-ui, Arial;
+            background: #f4f6f9;
+            padding: 20px;
         }
-        input[type="submit"] { padding:8px 14px; }
-        .error { color: #b00020; margin-bottom:10px; }
+
+        .box {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0 14px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        input[type=submit] {
+            background: #16a34a;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        input[type=submit]:hover {
+            background: #15803d;
+        }
+
+        .error {
+            background: #ffe4e6;
+            padding: 10px;
+            border-radius: 8px;
+            color: #b91c1c;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
+
 <body>
-    <h1>Formularz awizacji - Intechstal</h1>
 
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
+<div class="box">
 
-    <form action="/zapisz" method="post">
-        <label for="firma">Firma *</label>
-        <input id="firma" type="text" name="firma" value="{{ dane.firma or '' }}" required>
+<h1>🚚 Formularz awizacji</h1>
 
-        <label for="rejestracja">Rejestracja *</label>
-        <input id="rejestracja" type="text" name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
+{% if error %}
+    <div class="error">{{ error }}</div>
+{% endif %}
 
-        <label for="kierowca">Kierowca *</label>
-        <input id="kierowca" type="text" name="kierowca" value="{{ dane.kierowca or '' }}" required>
+<form action="/zapisz" method="post">
 
-        <label for="email">Email</label>
-        <input id="email" type="email" name="email" value="{{ dane.email or '' }}" required>
+    <label>Firma</label>
+    <input type="text" name="firma" value="{{ dane.firma or '' }}" required>
 
-        <label for="telefon">Telefon *</label>
-        <input id="telefon" type="text" name="telefon" value="{{ dane.telefon or '' }}" required>
+    <label>Rejestracja</label>
+    <input type="text" name="rejestracja" required>
 
-        <label for="typ_ladunku">Typ ładunku</label>
-        <select id="typ_ladunku" name="typ_ladunku" required>
-            {% set opcje = [
-                "Odbiór złomu",
-                "Odbiór zamówienia",
-                "Dostawa materiału",
-                "Odbiór zamówienia i dostawa materiału powierzonego",
-                "Dostawa palet",
-                "Dostawa materiału powierzonego (klient)"
-            ] %}
-            {% for opcja in opcje %}
-                <option value="{{ opcja }}" {% if dane.typ_ladunku == opcja %}selected{% endif %}>
-                    {{ opcja }}
-                </option>
+    <label>Kierowca</label>
+    <input type="text" name="kierowca" required>
+
+    <label>Email</label>
+    <input type="email" name="email" required>
+
+    <label>Telefon</label>
+    <input type="text" name="telefon" required>
+
+    <label>Typ ładunku</label>
+    <select name="typ_ladunku">
+        <option>Odbiór złomu</option>
+        <option>Dostawa materiału</option>
+        <option>Odbiór zamówienia</option>
+    </select>
+
+    <label>Waga</label>
+    <input type="text" name="waga_ladunku">
+
+    <label>Komentarz</label>
+    <textarea name="komentarz"></textarea>
+
+    <label>Termin</label>
+    <select name="data_godzina">
+
+        {% for d in dni %}
+            <optgroup label="{{ d.strftime('%d.%m') }}">
+            {% for h in godziny %}
+                {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+                {% if slot not in zajete %}
+                    <option value="{{ slot }}">
+                        {{ d.strftime('%d.%m') }} {{ h }}
+                    </option>
+                {% endif %}
             {% endfor %}
-        </select>
+            </optgroup>
+        {% endfor %}
 
-        <label for="waga_ladunku">Waga ładunku</label>
-        <input id="waga_ladunku" type="text" name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
+    </select>
 
-        <label for="komentarz">Komentarz</label>
-        <textarea id="komentarz" name="komentarz">{{ dane.komentarz or '' }}</textarea>
+    <input type="submit" value="Wyślij awizację">
 
-        <label for="data_godzina">Data i godzina (wolne terminy)</label>
-        <select id="data_godzina" name="data_godzina" required>
-            {% for d in dni %}
-                <optgroup label="{{ d.strftime('%A %d.%m') }}">
-                {% for h in godziny %}
-                    {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
-                    {# Wyświetl tylko dostępne sloty (te, które nie są w zajete) #}
-                    {% if slot not in zajete %}
-                        <option value="{{ slot }}"
-                            {% if dane.data_godzina == slot %}selected{% endif %}>
-                            {{ d.strftime('%d.%m') }} {{ h }}
-                        </option>
-                    {% endif %}
-                {% endfor %}
-                </optgroup>
-            {% endfor %}
-        </select>
+</form>
 
-        <input type="submit" value="Wyślij awizację">
-    </form>
+</div>
+
 </body>
 </html>
