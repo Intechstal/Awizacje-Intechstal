@@ -1,109 +1,57 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <title>Awizacja - Intechstal</title>
+<meta charset="UTF-8">
+<title>Awizacja - Intechstal</title>
 
-    <style>
-        body {
-            font-family: system-ui, Arial;
-            background: #f4f6f9;
-            padding: 20px;
-        }
+<style>
+body {
+    font-family: system-ui;
+    background: #f4f6f9;
+    padding: 20px;
+}
 
-        .box {
-            max-width: 900px;
-            margin: auto;
-            background: white;
-            padding: 25px;
-            border-radius: 14px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-        }
+.box {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
 
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            margin: 6px 0 14px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
+label {
+    font-weight: 600;
+    font-size: 13px;
+}
 
-        label {
-            font-weight: 600;
-            font-size: 13px;
-        }
+input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0 14px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
 
-        .error {
-            background: #ffe4e6;
-            padding: 10px;
-            border-radius: 8px;
-            color: #b91c1c;
-            margin-bottom: 10px;
-        }
+button {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 10px;
+    font-weight: bold;
+}
 
-        button {
-            background: #16a34a;
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+.error {
+    background: #ffe4e6;
+    padding: 10px;
+    border-radius: 8px;
+    color: #b91c1c;
+    margin-bottom: 10px;
+}
+</style>
 
-        button:hover {
-            background: #15803d;
-        }
-
-        /* KALENDARZ */
-        #calendar {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
-            margin-top: 15px;
-        }
-
-        .day {
-            background: #fff;
-            padding: 8px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .day-title {
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 8px;
-        }
-
-        .slot {
-            padding: 6px;
-            margin: 4px 0;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 12px;
-            border: 1px solid #ddd;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .slot:hover {
-            background: #e0f2fe;
-        }
-
-        .busy {
-            background: #f8d7da;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .selected {
-            background: #22c55e !important;
-            color: white;
-            font-weight: bold;
-        }
-    </style>
 </head>
 
 <body>
@@ -113,101 +61,72 @@
 <h1>🚚 Formularz awizacji</h1>
 
 {% if error %}
-    <div class="error">{{ error }}</div>
+<div class="error">{{ error }}</div>
 {% endif %}
 
 <form action="/zapisz" method="post">
 
-    <label>Firma</label>
-    <input name="firma" value="{{ dane.firma or '' }}" required>
+<label>Firma</label>
+<input name="firma" value="{{ dane.firma or '' }}" required>
 
-    <label>Rejestracja</label>
-    <input name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
+<label>Rejestracja</label>
+<input name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
 
-    <label>Kierowca</label>
-    <input name="kierowca" value="{{ dane.kierowca or '' }}" required>
+<label>Kierowca</label>
+<input name="kierowca" value="{{ dane.kierowca or '' }}" required>
 
-    <label>Email</label>
-    <input name="email" value="{{ dane.email or '' }}" required>
+<label>Email</label>
+<input name="email" value="{{ dane.email or '' }}" required>
 
-    <label>Telefon</label>
-    <input name="telefon" value="{{ dane.telefon or '' }}" required>
+<label>Telefon</label>
+<input name="telefon" value="{{ dane.telefon or '' }}" required>
 
-    <label>Typ ładunku</label>
-    <input name="typ_ladunku" value="{{ dane.typ_ladunku or '' }}">
+<label>Typ ładunku</label>
 
-    <label>Waga</label>
-    <input name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
+<select name="typ_ladunku" required>
+    {% set opcje = [
+        "Odbiór złomu",
+        "Odbiór zamówienia",
+        "Dostawa materiału"
+    ] %}
 
-    <label>Komentarz</label>
-    <textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
+    {% for opcja in opcje %}
+        <option value="{{ opcja }}"
+            {% if dane.typ_ladunku == opcja %}selected{% endif %}>
+            {{ opcja }}
+        </option>
+    {% endfor %}
+</select>
 
-    <label><b>Wybierz termin (kliknij slot)</b></label>
+<label>Waga</label>
+<input name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
 
-    <input type="hidden" id="data_godzina" name="data_godzina" required>
+<label>Komentarz</label>
+<textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
 
-    <div id="calendar"></div>
+<label>Termin</label>
 
-    <br>
-    <button type="submit">Wyślij awizację</button>
+<select name="data_godzina" required>
+    {% for d in dni %}
+        <optgroup label="{{ d.strftime('%d.%m') }}">
+        {% for h in godziny %}
+            {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+            {% if slot not in zajete %}
+                <option value="{{ slot }}"
+                    {% if dane.data_godzina == slot %}selected{% endif %}>
+                    {{ d.strftime('%d.%m') }} {{ h }}
+                </option>
+            {% endif %}
+        {% endfor %}
+        </optgroup>
+    {% endfor %}
+</select>
+
+<button>Wyślij awizację</button>
 
 </form>
 
 </div>
-
-<script>
-const dni = {{ dni|tojson }};
-const godziny = {{ godziny|tojson }};
-const zajete = {{ zajete|tojson }};
-
-const calendar = document.getElementById("calendar");
-const input = document.getElementById("data_godzina");
-
-let selected = null;
-
-dni.forEach(d => {
-
-    const dayBox = document.createElement("div");
-    dayBox.className = "day";
-
-    const title = document.createElement("div");
-    title.className = "day-title";
-    title.innerText = new Date(d).toLocaleDateString('pl-PL', {
-        weekday: 'short',
-        day: '2-digit',
-        month: '2-digit'
-    });
-
-    dayBox.appendChild(title);
-
-    godziny.forEach(h => {
-
-        const slotKey = d.split("T")[0] + "T" + h;
-
-        const slot = document.createElement("div");
-        slot.className = "slot";
-        slot.innerText = h;
-
-        if (zajete[slotKey]) {
-            slot.classList.add("busy");
-            slot.innerText += " ❌";
-        } else {
-            slot.onclick = () => {
-                if (selected) selected.classList.remove("selected");
-
-                slot.classList.add("selected");
-                selected = slot;
-
-                input.value = slotKey;
-            };
-        }
-
-        dayBox.appendChild(slot);
-    });
-
-    calendar.appendChild(dayBox);
-});
-</script>
 
 </body>
 </html>
