@@ -25,20 +25,93 @@ def init_db():
         status TEXT DEFAULT 'oczekująca'
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        login TEXT UNIQUE,
+        haslo TEXT
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS logi (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT,
+        akcja TEXT,
+        data TEXT
+    )''')
+
     conn.commit()
     conn.close()
 
 init_db()
+
+# ---------------- USERS (AUTO) ----------------
+
+def create_users():
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    users = [("admin1","1234"),("admin2","1234"),("admin3","1234"),("admin4","1234")]
+
+    for u in users:
+        try:
+            c.execute("INSERT INTO users (login,haslo) VALUES (?,?)", u)
+        except:
+            pass
+
+    conn.commit()
+    conn.close()
+
+create_users()
+
+# ---------------- LOGS ----------------
+
+def log_action(user, akcja):
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("INSERT INTO logi (user,akcja,data) VALUES (?,?,?)",
+              (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M")))
+    conn.commit()
+    conn.close()
 
 # ---------------- AUTH ----------------
 
 def is_logged():
     return session.get("logged_in")
 
+@app.route("/login", methods=["GET","POST"])
+def login():
+    error = None
+
+    if request.method == "POST":
+        login = request.form["login"]
+        haslo = request.form["haslo"]
+
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login,haslo))
+        user = c.fetchone()
+        conn.close()
+
+        if user:
+            session["logged_in"] = True
+            session["user"] = login
+            log_action(login, "LOGIN")
+            return redirect("/admin")
+        else:
+            error = "Błędny login lub hasło"
+
+    return render_template("login.html", error=error)
+
+@app.route("/logout")
+def logout():
+    if session.get("user"):
+        log_action(session["user"], "LOGOUT")
+    session.clear()
+    return redirect("/login")
+
 # ---------------- SLOTY ----------------
 
 def get_days_and_slots():
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now().replace(hour=0, minute=0)
 
     dni = []
     d = today
@@ -48,9 +121,9 @@ def get_days_and_slots():
         d += timedelta(days=1)
 
     godziny = []
-    for start, end in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-        s = datetime.strptime(start, "%H:%M")
-        e = datetime.strptime(end, "%H:%M")
+    for start,end in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
+        s = datetime.strptime(start,"%H:%M")
+        e = datetime.strptime(end,"%H:%M")
         while s < e:
             godziny.append(s.strftime("%H:%M"))
             s += timedelta(minutes=15)
@@ -61,10 +134,10 @@ def get_days_and_slots():
     c = conn.cursor()
     c.execute("SELECT firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz FROM awizacje WHERE status!='odrzucona'")
 
-    for f, s, dt, typ, waga, kom in c.fetchall():
-        base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+    for f,s,dt,typ,waga,kom in c.fetchall():
+        base = datetime.strptime(dt,"%Y-%m-%dT%H:%M")
 
-        for i in range(-3, 4):
+        for i in range(-3,4):
             key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
 
             zajete[key] = {
@@ -73,74 +146,33 @@ def get_days_and_slots():
                 "typ_ladunku": typ,
                 "waga": waga,
                 "komentarz": kom,
-                "main": (i == 0),
-                "future_block": (i > 0),
-                "past_block": (i < 0)
+                "main": (i==0),
+                "future_block": (i>0),
+                "past_block": (i<0)
             }
 
     conn.close()
     return dni, godziny, zajete
 
-# ---------------- FORM (HOME) ----------------
+# ---------------- FORM ----------------
 
 @app.route("/")
 def index():
-    dni, godziny, zajete = get_days_and_slots()
-    return render_template("form.html",
-                           dni=dni,
-                           godziny=godziny,
-                           zajete=zajete,
-                           dane={},
-                           error=None)
-
-# ---------------- ZAPIS ----------------
+    dni,godziny,zajete = get_days_and_slots()
+    return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane={}, error=None)
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
     dane = request.form.to_dict()
 
-    try:
-        dt = datetime.strptime(dane["data_godzina"], "%Y-%m-%dT%H:%M")
-    except:
-        return redirect("/")
-
-    if dt < datetime.now():
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html",
-                               dni=dni,
-                               godziny=godziny,
-                               zajete=zajete,
-                               dane=dane,
-                               error="Nie można wybrać przeszłości")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
-    c.execute("SELECT data_godzina FROM awizacje WHERE status!='odrzucona'")
-    rows = c.fetchall()
-
-    zajete_set = set()
-
-    for (d,) in rows:
-        base = datetime.strptime(d, "%Y-%m-%dT%H:%M")
-        for i in range(-3, 4):
-            zajete_set.add((base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M"))
-
-    if dane["data_godzina"] in zajete_set:
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html",
-                               dni=dni,
-                               godziny=godziny,
-                               zajete=zajete,
-                               dane=dane,
-                               error="Termin zajęty")
 
     c.execute('''INSERT INTO awizacje
         (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
         VALUES (?,?,?,?,?,?,?,?,?)''',
-        (dane["firma"], dane["rejestracja"], dane["kierowca"],
-         dane["email"], dane["telefon"], dane["data_godzina"],
-         dane["typ_ladunku"], dane["waga_ladunku"], dane.get("komentarz",""))
+        (dane["firma"],dane["rejestracja"],dane["kierowca"],dane["email"],dane["telefon"],
+         dane["data_godzina"],dane["typ_ladunku"],dane["waga_ladunku"],dane.get("komentarz",""))
     )
 
     conn.commit()
@@ -161,30 +193,13 @@ def admin():
     awizacje = c.fetchall()
     conn.close()
 
-    dni, godziny, zajete = get_days_and_slots()
+    dni,godziny,zajete = get_days_and_slots()
 
     return render_template("admin.html",
                            awizacje=awizacje,
                            dni=dni,
                            godziny=godziny,
                            zajete=zajete)
-
-# ---------------- STATUS ----------------
-
-@app.route("/admin/update_status/<int:id>", methods=["POST"])
-def update_status(id):
-    if not is_logged():
-        return redirect("/login")
-
-    status = request.form["status"]
-
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
-    conn.commit()
-    conn.close()
-
-    return redirect("/admin")
 
 # ---------------- EDIT ----------------
 
@@ -206,9 +221,8 @@ def edit(id):
             firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
             data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
             WHERE id=?''',
-            (f["firma"], f["rejestracja"], f["kierowca"],
-             f["email"], f["telefon"], f["data_godzina"],
-             f["typ_ladunku"], f["waga_ladunku"], f["komentarz"], id)
+            (f["firma"],f["rejestracja"],f["kierowca"],f["email"],f["telefon"],
+             f["data_godzina"],f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id)
         )
 
         conn.commit()
@@ -216,13 +230,55 @@ def edit(id):
         return redirect("/admin")
 
     conn.close()
+    dni,godziny,zajete = get_days_and_slots()
+    return render_template("edit.html", awizacja=a, dni=dni, godziny=godziny, zajete=zajete)
 
-    dni, godziny, zajete = get_days_and_slots()
-    return render_template("edit.html",
-                           awizacja=a,
-                           dni=dni,
-                           godziny=godziny,
-                           zajete=zajete)
+# ---------------- STATUS ----------------
+
+@app.route("/admin/update_status/<int:id>", methods=["POST"])
+def update_status(id):
+    if not is_logged():
+        return redirect("/login")
+
+    status = request.form["status"]
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status,id))
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin")
+
+# ---------------- HISTORIA ----------------
+
+@app.route("/admin/historia")
+def historia():
+    if not is_logged():
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
+    dane = c.fetchall()
+    conn.close()
+
+    return render_template("historia.html", awizacje=dane)
+
+# ---------------- LOGI ----------------
+
+@app.route("/admin/logi")
+def logi():
+    if not is_logged():
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM logi ORDER BY id DESC")
+    dane = c.fetchall()
+    conn.close()
+
+    return render_template("logi.html", logi=dane)
 
 # ---------------- RUN ----------------
 
