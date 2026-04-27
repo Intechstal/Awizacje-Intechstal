@@ -213,7 +213,26 @@ def admin():
     dni, godziny, zajete = get_days_and_slots()
     return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete)
 
-# ================= EDYCJA (NAPRAWIONE) =================
+# ================= STATUS (NAPRAWIONE) =================
+
+@app.route("/admin/update_status/<int:id>", methods=["POST"])
+def update_status(id):
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    status = request.form["status"]
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
+    conn.commit()
+    conn.close()
+
+    log_action(session["user"], f"STATUS ID {id} -> {status}")
+
+    return redirect("/admin")
+
+# ================= EDYCJA =================
 
 @app.route("/admin/edit/<int:id>", methods=["GET","POST"])
 def edit(id):
