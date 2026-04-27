@@ -50,11 +50,11 @@ def create_users():
     c = conn.cursor()
 
     users = [
-        ("SK", "963852"),
-        ("BL", "1234"),
-        ("JU", "1234"),
-        ("TR", "1234"),
-        ("KJ", "1234"),
+        ("admin1", "1234"),
+        ("admin2", "1234"),
+        ("admin3", "1234"),
+        ("admin4", "1234"),
+        ("admin5", "1234"),
     ]
 
     for u, p in users:
@@ -105,24 +105,24 @@ def get_days_and_slots():
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
 
-    c.execute("""SELECT firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz 
+    c.execute("""SELECT id,firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz 
                  FROM awizacje WHERE status!='odrzucona'""")
 
-    for f, s, dt, typ, waga, kom in c.fetchall():
+    for id_, f, s, dt, typ, waga, kom in c.fetchall():
         base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
 
         for i in range(-3, 4):
             key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
 
             zajete[key] = {
+                "id": id_,
                 "firma": f,
                 "status": s,
                 "typ_ladunku": typ,
                 "waga": waga,
                 "komentarz": kom,
                 "main": (i == 0),
-                "future_block": (i > 0),
-                "past_block": (i < 0)
+                "future_block": (i > 0)
             }
 
     conn.close()
@@ -145,12 +145,15 @@ def login():
         if user:
             session["logged_in"] = True
             session["user"] = login
+            log_action(login, "LOGIN")
             return redirect("/admin")
 
     return render_template("login.html")
 
 @app.route("/logout")
 def logout():
+    if session.get("user"):
+        log_action(session["user"], "LOGOUT")
     session.clear()
     return redirect("/login")
 
@@ -159,65 +162,38 @@ def logout():
 @app.route("/")
 def index():
     dni, godziny, zajete = get_days_and_slots()
-    return render_template("form.html",
-                           dni=dni,
-                           godziny=godziny,
-                           zajete=zajete,
-                           dane={},
-                           error=None)
+    return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane={}, error=None)
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
     dane = request.form.to_dict()
 
-    # WALIDACJA
     if not dane["telefon"].isdigit():
         dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html",
-                               dni=dni,
-                               godziny=godziny,
-                               zajete=zajete,
-                               dane=dane,
-                               error="Telefon tylko cyfry")
+        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Telefon tylko cyfry")
 
     if "@" not in dane["email"]:
         dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html",
-                               dni=dni,
-                               godziny=godziny,
-                               zajete=zajete,
-                               dane=dane,
-                               error="Błędny email")
+        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Błędny email")
 
-    # 🔥 BLOKADA PRZESZŁOŚCI
     slot = datetime.strptime(dane["data_godzina"], "%Y-%m-%dT%H:%M")
-    now = datetime.now()
-
-    if slot <= now:
+    if slot <= datetime.now():
         dni, godziny, zajete = get_days_and_slots()
-        return render_template(
-            "form.html",
-            dni=dni,
-            godziny=godziny,
-            zajete=zajete,
-            dane=dane,
-            error="Nie można awizować dat z przeszłości"
-        )
+        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Nie można awizować dat z przeszłości")
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
     c.execute("""INSERT INTO awizacje
-        (firma,rejestracja,kierowca,email,telefon,data_godzina,
-         typ_ladunku,waga_ladunku,komentarz)
+        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
         VALUES (?,?,?,?,?,?,?,?,?)""",
         (dane["firma"],dane["rejestracja"],dane["kierowca"],
          dane["email"],dane["telefon"],dane["data_godzina"],
          dane["typ_ladunku"],dane["waga_ladunku"],dane.get("komentarz",""))
     )
-
     conn.commit()
     conn.close()
+
+    log_action("FORM", f"NOWA AWIZACJA {dane['firma']}")
 
     return render_template("success.html")
 
@@ -235,29 +211,42 @@ def admin():
     conn.close()
 
     dni, godziny, zajete = get_days_and_slots()
+    return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete)
 
-    return render_template("admin.html",
-                           awizacje=awizacje,
-                           dni=dni,
-                           godziny=godziny,
-                           zajete=zajete)
+# ================= EDYCJA (NAPRAWIONE) =================
 
-# ================= STATUS =================
-
-@app.route("/admin/update_status/<int:id>", methods=["POST"])
-def update_status(id):
+@app.route("/admin/edit/<int:id>", methods=["GET","POST"])
+def edit(id):
     if not session.get("logged_in"):
         return redirect("/login")
 
-    status = request.form["status"]
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
-    conn.commit()
+
+    if request.method == "POST":
+        f = request.form
+
+        c.execute("""UPDATE awizacje SET
+            firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
+            data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
+            WHERE id=?""",
+            (f["firma"],f["rejestracja"],f["kierowca"],
+             f["email"],f["telefon"],f["data_godzina"],
+             f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id)
+        )
+
+        conn.commit()
+        conn.close()
+
+        log_action(session["user"], f"EDYCJA ID {id}")
+        return redirect("/admin")
+
+    c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
+    awizacja = c.fetchone()
     conn.close()
 
-    return redirect("/admin")
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template("edit.html", awizacja=awizacja, dni=dni, godziny=godziny, zajete=zajete)
 
 # ================= LOGI =================
 
@@ -288,12 +277,6 @@ def historia():
     conn.close()
 
     return render_template("historia.html", awizacje=dane)
-
-# ================= FALLBACK (BRAK 404) =================
-
-@app.errorhandler(404)
-def not_found(e):
-    return redirect("/admin")
 
 # ================= RUN =================
 
