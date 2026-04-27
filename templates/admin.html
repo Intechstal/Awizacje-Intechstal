@@ -2,102 +2,119 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Admina - Awizacje</title>
+    <title>Panel admina</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        h1 { margin-bottom: 8px; }
-        a.button { display:inline-block; padding:6px 10px; background:#2d6cdf; color:white; text-decoration:none; border-radius:4px; margin-bottom:10px; }
-        table { border-collapse: separate; border-spacing: 0 8px; width:100%; }
-        th, td { padding:8px; border:1px solid #ddd; background:white; vertical-align: middle; }
-        th { background:#f0f0f0; }
-        tr.pending td { background:#f9c7c7; } /* odstęp koloru całego wiersza */
-        tr.accepted td { background:#c7f0c7; }
-        .actions form { display:inline-block; margin-right:6px; }
-        .calendar { margin-top: 20px; }
-        .slot { padding:6px; min-width:80px; }
-        .slot.zaakceptowana { background:#c7f0c7; }
-        .slot.oczekująca { background:#f9c7c7; }
-        /* estetyka: zaokrąglenie tabeli wierszy */
-        tbody tr td { border-radius: 6px; }
+        body {
+            font-family: Arial;
+        }
+        table {
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        td, th {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        .oczekujaca {
+            background-color: #ffcccc;
+        }
+        .zaakceptowana {
+            background-color: #ccffcc;
+        }
+        .kalendarz td {
+            width: 90px;
+            height: 30px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
-    <h1>Panel administratora</h1>
-    <a class="button" href="/admin/historia">Pokaż historię odrzuconych</a>
 
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Firma</th>
-                <th>Rejestracja</th>
-                <th>Kierowca</th>
-                <th>Email</th>
-                <th>Telefon</th>
-                <th>Data i godzina</th>
-                <th>Typ ładunku</th>
-                <th>Waga</th>
-                <th>Komentarz</th>
-                <th>Status</th>
-                <th>Akcje</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for a in awizacje %}
-            <tr class="{{ 'accepted' if a[10]=='zaakceptowana' else 'pending' }}">
-                <td>{{ a[0] }}</td>
-                <td>{{ a[1] }}</td>
-                <td>{{ a[2] }}</td>
-                <td>{{ a[3] }}</td>
-                <td>{{ a[4] }}</td>
-                <td>{{ a[5] }}</td>
-                <td>{{ a[6].replace('T',' ') }}</td>
-                <td>{{ a[7] }}</td>
-                <td>{{ a[8] }}</td>
-                <td>{{ a[9] }}</td>
-                <td>{{ a[10] }}</td>
-                <td class="actions">
-                    <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
-                    <form method="POST" action="/admin/update_status/{{ a[0] }}" style="display:inline-block;">
-                        <select name="status" onchange="this.form.submit()">
-                            <option value="oczekująca" {% if a[10]=='oczekująca' %}selected{% endif %}>oczekująca</option>
-                            <option value="zaakceptowana" {% if a[10]=='zaakceptowana' %}selected{% endif %}>zaakceptowana</option>
-                            <option value="odrzucona">odrzucona</option>
-                        </select>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<h1>Panel administratora</h1>
 
-    <div class="calendar">
-        <h2>Kalendarz (dziś + 4 kolejne dni robocze)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Godzina</th>
-                    {% for d in dni %}
-                        <th>{{ d.strftime('%a %d.%m') }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for h in godziny %}
-                <tr>
-                    <td>{{ h }}</td>
-                    {% for d in dni %}
-                        {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
-                        {% if slot in zajete %}
-                            <td class="slot {{ zajete[slot]['status'] }}">{{ zajete[slot]['firma'] }}</td>
-                        {% else %}
-                            <td class="slot"></td>
-                        {% endif %}
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<a href="/logout">Wyloguj</a> |
+<a href="/admin/logi">Logi</a> |
+<a href="/admin/historia">Historia odrzuconych</a>
+
+<h2>Lista awizacji</h2>
+
+<table>
+<tr>
+    <th>ID</th>
+    <th>Firma</th>
+    <th>Rejestracja</th>
+    <th>Kierowca</th>
+    <th>Email</th>
+    <th>Telefon</th>
+    <th>Data</th>
+    <th>Typ</th>
+    <th>Waga</th>
+    <th>Status</th>
+    <th>Akcje</th>
+</tr>
+
+{% for a in awizacje %}
+<tr class="{{ a[10] }}">
+    <td>{{ a[0] }}</td>
+    <td>{{ a[1] }}</td>
+    <td>{{ a[2] }}</td>
+    <td>{{ a[3] }}</td>
+    <td>{{ a[4] }}</td>
+    <td>{{ a[5] }}</td>
+    <td>{{ a[6] }}</td>
+    <td>{{ a[7] }}</td>
+    <td>{{ a[8] }}</td>
+    <td>{{ a[10] }}</td>
+    <td>
+        <form action="/admin/update_status/{{ a[0] }}" method="post" style="display:inline;">
+            <select name="status">
+                <option value="oczekująca">Oczekująca</option>
+                <option value="zaakceptowana">Zaakceptowana</option>
+                <option value="odrzucona">Odrzucona</option>
+            </select>
+            <button type="submit">Zmień</button>
+        </form>
+
+        <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
+    </td>
+</tr>
+{% endfor %}
+</table>
+
+<h2>Kalendarz (5 dni roboczych)</h2>
+
+<table class="kalendarz">
+<tr>
+    <th>Godzina</th>
+    {% for d in dni %}
+        <th>{{ d.strftime('%d.%m') }}</th>
+    {% endfor %}
+</tr>
+
+{% for h in godziny %}
+<tr>
+    <td>{{ h }}</td>
+    {% for d in dni %}
+        {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+        {% if slot in zajete %}
+            {% set status = zajete[slot]['status'] %}
+            <td style="
+                {% if status == 'oczekująca' %}
+                    background-color: #ffcccc;
+                {% elif status == 'zaakceptowana' %}
+                    background-color: #ccffcc;
+                {% endif %}
+            ">
+                {{ zajete[slot]['firma'] }}
+            </td>
+        {% else %}
+            <td></td>
+        {% endif %}
+    {% endfor %}
+</tr>
+{% endfor %}
+</table>
+
 </body>
 </html>
