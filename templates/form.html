@@ -2,22 +2,36 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Awizacja - Intechstal</title>
+<title>Awizacja</title>
 
 <style>
+:root {
+    --navy: #0f172a;
+    --navy-2: #1e293b;
+    --gray: #f1f5f9;
+    --gray-2: #e2e8f0;
+    --white: #ffffff;
+}
+
 body {
     font-family: system-ui;
-    background: #f4f6f9;
+    background: var(--gray);
+    margin: 0;
     padding: 20px;
+    color: #0b0f19;
 }
 
 .box {
-    max-width: 600px;
+    max-width: 650px;
     margin: auto;
-    background: white;
+    background: var(--white);
     padding: 25px;
     border-radius: 14px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+h1 {
+    color: var(--navy);
 }
 
 label {
@@ -30,11 +44,16 @@ input, select, textarea {
     padding: 10px;
     margin: 6px 0 14px;
     border-radius: 8px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--gray-2);
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--navy);
+    outline: none;
 }
 
 button {
-    background: #16a34a;
+    background: var(--navy);
     color: white;
     border: none;
     padding: 12px;
@@ -43,11 +62,15 @@ button {
     font-weight: bold;
 }
 
+button:hover {
+    background: var(--navy-2);
+}
+
 .error {
-    background: #ffe4e6;
+    background: #fee2e2;
+    color: #7f1d1d;
     padding: 10px;
     border-radius: 8px;
-    color: #b91c1c;
     margin-bottom: 10px;
 }
 </style>
@@ -58,7 +81,7 @@ button {
 
 <div class="box">
 
-<h1>🚚 Formularz awizacji</h1>
+<h1>🚚 Awizacja transportu</h1>
 
 {% if error %}
 <div class="error">{{ error }}</div>
