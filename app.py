@@ -118,7 +118,7 @@ def logout():
     session.clear()
     return redirect('/login')
 
-# ------------------ FORM ------------------
+# ------------------ SLOTY ------------------
 
 def get_days_and_slots():
     today = datetime.now().replace(hour=0, minute=0)
@@ -145,10 +145,15 @@ def get_days_and_slots():
     for d, f, s in c.fetchall():
         dt = datetime.strptime(d, '%Y-%m-%dT%H:%M')
         for i in range(-3,4):
-            zajete[(dt + timedelta(minutes=15*i)).strftime('%Y-%m-%dT%H:%M')] = {"firma":f,"status":s}
+            zajete[(dt + timedelta(minutes=15*i)).strftime('%Y-%m-%dT%H:%M')] = {
+                "firma": f,
+                "status": s
+            }
     conn.close()
 
     return dni, godziny, zajete
+
+# ------------------ FORM ------------------
 
 @app.route('/')
 def index():
@@ -158,11 +163,30 @@ def index():
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
     dane = request.form.to_dict()
+
     dt = datetime.strptime(dane['data_godzina'], "%Y-%m-%dT%H:%M")
 
     if dt < datetime.now():
         dni, godziny, zajete = get_days_and_slots()
-        return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Nie można wstecz")
+        return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete,
+                               dane=dane, error="Nie można w przeszłość")
+
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute("SELECT data_godzina FROM awizacje WHERE status!='odrzucona'")
+    rows = c.fetchall()
+    conn.close()
+
+    zajete_set = set()
+    for (d,) in rows:
+        base = datetime.strptime(d, '%Y-%m-%dT%H:%M')
+        for i in range(-3,4):
+            zajete_set.add((base + timedelta(minutes=15*i)).strftime('%Y-%m-%dT%H:%M'))
+
+    if dane['data_godzina'] in zajete_set:
+        dni, godziny, zajete = get_days_and_slots()
+        return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete,
+                               dane=dane, error="Termin zajęty")
 
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
@@ -227,7 +251,6 @@ def edit(id):
     if request.method == 'POST':
         new = request.form.to_dict()
 
-        # 🔥 porównanie zmian
         fields = ["firma","rejestracja","kierowca","email","telefon","data_godzina","typ_ladunku","waga_ladunku","komentarz"]
         changes = []
 
@@ -255,6 +278,19 @@ def edit(id):
     conn.close()
     dni, godziny, zajete = get_days_and_slots()
     return render_template("edit.html", awizacja=old, dni=dni, godziny=godziny, zajete=zajete)
+
+@app.route('/admin/historia')
+def historia():
+    if not is_logged():
+        return redirect('/login')
+
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
+    dane = c.fetchall()
+    conn.close()
+
+    return render_template("historia.html", awizacje=dane)
 
 @app.route('/admin/logi')
 def logi():
