@@ -2,15 +2,13 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Awizacja transportu</title>
+<title>Awizacja</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
-
     <div class="topbar-left">
         <img src="/static/logo.png" class="logo">
     </div>
@@ -20,14 +18,13 @@
     </div>
 
     <div class="topbar-right">
-        <button class="dark-btn" onclick="toggleDark()">🌙</button>
+        <a href="/login">Admin</a>
     </div>
-
 </div>
 
-<div class="box">
+<div class="form-box">
 
-<h2>🚚 Formularz awizacji</h2>
+<h1>Awizacja transportu</h1>
 
 {% if error %}
 <div class="error">{{ error }}</div>
@@ -52,9 +49,9 @@
 
 <label>Typ ładunku</label>
 <select name="typ_ladunku" required>
-    <option value="Odbiór złomu">Odbiór złomu</option>
-    <option value="Odbiór zamówienia">Odbiór zamówienia</option>
-    <option value="Dostawa materiału">Dostawa materiału</option>
+    <option>Odbiór złomu</option>
+    <option>Odbiór zamówienia</option>
+    <option>Dostawa materiału</option>
 </select>
 
 <label>Waga</label>
@@ -64,7 +61,6 @@
 <textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
 
 <label>Termin</label>
-
 <select name="data_godzina" required>
     {% for d in dni %}
         <optgroup label="{{ d.strftime('%d.%m') }}">
@@ -85,19 +81,6 @@
 </form>
 
 </div>
-
-<script>
-function toggleDark() {
-    document.body.classList.toggle("dark");
-    localStorage.setItem("dark", document.body.classList.contains("dark"));
-}
-
-window.onload = () => {
-    if (localStorage.getItem("dark") === "true") {
-        document.body.classList.add("dark");
-    }
-};
-</script>
 
 </body>
 </html>
