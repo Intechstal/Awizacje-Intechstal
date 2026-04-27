@@ -27,7 +27,7 @@
 
 </div>
 
-<h2>📦 Awizacje</h2>
+<h2>Awizacje</h2>
 
 <table>
 <tr>
@@ -52,9 +52,9 @@
     <td>
         <form action="/admin/update_status/{{ a[0] }}" method="post">
             <select name="status">
-                <option value="oczekująca">Oczekująca</option>
-                <option value="zaakceptowana">Zaakceptowana</option>
-                <option value="odrzucona">Odrzucona</option>
+                <option value="oczekująca">oczekująca</option>
+                <option value="zaakceptowana">zaakceptowana</option>
+                <option value="odrzucona">odrzucona</option>
             </select>
             <button type="submit">OK</button>
         </form>
@@ -65,51 +65,48 @@
 {% endfor %}
 </table>
 
-<h2>📅 Kalendarz (czytelny / powiększony)</h2>
+<h2>Kalendarz (widok tabelaryczny)</h2>
 
-<div class="calendar">
+<table style="width:100%; background:white; border-radius:12px; overflow:hidden;">
 
-{% for d in dni %}
-<div class="day">
+    <!-- HEADER -->
+    <tr style="background:#0f172a; color:white;">
+        <th>Godzina</th>
+        {% for d in dni %}
+            <th>{{ d.strftime('%d.%m') }}</th>
+        {% endfor %}
+    </tr>
 
-    <div class="day-title">
-        {{ d.strftime('%d.%m') }}
-    </div>
-
+    <!-- ROWS -->
     {% for h in godziny %}
-        {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+    <tr>
 
-        {% if slot in zajete %}
+        <!-- GODZINA -->
+        <td style="font-weight:700; background:#f1f5f9;">
+            {{ h }}
+        </td>
 
-            <div class="slot {{ zajete[slot]['status'] }}">
+        {% for d in dni %}
+            {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
 
-                <div style="font-size:16px; font-weight:800;">
-                    {{ h }}
-                </div>
+            {% if slot in zajete %}
+                <td class="{{ zajete[slot]['status'] }}" style="padding:10px;">
+                    <div style="font-weight:700;">
+                        {{ zajete[slot]['firma'] }}
+                    </div>
+                </td>
+            {% else %}
+                <td style="color:#94a3b8; text-align:center;">
+                    —
+                </td>
+            {% endif %}
 
-                <div style="margin-top:4px;">
-                    🚚 {{ zajete[slot]['firma'] }}
-                </div>
+        {% endfor %}
 
-            </div>
-
-        {% else %}
-
-            <div class="slot" style="background:#f1f5f9; min-height:55px;">
-                <div style="font-size:16px; font-weight:700;">
-                    {{ h }}
-                </div>
-                <div style="opacity:0.4;">wolne</div>
-            </div>
-
-        {% endif %}
-
+    </tr>
     {% endfor %}
 
-</div>
-{% endfor %}
-
-</div>
+</table>
 
 <script>
 function toggleDark() {
