@@ -6,6 +6,7 @@
     --white: #ffffff;
 }
 
+/* ===== GLOBAL ===== */
 body {
     margin: 0;
     font-family: system-ui;
@@ -13,7 +14,7 @@ body {
     color: #0b0f19;
 }
 
-/* TOPBAR */
+/* ===== TOPBAR ===== */
 .topbar {
     display: flex;
     justify-content: space-between;
@@ -24,7 +25,7 @@ body {
 }
 
 .logo {
-    height: 60px; /* większe logo */
+    height: 70px;
 }
 
 .topbar-center {
@@ -32,18 +33,20 @@ body {
     font-weight: 700;
 }
 
+/* ===== LINKS ===== */
 .topbar-right a {
     color: white;
     margin-left: 15px;
     text-decoration: none;
+    font-weight: 500;
 }
 
-/* CONTAINER */
+/* ===== CONTAINER ===== */
 .container {
     padding: 20px;
 }
 
-/* TABLE */
+/* ===== TABLE ===== */
 .table {
     width: 100%;
     border-collapse: collapse;
@@ -64,40 +67,42 @@ body {
     text-align: center;
 }
 
-/* STATUSY */
-.oczekująca {
+/* ===== STATUS (TABELA) ===== */
+.status-oczekująca {
     background: #fef9c3;
 }
 
-.zaakceptowana {
+.status-zaakceptowana {
     background: #dcfce7;
 }
 
-.odrzucona {
+.status-odrzucona {
     background: #fee2e2;
 }
 
-/* BUTTON */
+/* ===== BUTTON ===== */
 .btn {
     background: var(--navy);
     color: white;
     border: none;
     padding: 6px 10px;
     border-radius: 6px;
+    cursor: pointer;
 }
 
-/* LINK */
+/* ===== LINK ===== */
 .link {
     margin-left: 10px;
     color: var(--navy);
     font-weight: 600;
 }
 
-/* CALENDAR */
+/* ===== CALENDAR ===== */
 .calendar {
     width: 100%;
     border-collapse: collapse;
     background: white;
+    margin-top: 10px;
 }
 
 .calendar th {
@@ -112,35 +117,39 @@ body {
     text-align: center;
 }
 
-/* SLOT */
-.slot {
-    padding: 6px;
-    border-radius: 6px;
-    font-size: 12px;
-}
-
-/* SMALL TEXT */
-.small {
-    font-size: 10px;
-    color: #334155;
-}
-
-/* TIME COLUMN */
+/* godziny */
 .time {
     background: #f1f5f9;
     font-weight: 600;
 }
 
-/* EMPTY */
+/* puste */
 .empty {
     color: #94a3b8;
 }
 
-/* +1 do +3 = TEN SAM KOLOR CO ZAAKCEPTOWANE */
-.zaakceptowana {
-    background: #dcfce7;
+/* ===== SLOTY ===== */
+.slot {
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
-/* lekka poprawa czytelności */
-.oczekująca { background: #fef9c3; }
-.odrzucona { background: #fee2e2; }
+/* MAIN (termin) */
+.slot-main {
+    background: #0f172a;
+    color: white;
+}
+
+/* FUTURE +1 +2 +3 = TYLKO zaakceptowany kolor */
+.slot-future {
+    background: #dcfce7;
+    color: #0f172a;
+}
+
+/* ===== SMALL TEXT ===== */
+.small {
+    font-size: 10px;
+    color: #334155;
+}
