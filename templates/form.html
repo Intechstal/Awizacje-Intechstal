@@ -12,7 +12,7 @@
         }
 
         .box {
-            max-width: 600px;
+            max-width: 900px;
             margin: auto;
             background: white;
             padding: 25px;
@@ -20,12 +20,7 @@
             box-shadow: 0 8px 25px rgba(0,0,0,0.08);
         }
 
-        label {
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        input, select, textarea {
+        input, textarea {
             width: 100%;
             padding: 10px;
             margin: 6px 0 14px;
@@ -33,16 +28,9 @@
             border: 1px solid #ccc;
         }
 
-        input[type=submit] {
-            background: #16a34a;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        input[type=submit]:hover {
-            background: #15803d;
+        label {
+            font-weight: 600;
+            font-size: 13px;
         }
 
         .error {
@@ -51,6 +39,69 @@
             border-radius: 8px;
             color: #b91c1c;
             margin-bottom: 10px;
+        }
+
+        button {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #15803d;
+        }
+
+        /* KALENDARZ */
+        #calendar {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .day {
+            background: #fff;
+            padding: 8px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .day-title {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .slot {
+            padding: 6px;
+            margin: 4px 0;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .slot:hover {
+            background: #e0f2fe;
+        }
+
+        .busy {
+            background: #f8d7da;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .selected {
+            background: #22c55e !important;
+            color: white;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -68,56 +119,95 @@
 <form action="/zapisz" method="post">
 
     <label>Firma</label>
-    <input type="text" name="firma" value="{{ dane.firma or '' }}" required>
+    <input name="firma" value="{{ dane.firma or '' }}" required>
 
     <label>Rejestracja</label>
-    <input type="text" name="rejestracja" required>
+    <input name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
 
     <label>Kierowca</label>
-    <input type="text" name="kierowca" required>
+    <input name="kierowca" value="{{ dane.kierowca or '' }}" required>
 
     <label>Email</label>
-    <input type="email" name="email" required>
+    <input name="email" value="{{ dane.email or '' }}" required>
 
     <label>Telefon</label>
-    <input type="text" name="telefon" required>
+    <input name="telefon" value="{{ dane.telefon or '' }}" required>
 
     <label>Typ ładunku</label>
-    <select name="typ_ladunku">
-        <option>Odbiór złomu</option>
-        <option>Dostawa materiału</option>
-        <option>Odbiór zamówienia</option>
-    </select>
+    <input name="typ_ladunku" value="{{ dane.typ_ladunku or '' }}">
 
     <label>Waga</label>
-    <input type="text" name="waga_ladunku">
+    <input name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
 
     <label>Komentarz</label>
-    <textarea name="komentarz"></textarea>
+    <textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
 
-    <label>Termin</label>
-    <select name="data_godzina">
+    <label><b>Wybierz termin (kliknij slot)</b></label>
 
-        {% for d in dni %}
-            <optgroup label="{{ d.strftime('%d.%m') }}">
-            {% for h in godziny %}
-                {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
-                {% if slot not in zajete %}
-                    <option value="{{ slot }}">
-                        {{ d.strftime('%d.%m') }} {{ h }}
-                    </option>
-                {% endif %}
-            {% endfor %}
-            </optgroup>
-        {% endfor %}
+    <input type="hidden" id="data_godzina" name="data_godzina" required>
 
-    </select>
+    <div id="calendar"></div>
 
-    <input type="submit" value="Wyślij awizację">
+    <br>
+    <button type="submit">Wyślij awizację</button>
 
 </form>
 
 </div>
+
+<script>
+const dni = {{ dni|tojson }};
+const godziny = {{ godziny|tojson }};
+const zajete = {{ zajete|tojson }};
+
+const calendar = document.getElementById("calendar");
+const input = document.getElementById("data_godzina");
+
+let selected = null;
+
+dni.forEach(d => {
+
+    const dayBox = document.createElement("div");
+    dayBox.className = "day";
+
+    const title = document.createElement("div");
+    title.className = "day-title";
+    title.innerText = new Date(d).toLocaleDateString('pl-PL', {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit'
+    });
+
+    dayBox.appendChild(title);
+
+    godziny.forEach(h => {
+
+        const slotKey = d.split("T")[0] + "T" + h;
+
+        const slot = document.createElement("div");
+        slot.className = "slot";
+        slot.innerText = h;
+
+        if (zajete[slotKey]) {
+            slot.classList.add("busy");
+            slot.innerText += " ❌";
+        } else {
+            slot.onclick = () => {
+                if (selected) selected.classList.remove("selected");
+
+                slot.classList.add("selected");
+                selected = slot;
+
+                input.value = slotKey;
+            };
+        }
+
+        dayBox.appendChild(slot);
+    });
+
+    calendar.appendChild(dayBox);
+});
+</script>
 
 </body>
 </html>
