@@ -4,77 +4,7 @@
 <meta charset="UTF-8">
 <title>Awizacja</title>
 
-<style>
-:root {
-    --navy: #0f172a;
-    --navy-2: #1e293b;
-    --gray: #f1f5f9;
-    --gray-2: #e2e8f0;
-    --white: #ffffff;
-}
-
-body {
-    font-family: system-ui;
-    background: var(--gray);
-    margin: 0;
-    padding: 20px;
-    color: #0b0f19;
-}
-
-.box {
-    max-width: 650px;
-    margin: auto;
-    background: var(--white);
-    padding: 25px;
-    border-radius: 14px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-}
-
-h1 {
-    color: var(--navy);
-}
-
-label {
-    font-weight: 600;
-    font-size: 13px;
-}
-
-input, select, textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 6px 0 14px;
-    border-radius: 8px;
-    border: 1px solid var(--gray-2);
-}
-
-input:focus, select:focus, textarea:focus {
-    border-color: var(--navy);
-    outline: none;
-}
-
-button {
-    background: var(--navy);
-    color: white;
-    border: none;
-    padding: 12px;
-    width: 100%;
-    border-radius: 10px;
-    font-weight: bold;
-}
-
-button:hover {
-    background: var(--navy-2);
-}
-
-.error {
-    background: #fee2e2;
-    color: #7f1d1d;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-}
-</style>
-
+<link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
@@ -145,7 +75,7 @@ button:hover {
     {% endfor %}
 </select>
 
-<button>Wyślij awizację</button>
+<button type="submit">Wyślij awizację</button>
 
 </form>
 
