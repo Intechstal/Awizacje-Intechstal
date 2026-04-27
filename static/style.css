@@ -1,12 +1,14 @@
-:root {
-    --navy: #0f172a;
-    --navy2: #1e293b;
-    --gray: #f1f5f9;
-    --gray2: #e2e8f0;
-    --white: #ffffff;
+* {
+    box-sizing: border-box;
 }
 
-/* ================= GLOBAL ================= */
+:root {
+    --navy: #0f172a;
+    --gray: #f1f5f9;
+    --gray2: #e2e8f0;
+}
+
+/* ================= BODY ================= */
 body {
     margin: 0;
     font-family: system-ui;
@@ -37,15 +39,53 @@ body {
     color: white;
     margin-left: 15px;
     text-decoration: none;
-    font-weight: 500;
 }
 
-/* ================= CONTAINER ================= */
-.container {
-    padding: 20px;
+/* ================= FORM (IZOLACJA!) ================= */
+.form-box {
+    max-width: 650px;
+    margin: 30px auto;
+    background: white;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
-/* ================= TABLE (AWIZACJE) ================= */
+.form-box h1 {
+    margin-top: 0;
+}
+
+.form-box input,
+.form-box select,
+.form-box textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0 14px;
+    border-radius: 8px;
+    border: 1px solid var(--gray2);
+}
+
+.form-box button {
+    width: 100%;
+    padding: 12px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* ================= ERROR ================= */
+.error {
+    background: #fee2e2;
+    color: #7f1d1d;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+/* ================= ADMIN TABLE ================= */
 .table {
     width: 100%;
     border-collapse: collapse;
@@ -66,90 +106,45 @@ body {
     text-align: center;
 }
 
-/* ================= STATUSY ================= */
-.oczekująca {
-    background: #fef9c3;
-}
-
-.zaakceptowana {
-    background: #dcfce7;
-}
-
-.odrzucona {
-    background: #fee2e2;
-}
-
-/* ================= BUTTON ================= */
-.btn {
-    background: var(--navy);
-    color: white;
-    border: none;
-    padding: 6px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-/* ================= LINK ================= */
-.link {
-    margin-left: 10px;
-    color: var(--navy);
-    font-weight: 600;
-    text-decoration: none;
-}
+/* ================= STATUS ================= */
+.oczekująca { background: #fef9c3; }
+.zaakceptowana { background: #dcfce7; }
+.odrzucona { background: #fee2e2; }
 
 /* ================= CALENDAR ================= */
 .calendar {
     width: 100%;
     border-collapse: collapse;
     background: white;
-    table-layout: fixed; /* 🔥 FIX szerokości */
-    margin-top: 10px;
+    table-layout: fixed;
 }
 
 .calendar th {
     background: var(--navy);
     color: white;
-    padding: 12px;
-    font-size: 14px;
+    padding: 10px;
 }
 
 .calendar td {
     border: 1px solid var(--gray2);
-    padding: 10px;
+    padding: 8px;
     text-align: center;
-    vertical-align: middle;
-    height: 60px;
 }
 
-/* godziny */
 .time {
     background: #f1f5f9;
     font-weight: 600;
     width: 90px;
 }
 
-/* kolumny dni */
-.calendar th:not(:first-child),
-.calendar td:not(:first-child) {
-    min-width: 160px;
-}
-
-/* brak danych */
 .empty {
     color: #94a3b8;
 }
 
-/* ================= SLOTY ================= */
+/* ================= SLOT ================= */
 .slot {
     padding: 6px;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
-    word-wrap: break-word;
-}
-
-/* ================= SMALL TEXT ================= */
-.small {
-    font-size: 10px;
-    color: #334155;
 }
