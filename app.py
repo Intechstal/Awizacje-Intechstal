@@ -30,7 +30,7 @@ def init_db():
 
 init_db()
 
-# ---------------- USERS ----------------
+# ---------------- AUTH ----------------
 
 def is_logged():
     return session.get("logged_in")
@@ -38,7 +38,7 @@ def is_logged():
 # ---------------- SLOTY ----------------
 
 def get_days_and_slots():
-    today = datetime.now().replace(hour=0, minute=0)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     dni = []
     d = today
@@ -49,8 +49,8 @@ def get_days_and_slots():
 
     godziny = []
     for start, end in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-        s = datetime.strptime(start,"%H:%M")
-        e = datetime.strptime(end,"%H:%M")
+        s = datetime.strptime(start, "%H:%M")
+        e = datetime.strptime(end, "%H:%M")
         while s < e:
             godziny.append(s.strftime("%H:%M"))
             s += timedelta(minutes=15)
@@ -59,9 +59,9 @@ def get_days_and_slots():
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT firma,status,data_godzina FROM awizacje WHERE status!='odrzucona'")
+    c.execute("SELECT firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz FROM awizacje WHERE status!='odrzucona'")
 
-    for f, s, dt in c.fetchall():
+    for f, s, dt, typ, waga, kom in c.fetchall():
         base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
 
         for i in range(-3, 4):
@@ -70,14 +70,83 @@ def get_days_and_slots():
             zajete[key] = {
                 "firma": f,
                 "status": s,
+                "typ_ladunku": typ,
+                "waga": waga,
+                "komentarz": kom,
                 "main": (i == 0),
                 "future_block": (i > 0),
                 "past_block": (i < 0)
             }
 
     conn.close()
-
     return dni, godziny, zajete
+
+# ---------------- FORM (HOME) ----------------
+
+@app.route("/")
+def index():
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template("form.html",
+                           dni=dni,
+                           godziny=godziny,
+                           zajete=zajete,
+                           dane={},
+                           error=None)
+
+# ---------------- ZAPIS ----------------
+
+@app.route("/zapisz", methods=["POST"])
+def zapisz():
+    dane = request.form.to_dict()
+
+    try:
+        dt = datetime.strptime(dane["data_godzina"], "%Y-%m-%dT%H:%M")
+    except:
+        return redirect("/")
+
+    if dt < datetime.now():
+        dni, godziny, zajete = get_days_and_slots()
+        return render_template("form.html",
+                               dni=dni,
+                               godziny=godziny,
+                               zajete=zajete,
+                               dane=dane,
+                               error="Nie można wybrać przeszłości")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    c.execute("SELECT data_godzina FROM awizacje WHERE status!='odrzucona'")
+    rows = c.fetchall()
+
+    zajete_set = set()
+
+    for (d,) in rows:
+        base = datetime.strptime(d, "%Y-%m-%dT%H:%M")
+        for i in range(-3, 4):
+            zajete_set.add((base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M"))
+
+    if dane["data_godzina"] in zajete_set:
+        dni, godziny, zajete = get_days_and_slots()
+        return render_template("form.html",
+                               dni=dni,
+                               godziny=godziny,
+                               zajete=zajete,
+                               dane=dane,
+                               error="Termin zajęty")
+
+    c.execute('''INSERT INTO awizacje
+        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
+        VALUES (?,?,?,?,?,?,?,?,?)''',
+        (dane["firma"], dane["rejestracja"], dane["kierowca"],
+         dane["email"], dane["telefon"], dane["data_godzina"],
+         dane["typ_ladunku"], dane["waga_ladunku"], dane.get("komentarz",""))
+    )
+
+    conn.commit()
+    conn.close()
+
+    return render_template("success.html")
 
 # ---------------- ADMIN ----------------
 
@@ -100,38 +169,6 @@ def admin():
                            godziny=godziny,
                            zajete=zajete)
 
-# ---------------- EDIT (NAPRAWIONE 404) ----------------
-
-@app.route("/admin/edit/<int:id>", methods=["GET","POST"])
-def edit(id):
-    if not is_logged():
-        return redirect("/login")
-
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
-    a = c.fetchone()
-
-    if request.method == "POST":
-        f = request.form
-
-        c.execute("""UPDATE awizacje SET
-            firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
-            data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
-            WHERE id=?""",
-            (f['firma'],f['rejestracja'],f['kierowca'],f['email'],f['telefon'],
-             f['data_godzina'],f['typ_ladunku'],f['waga_ladunku'],f['komentarz'],id))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/admin")
-
-    conn.close()
-
-    dni, godziny, zajete = get_days_and_slots()
-    return render_template("edit.html", awizacja=a, dni=dni, godziny=godziny, zajete=zajete)
-
 # ---------------- STATUS ----------------
 
 @app.route("/admin/update_status/<int:id>", methods=["POST"])
@@ -148,6 +185,44 @@ def update_status(id):
     conn.close()
 
     return redirect("/admin")
+
+# ---------------- EDIT ----------------
+
+@app.route("/admin/edit/<int:id>", methods=["GET","POST"])
+def edit(id):
+    if not is_logged():
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
+    a = c.fetchone()
+
+    if request.method == "POST":
+        f = request.form
+
+        c.execute('''UPDATE awizacje SET
+            firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
+            data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
+            WHERE id=?''',
+            (f["firma"], f["rejestracja"], f["kierowca"],
+             f["email"], f["telefon"], f["data_godzina"],
+             f["typ_ladunku"], f["waga_ladunku"], f["komentarz"], id)
+        )
+
+        conn.commit()
+        conn.close()
+        return redirect("/admin")
+
+    conn.close()
+
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template("edit.html",
+                           awizacja=a,
+                           dni=dni,
+                           godziny=godziny,
+                           zajete=zajete)
 
 # ---------------- RUN ----------------
 
