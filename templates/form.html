@@ -9,25 +9,24 @@
 
 <body>
 
-<div class="box" style="position:relative;">
+<div class="box">
 
-<!-- LOGO LEWY GÓRNY RÓG -->
-<img src="/static/logo.png" style="
+<!-- LOGO (PRAWY GÓRNY RÓG) -->
+<img src="/static/logo.jpg" style="
     position:absolute;
     top:10px;
-    left:10px;
+    right:10px;
     width:60px;
     height:60px;
     object-fit:contain;
+    border-radius:8px;
 ">
-
-<h1 style="padding-left:80px;">🚚 Awizacja transportu</h1>
 
 <!-- DARK MODE -->
 <button onclick="toggleDark()" style="
     position:absolute;
     top:10px;
-    right:10px;
+    left:10px;
     width:auto;
     padding:6px 10px;
     background:#1e293b;
@@ -38,11 +37,13 @@
 🌙 / ☀️
 </button>
 
+<h1 style="text-align:center;">🚚 Awizacja transportu</h1>
+
 {% if error %}
 <div class="error">{{ error }}</div>
 {% endif %}
 
-<form action="/zapisz" method="post" enctype="multipart/form-data">
+<form action="/zapisz" method="post">
 
 <label>Firma</label>
 <input name="firma" value="{{ dane.firma or '' }}" required>
@@ -82,22 +83,7 @@
 <label>Komentarz</label>
 <textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
 
-<!-- 📷 JPG UPLOAD -->
-<label>Zdjęcie (JPG)</label>
-<input type="file" name="zdjecie" accept="image/jpeg">
-
-{% if dane.zdjecie %}
-    <div style="margin:10px 0;">
-        <img src="/uploads/{{ dane.zdjecie }}" style="
-            width:120px;
-            height:120px;
-            object-fit:cover;
-            border-radius:10px;
-            border:2px solid #0f172a;
-        ">
-    </div>
-{% endif %}
-
+<!-- TERMIN -->
 <label>Termin</label>
 
 <select name="data_godzina" required>
