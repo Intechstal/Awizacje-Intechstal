@@ -1,0 +1,22 @@
+body {
+    font-family: system-ui, sans-serif;
+    background-color: #f5f6f8;
+}
+
+.card {
+    border-radius: 16px;
+    border: none;
+}
+
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.btn {
+    border-radius: 10px;
+}
+
+.navbar {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
