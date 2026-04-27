@@ -6,9 +6,12 @@
     --white: #ffffff;
 }
 
-/* NIE DOTYKAMY layoutu - tylko kolory */
+/* GLOBAL — BEZ ruszania layoutu */
+body {
+    font-family: system-ui;
+}
 
-/* TEKST */
+/* NAGŁÓWKI */
 h1, h2 {
     color: var(--navy);
 }
@@ -16,13 +19,15 @@ h1, h2 {
 /* INPUTY */
 input, select, textarea {
     border: 1px solid var(--gray-2);
+    border-radius: 8px;
 }
 
 input:focus, select:focus, textarea:focus {
     border-color: var(--navy);
+    outline: none;
 }
 
-/* PRZYCISK */
+/* PRZYCISKI */
 button {
     background: var(--navy);
     color: white;
@@ -37,7 +42,7 @@ a {
     color: var(--navy);
 }
 
-/* HEADER ADMIN */
+/* HEADER (admin) */
 .header {
     background: var(--navy);
     color: white;
@@ -47,7 +52,7 @@ a {
     color: white;
 }
 
-/* STATUSY (zostają jak były, tylko kolorystyka spójna) */
+/* STATUSY (TYLKO KOLORY, BEZ UKŁADU) */
 .oczekująca {
     background: #fef9c3;
 }
