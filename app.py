@@ -78,19 +78,72 @@ create_users()
 def log_action(user, akcja):
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
-    c.execute("INSERT INTO logi (user, akcja, data) VALUES (?, ?, ?)",
-              (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    c.execute(
+        "INSERT INTO logi (user, akcja, data) VALUES (?, ?, ?)",
+        (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    )
     conn.commit()
     conn.close()
 
-# ------------------ LOGIN ------------------
+# ------------------ HELPERS ------------------
 
 def is_logged():
     return session.get("logged_in")
 
-@app.route('/login', methods=['GET','POST'])
+
+def render_form_error(dane, error):
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template(
+        'form.html',
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        dane=dane,
+        error=error
+    )
+
+# ------------------ SLOTY ------------------
+
+def get_days_and_slots():
+    today = datetime.now().replace(hour=0, minute=0)
+    dni = []
+    d = today
+
+    while len(dni) < 5:
+        if d.weekday() < 5:
+            dni.append(d)
+        d += timedelta(days=1)
+
+    godziny = []
+    for start, end in [("07:30", "09:30"), ("11:00", "13:15"), ("14:15", "20:00")]:
+        s = datetime.strptime(start, "%H:%M")
+        e = datetime.strptime(end, "%H:%M")
+        while s < e:
+            godziny.append(s.strftime('%H:%M'))
+            s += timedelta(minutes=15)
+
+    zajete = {}
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute("SELECT data_godzina, firma, status FROM awizacje WHERE status!='odrzucona'")
+
+    for d, f, s in c.fetchall():
+        dt = datetime.strptime(d, '%Y-%m-%dT%H:%M')
+        for i in range(-3, 4):
+            zajete[(dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M')] = {
+                "firma": f,
+                "status": s
+            }
+
+    conn.close()
+    return dni, godziny, zajete
+
+# ------------------ LOGIN ------------------
+
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
+
     if request.method == 'POST':
         login = request.form['login']
         haslo = request.form['haslo']
@@ -118,47 +171,19 @@ def logout():
     session.clear()
     return redirect('/login')
 
-# ------------------ SLOTY ------------------
-
-def get_days_and_slots():
-    today = datetime.now().replace(hour=0, minute=0)
-    dni = []
-    d = today
-
-    while len(dni) < 5:
-        if d.weekday() < 5:
-            dni.append(d)
-        d += timedelta(days=1)
-
-    godziny = []
-    for start, end in [("07:30", "09:30"), ("11:00", "13:15"), ("14:15", "20:00")]:
-        s = datetime.strptime(start, "%H:%M")
-        e = datetime.strptime(end, "%H:%M")
-        while s < e:
-            godziny.append(s.strftime('%H:%M'))
-            s += timedelta(minutes=15)
-
-    zajete = {}
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute("SELECT data_godzina, firma, status FROM awizacje WHERE status!='odrzucona'")
-    for d, f, s in c.fetchall():
-        dt = datetime.strptime(d, '%Y-%m-%dT%H:%M')
-        for i in range(-3,4):
-            zajete[(dt + timedelta(minutes=15*i)).strftime('%Y-%m-%dT%H:%M')] = {
-                "firma": f,
-                "status": s
-            }
-    conn.close()
-
-    return dni, godziny, zajete
-
-# ------------------ FORM ------------------
+# ------------------ FORMULARZ ------------------
 
 @app.route('/')
 def index():
     dni, godziny, zajete = get_days_and_slots()
-    return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, dane={}, error=None)
+    return render_template(
+        'form.html',
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        dane={},
+        error=None
+    )
 
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
@@ -167,9 +192,7 @@ def zapisz():
     dt = datetime.strptime(dane['data_godzina'], "%Y-%m-%dT%H:%M")
 
     if dt < datetime.now():
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete,
-                               dane=dane, error="Nie można w przeszłość")
+        return render_form_error(dane, "Nie można w przeszłość")
 
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
@@ -180,13 +203,11 @@ def zapisz():
     zajete_set = set()
     for (d,) in rows:
         base = datetime.strptime(d, '%Y-%m-%dT%H:%M')
-        for i in range(-3,4):
-            zajete_set.add((base + timedelta(minutes=15*i)).strftime('%Y-%m-%dT%H:%M'))
+        for i in range(-3, 4):
+            zajete_set.add((base + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M'))
 
     if dane['data_godzina'] in zajete_set:
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete,
-                               dane=dane, error="Termin zajęty")
+        return render_form_error(dane, "Termin zajęty")
 
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
@@ -197,8 +218,9 @@ def zapisz():
     ''', (
         dane['firma'], dane['rejestracja'], dane['kierowca'],
         dane['email'], dane['telefon'], dane['data_godzina'],
-        dane['typ_ladunku'], dane['waga_ladunku'], dane.get('komentarz','')
+        dane['typ_ladunku'], dane['waga_ladunku'], dane.get('komentarz', '')
     ))
+
     conn.commit()
     conn.close()
 
@@ -218,7 +240,14 @@ def admin():
     conn.close()
 
     dni, godziny, zajete = get_days_and_slots()
-    return render_template("admin.html", awizacje=dane, dni=dni, godziny=godziny, zajete=zajete)
+
+    return render_template(
+        "admin.html",
+        awizacje=dane,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete
+    )
 
 @app.route('/admin/update_status/<int:id>', methods=['POST'])
 def update_status(id):
@@ -237,7 +266,7 @@ def update_status(id):
 
     return redirect('/admin')
 
-@app.route('/admin/edit/<int:id>', methods=['GET','POST'])
+@app.route('/admin/edit/<int:id>', methods=['GET', 'POST'])
 def edit(id):
     if not is_logged():
         return redirect('/login')
@@ -251,7 +280,9 @@ def edit(id):
     if request.method == 'POST':
         new = request.form.to_dict()
 
-        fields = ["firma","rejestracja","kierowca","email","telefon","data_godzina","typ_ladunku","waga_ladunku","komentarz"]
+        fields = ["firma","rejestracja","kierowca","email","telefon","data_godzina",
+                  "typ_ladunku","waga_ladunku","komentarz"]
+
         changes = []
 
         for i, field in enumerate(fields, start=1):
@@ -276,8 +307,16 @@ def edit(id):
         return redirect('/admin')
 
     conn.close()
+
     dni, godziny, zajete = get_days_and_slots()
-    return render_template("edit.html", awizacja=old, dni=dni, godziny=godziny, zajete=zajete)
+
+    return render_template(
+        "edit.html",
+        awizacja=old,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete
+    )
 
 @app.route('/admin/historia')
 def historia():
@@ -304,6 +343,8 @@ def logi():
     conn.close()
 
     return render_template("logi.html", logi=dane)
+
+# ------------------ RUN ------------------
 
 if __name__ == '__main__':
     app.run(debug=True)
