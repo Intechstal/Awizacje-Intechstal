@@ -4,10 +4,62 @@
 <meta charset="UTF-8">
 <title>Panel logistyczny</title>
 <link rel="stylesheet" href="/static/style.css">
+
+<style>
+/* tylko lokalne poprawki czytelności kalendarza */
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.calendar-table th {
+    background: #0f172a;
+    color: white;
+    padding: 10px;
+    font-weight: 600;
+}
+
+.calendar-table td {
+    border: 1px solid #e2e8f0;
+    padding: 8px;
+    text-align: center;
+    vertical-align: middle;
+    min-width: 120px;
+}
+
+.time-col {
+    background: #f1f5f9;
+    font-weight: 600;
+}
+
+.slot {
+    padding: 6px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* statusy */
+.oczekująca {
+    background: #fef9c3;
+}
+
+.zaakceptowana {
+    background: #dcfce7;
+}
+
+.odrzucona {
+    background: #fee2e2;
+}
+</style>
 </head>
 
 <body>
 
+<!-- TOPBAR -->
 <div class="topbar">
 
     <div class="topbar-left">
@@ -47,7 +99,7 @@
     <td>{{ a[2] }}</td>
     <td>{{ a[3] }}</td>
     <td>{{ a[6] }}</td>
-    <td><span class="{{ a[10] }}">{{ a[10] }}</span></td>
+    <td>{{ a[10] }}</td>
 
     <td>
         <form action="/admin/update_status/{{ a[0] }}" method="post">
@@ -65,40 +117,37 @@
 {% endfor %}
 </table>
 
-<h2>Kalendarz (widok tabelaryczny)</h2>
+<h2>Kalendarz logistyczny</h2>
 
-<table style="width:100%; background:white; border-radius:12px; overflow:hidden;">
+<table class="calendar-table">
 
-    <!-- HEADER -->
-    <tr style="background:#0f172a; color:white;">
+    <tr>
         <th>Godzina</th>
         {% for d in dni %}
             <th>{{ d.strftime('%d.%m') }}</th>
         {% endfor %}
     </tr>
 
-    <!-- ROWS -->
     {% for h in godziny %}
     <tr>
 
-        <!-- GODZINA -->
-        <td style="font-weight:700; background:#f1f5f9;">
-            {{ h }}
-        </td>
+        <td class="time-col">{{ h }}</td>
 
         {% for d in dni %}
             {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
 
-            {% if slot in zajete %}
-                <td class="{{ zajete[slot]['status'] }}" style="padding:10px;">
-                    <div style="font-weight:700;">
+            {% if slot in zajete and zajete[slot].get('main') %}
+
+                <td>
+                    <div class="slot {{ zajete[slot]['status'] }}">
                         {{ zajete[slot]['firma'] }}
                     </div>
                 </td>
+
             {% else %}
-                <td style="color:#94a3b8; text-align:center;">
-                    —
-                </td>
+
+                <td style="color:#94a3b8;">—</td>
+
             {% endif %}
 
         {% endfor %}
