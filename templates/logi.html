@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Logi</title>
+</head>
+<body>
+
+<h1>Logi systemu</h1>
+
+<a href="/admin">Powrót</a>
+
+<table border="1">
+<tr>
+<th>ID</th><th>Użytkownik</th><th>Akcja</th><th>Data</th>
+</tr>
+
+{% for l in logi %}
+<tr>
+<td>{{ l[0] }}</td>
+<td>{{ l[1] }}</td>
+<td>{{ l[2] }}</td>
+<td>{{ l[3] }}</td>
+</tr>
+{% endfor %}
+
+</table>
+
+</body>
+</html>
