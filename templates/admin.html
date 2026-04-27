@@ -6,7 +6,6 @@
 <link rel="stylesheet" href="/static/style.css">
 
 <style>
-/* tylko lokalne poprawki czytelności kalendarza */
 .calendar-table {
     width: 100%;
     border-collapse: collapse;
@@ -19,18 +18,17 @@
     background: #0f172a;
     color: white;
     padding: 10px;
-    font-weight: 600;
 }
 
 .calendar-table td {
     border: 1px solid #e2e8f0;
-    padding: 8px;
+    padding: 10px;
     text-align: center;
     vertical-align: middle;
-    min-width: 120px;
+    min-width: 130px;
 }
 
-.time-col {
+.time {
     background: #f1f5f9;
     font-weight: 600;
 }
@@ -38,30 +36,29 @@
 .slot {
     padding: 6px;
     border-radius: 8px;
-    font-size: 13px;
     font-weight: 600;
+    font-size: 13px;
 }
 
-/* statusy */
-.oczekująca {
-    background: #fef9c3;
-}
+.oczekująca { background: #fef9c3; }
+.zaakceptowana { background: #dcfce7; }
+.odrzucona { background: #fee2e2; }
 
-.zaakceptowana {
-    background: #dcfce7;
+.future {
+    background: #e2e8f0;
 }
-
-.odrzucona {
-    background: #fee2e2;
+.small {
+    font-size: 11px;
+    font-weight: 400;
+    margin-top: 3px;
+    color: #334155;
 }
 </style>
 </head>
 
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
-
     <div class="topbar-left">
         <img src="/static/logo.png" class="logo">
     </div>
@@ -71,12 +68,10 @@
     </div>
 
     <div class="topbar-right">
-        <button class="dark-btn" onclick="toggleDark()">🌙</button>
         <a href="/admin/logi">Logi</a>
         <a href="/admin/historia">Historia</a>
         <a href="/logout">Wyloguj</a>
     </div>
-
 </div>
 
 <h2>Awizacje</h2>
@@ -88,6 +83,9 @@
     <th>Rejestracja</th>
     <th>Kierowca</th>
     <th>Data</th>
+    <th>Typ</th>
+    <th>Waga</th>
+    <th>Komentarz</th>
     <th>Status</th>
     <th>Akcje</th>
 </tr>
@@ -99,6 +97,11 @@
     <td>{{ a[2] }}</td>
     <td>{{ a[3] }}</td>
     <td>{{ a[6] }}</td>
+
+    <td>{{ a[7] }}</td>
+    <td>{{ a[8] }}</td>
+    <td>{{ a[9] }}</td>
+
     <td>{{ a[10] }}</td>
 
     <td>
@@ -108,7 +111,7 @@
                 <option value="zaakceptowana">zaakceptowana</option>
                 <option value="odrzucona">odrzucona</option>
             </select>
-            <button type="submit">OK</button>
+            <button>OK</button>
         </form>
 
         <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
@@ -117,58 +120,66 @@
 {% endfor %}
 </table>
 
-<h2>Kalendarz logistyczny</h2>
+<h2>Kalendarz</h2>
 
 <table class="calendar-table">
 
-    <tr>
-        <th>Godzina</th>
-        {% for d in dni %}
-            <th>{{ d.strftime('%d.%m') }}</th>
-        {% endfor %}
-    </tr>
+<tr>
+    <th>Godzina</th>
+    {% for d in dni %}
+        <th>{{ d.strftime('%d.%m') }}</th>
+    {% endfor %}
+</tr>
 
-    {% for h in godziny %}
-    <tr>
+{% for h in godziny %}
+<tr>
 
-        <td class="time-col">{{ h }}</td>
+    <td class="time">{{ h }}</td>
 
-        {% for d in dni %}
-            {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+    {% for d in dni %}
+        {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+        {% set data = zajete.get(slot) %}
 
-            {% if slot in zajete and zajete[slot].get('main') %}
+        {% if data and data.main %}
 
-                <td>
-                    <div class="slot {{ zajete[slot]['status'] }}">
-                        {{ zajete[slot]['firma'] }}
+            <td>
+                <div class="slot {{ data.status }}">
+                    {{ data.firma }}
+
+                    <div class="small">
+                        {{ data.typ_ladunku if data.typ_ladunku is defined else "" }}
                     </div>
-                </td>
 
-            {% else %}
+                    <div class="small">
+                        {{ data.waga if data.waga is defined else "" }}
+                    </div>
 
-                <td style="color:#94a3b8;">—</td>
+                    <div class="small">
+                        {{ data.komentarz if data.komentarz is defined else "" }}
+                    </div>
+                </div>
+            </td>
 
-            {% endif %}
+        {% elif data and data.future_block %}
 
-        {% endfor %}
+            <td class="future">
+                <div class="slot">
+                    {{ data.firma }}
+                </div>
+            </td>
 
-    </tr>
+        {% else %}
+
+            <td style="color:#94a3b8;">—</td>
+
+        {% endif %}
+
     {% endfor %}
 
+</tr>
+{% endfor %}
+
 </table>
-
-<script>
-function toggleDark() {
-    document.body.classList.toggle("dark");
-    localStorage.setItem("dark", document.body.classList.contains("dark"));
-}
-
-window.onload = () => {
-    if (localStorage.getItem("dark") === "true") {
-        document.body.classList.add("dark");
-    }
-};
-</script>
 
 </body>
 </html>
