@@ -19,12 +19,12 @@ body {
 }
 
 /* =========================
-   HEADER BAR
+   TOPBAR (HEADER)
 ========================= */
 
 .topbar {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
     align-items: center;
     background: var(--navy);
     color: white;
@@ -33,25 +33,42 @@ body {
     margin-bottom: 20px;
 }
 
+/* LEWA STRONA (LOGO) */
 .topbar-left {
     display: flex;
     align-items: center;
-    gap: 14px;
 }
 
 .logo {
-    width: 70px;
-    height: 70px;
+    width: 120px;
+    height: 120px;
     object-fit: contain;
     border-radius: 8px;
 }
 
-.topbar-left span {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
+/* ŚRODEK (TYTUŁ) */
+.topbar-center {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
 }
 
+/* PRAWA STRONA */
+.topbar-right {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    align-items: center;
+}
+
+.topbar-right a {
+    color: white;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+/* DARK BUTTON */
 .dark-btn {
     background: var(--navy-2);
     color: white;
@@ -61,10 +78,6 @@ body {
     border-radius: 6px;
     cursor: pointer;
     width: auto;
-}
-
-.dark-btn:hover {
-    opacity: 0.85;
 }
 
 /* =========================
@@ -99,7 +112,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* =========================
-   BUTTONS
+   BUTTON
 ========================= */
 
 button {
@@ -130,7 +143,7 @@ button:hover {
 }
 
 /* =========================
-   TABLE (ADMIN FIX)
+   TABLE (ADMIN)
 ========================= */
 
 table {
@@ -156,7 +169,7 @@ td {
 }
 
 /* =========================
-   STATUS BADGES
+   STATUSY
 ========================= */
 
 .oczekująca,
