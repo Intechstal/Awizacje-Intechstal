@@ -9,32 +9,29 @@
 
 <body>
 
-<div class="header">
-    <h1 style="margin:0;">🚚 Panel logistyczny</h1>
+<!-- HEADER -->
+<div class="topbar">
 
-    <div style="margin-top:10px;">
-        <a href="/logout">Wyloguj</a>
-        <a href="/admin/logi">Logi</a>
-        <a href="/admin/historia">Historia</a>
-
-        <!-- DARK MODE TOGGLE -->
-        <button onclick="toggleDark()" style="
-            float:right;
-            width:auto;
-            padding:6px 10px;
-            background:#1e293b;
-            color:white;
-            border:none;
-            border-radius:6px;
-        ">
-        🌙 / ☀️
-        </button>
+    <div class="topbar-left">
+        <img src="/static/logo.png" class="logo">
+        <span>Panel logistyczny</span>
     </div>
+
+    <div style="display:flex; gap:10px;">
+        <button class="dark-btn" onclick="toggleDark()">🌙 / ☀️</button>
+        <a href="/logout" style="color:white; text-decoration:none;">Wyloguj</a>
+        <a href="/admin/logi" style="color:white; text-decoration:none;">Logi</a>
+        <a href="/admin/historia" style="color:white; text-decoration:none;">Historia</a>
+    </div>
+
 </div>
 
-<h2>📦 Lista awizacji</h2>
+<!-- TABLE -->
+<h2>📦 Awizacje</h2>
 
+<div style="overflow-x:auto;">
 <table>
+
 <tr>
     <th>ID</th>
     <th>Firma</th>
@@ -46,7 +43,8 @@
 </tr>
 
 {% for a in awizacje %}
-<tr class="{{ a[10] }}">
+<tr>
+
     <td>{{ a[0] }}</td>
     <td>{{ a[1] }}</td>
     <td>{{ a[2] }}</td>
@@ -57,23 +55,29 @@
         <span class="{{ a[10] }}">{{ a[10] }}</span>
     </td>
 
-    <td>
-        <form action="/admin/update_status/{{ a[0] }}" method="post" style="display:inline;">
+    <td style="display:flex; gap:8px; justify-content:center;">
+
+        <form action="/admin/update_status/{{ a[0] }}" method="post">
             <select name="status">
-                <option value="oczekująca">oczekująca</option>
-                <option value="zaakceptowana">zaakceptowana</option>
-                <option value="odrzucona">odrzucona</option>
+                <option value="oczekująca">Oczekująca</option>
+                <option value="zaakceptowana">Zaakceptowana</option>
+                <option value="odrzucona">Odrzucona</option>
             </select>
-            <button>Zmień</button>
+            <button type="submit">OK</button>
         </form>
 
         <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
+
     </td>
+
 </tr>
 {% endfor %}
-</table>
 
-<h2>📅 Kalendarz logistyczny</h2>
+</table>
+</div>
+
+<!-- CALENDAR -->
+<h2>📅 Kalendarz</h2>
 
 <div class="calendar">
 
@@ -93,7 +97,7 @@
                 {{ zajete[slot]['firma'] }}
             </div>
         {% else %}
-            <div class="slot">
+            <div class="slot" style="background:#f1f5f9;">
                 {{ h }}
             </div>
         {% endif %}
