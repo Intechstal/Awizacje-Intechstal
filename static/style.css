@@ -1,261 +1,261 @@
 :root {
---navy: #0f172a;
---navy-2: #1e293b;
---gray: #f1f5f9;
---gray-2: #e2e8f0;
---white: #ffffff;
+    --navy: #0f172a;
+    --navy-2: #1e293b;
+    --gray: #f1f5f9;
+    --gray-2: #e2e8f0;
+    --white: #ffffff;
 }
 
 /* =========================
-  GLOBAL
+   GLOBAL
 ========================= */
 
 body {
-font-family: system-ui;
-background: var(--gray);
-margin: 0;
-padding: 20px;
-color: #0b0f19;
+    font-family: system-ui;
+    background: var(--gray);
+    margin: 0;
+    padding: 20px;
+    color: #0b0f19;
 }
 
 /* =========================
-  TOPBAR (HEADER)
+   TOPBAR (HEADER)
 ========================= */
 
 .topbar {
-display: grid;
-grid-template-columns: 1fr 2fr 1fr;
-align-items: center;
-background: var(--navy);
-color: white;
-padding: 14px 18px;
-border-radius: 12px;
-margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    align-items: center;
+    background: var(--navy);
+    color: white;
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
 }
 
 /* LEWA STRONA (LOGO) */
 .topbar-left {
-display: flex;
-align-items: center;
+    display: flex;
+    align-items: center;
 }
 
 .logo {
-    width: 600px;
-height: 200px;
-object-fit: contain;
-border-radius: 8px;
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    border-radius: 8px;
 }
 
 /* ŚRODEK (TYTUŁ) */
 .topbar-center {
-text-align: center;
-font-size: 26px;
-font-weight: 800;
-letter-spacing: 0.5px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
 }
 
 /* PRAWA STRONA */
 .topbar-right {
-display: flex;
-justify-content: flex-end;
-gap: 12px;
-align-items: center;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    align-items: center;
 }
 
 .topbar-right a {
-color: white;
-text-decoration: none;
-font-size: 13px;
+    color: white;
+    text-decoration: none;
+    font-size: 13px;
 }
 
 /* DARK BUTTON */
 .dark-btn {
-background: var(--navy-2);
-color: white;
-border: none;
-padding: 6px 10px;
-font-size: 12px;
-border-radius: 6px;
-cursor: pointer;
-width: auto;
+    background: var(--navy-2);
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: auto;
 }
 
 /* =========================
-  FORM BOX
+   FORM BOX
 ========================= */
 
 .box {
-max-width: 650px;
-margin: auto;
-background: var(--white);
-padding: 25px;
-border-radius: 14px;
-box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    max-width: 650px;
+    margin: auto;
+    background: var(--white);
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
 /* =========================
-  INPUTS
+   INPUTS
 ========================= */
 
 input, select, textarea {
-width: 100%;
-padding: 10px;
-margin: 6px 0 14px;
-border-radius: 8px;
-border: 1px solid var(--gray-2);
-font-size: 14px;
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0 14px;
+    border-radius: 8px;
+    border: 1px solid var(--gray-2);
+    font-size: 14px;
 }
 
 input:focus, select:focus, textarea:focus {
-border-color: var(--navy);
-outline: none;
+    border-color: var(--navy);
+    outline: none;
 }
 
 /* =========================
-  BUTTON
+   BUTTON
 ========================= */
 
 button {
-background: var(--navy);
-color: white;
-border: none;
-padding: 12px;
-width: 100%;
-border-radius: 10px;
-font-weight: bold;
-cursor: pointer;
+    background: var(--navy);
+    color: white;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 button:hover {
-background: var(--navy-2);
+    background: var(--navy-2);
 }
 
 /* =========================
-  ERROR
+   ERROR
 ========================= */
 
 .error {
-background: #fee2e2;
-color: #7f1d1d;
-padding: 10px;
-border-radius: 8px;
-margin-bottom: 10px;
+    background: #fee2e2;
+    color: #7f1d1d;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
 }
 
 /* =========================
-  TABLE (ADMIN)
+   TABLE (ADMIN)
 ========================= */
 
 table {
-width: 100%;
-border-collapse: collapse;
-background: white;
-border-radius: 12px;
-overflow: hidden;
-box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
 th {
-background: var(--navy);
-color: white;
-padding: 10px;
+    background: var(--navy);
+    color: white;
+    padding: 10px;
 }
 
 td {
-padding: 10px;
-border-bottom: 1px solid var(--gray-2);
-text-align: center;
-font-size: 13px;
+    padding: 10px;
+    border-bottom: 1px solid var(--gray-2);
+    text-align: center;
+    font-size: 13px;
 }
 
 /* =========================
-  STATUSY
+   STATUSY
 ========================= */
 
 .oczekująca,
 .zaakceptowana,
 .odrzucona {
-display: inline-block;
-padding: 3px 8px;
-border-radius: 999px;
-font-size: 11px;
-font-weight: 600;
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
 }
 
 .oczekująca {
-background: #fef9c3;
-color: #854d0e;
+    background: #fef9c3;
+    color: #854d0e;
 }
 
 .zaakceptowana {
-background: #dcfce7;
-color: #166534;
+    background: #dcfce7;
+    color: #166534;
 }
 
 .odrzucona {
-background: #fee2e2;
-color: #991b1b;
+    background: #fee2e2;
+    color: #991b1b;
 }
 
 /* =========================
-  CALENDAR
+   CALENDAR
 ========================= */
 
 .calendar {
-display: grid;
-grid-template-columns: repeat(5, 1fr);
-gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
 }
 
 .day {
-background: white;
-border-radius: 12px;
-padding: 10px;
-box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    background: white;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 
 .day-title {
-text-align: center;
-font-weight: bold;
-margin-bottom: 10px;
-color: var(--navy);
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--navy);
 }
 
 .slot {
-font-size: 11px;
-padding: 5px;
-margin: 3px 0;
-border-radius: 6px;
-text-align: center;
+    font-size: 11px;
+    padding: 5px;
+    margin: 3px 0;
+    border-radius: 6px;
+    text-align: center;
 }
 
 /* =========================
-  DARK MODE
+   DARK MODE
 ========================= */
 
 body.dark {
-background: #0b1220;
-color: #e5e7eb;
+    background: #0b1220;
+    color: #e5e7eb;
 }
 
 body.dark .box,
 body.dark table,
 body.dark .day {
-background: #111827;
+    background: #111827;
 }
 
 body.dark input,
 body.dark select,
 body.dark textarea {
-background: #0f172a;
-color: #e5e7eb;
-border: 1px solid #334155;
+    background: #0f172a;
+    color: #e5e7eb;
+    border: 1px solid #334155;
 }
 
 body.dark .topbar {
-background: #020617;
+    background: #020617;
 }
 
 body.dark .dark-btn {
-background: #111827;
+    background: #111827;
 }
