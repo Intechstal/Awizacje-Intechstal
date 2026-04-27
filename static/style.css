@@ -4,22 +4,76 @@
     --gray: #f1f5f9;
     --gray-2: #e2e8f0;
     --white: #ffffff;
+    --black: #0b0f19;
 }
 
-/* GLOBAL — BEZ ruszania layoutu */
+/* =========================
+   GLOBAL
+========================= */
+
 body {
     font-family: system-ui;
+    background: var(--gray);
+    margin: 0;
+    padding: 20px;
+    color: var(--black);
 }
 
-/* NAGŁÓWKI */
+/* =========================
+   DARK MODE
+========================= */
+
+body.dark {
+    background: #0b1220;
+    color: #e5e7eb;
+}
+
+/* karty */
+body.dark .box,
+body.dark table,
+body.dark .day {
+    background: #111827;
+    color: #e5e7eb;
+}
+
+/* inputy */
+body.dark input,
+body.dark select,
+body.dark textarea {
+    background: #0f172a;
+    color: #e5e7eb;
+    border: 1px solid #334155;
+}
+
+/* header */
+body.dark .header {
+    background: #020617;
+}
+
+/* sloty */
+body.dark .slot {
+    background: #0f172a;
+}
+
+/* =========================
+   TYPOGRAFIA
+========================= */
+
 h1, h2 {
     color: var(--navy);
 }
 
-/* INPUTY */
+/* =========================
+   FORM ELEMENTY
+========================= */
+
 input, select, textarea {
-    border: 1px solid var(--gray-2);
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0 14px;
     border-radius: 8px;
+    border: 1px solid var(--gray-2);
+    background: white;
 }
 
 input:focus, select:focus, textarea:focus {
@@ -27,40 +81,158 @@ input:focus, select:focus, textarea:focus {
     outline: none;
 }
 
-/* PRZYCISKI */
+/* =========================
+   BUTTONY
+========================= */
+
 button {
     background: var(--navy);
     color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
 }
 
 button:hover {
     background: var(--navy-2);
 }
 
-/* LINKI */
+/* =========================
+   LINKI
+========================= */
+
 a {
     color: var(--navy);
+    text-decoration: none;
 }
 
-/* HEADER (admin) */
+/* =========================
+   HEADER ADMIN
+========================= */
+
 .header {
     background: var(--navy);
     color: white;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
 }
 
 .header a {
     color: white;
+    margin-right: 10px;
 }
 
-/* STATUSY (TYLKO KOLORY, BEZ UKŁADU) */
+/* =========================
+   TABELA ADMIN
+========================= */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+th {
+    background: var(--navy);
+    color: white;
+    padding: 10px;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid var(--gray-2);
+    text-align: center;
+}
+
+/* =========================
+   STATUSY (BADGE STYLE)
+========================= */
+
+.oczekująca,
+.zaakceptowana,
+.odrzucona {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* kolory */
 .oczekująca {
     background: #fef9c3;
+    color: #854d0e;
 }
 
 .zaakceptowana {
     background: #dcfce7;
+    color: #166534;
 }
 
 .odrzucona {
     background: #fee2e2;
+    color: #991b1b;
+}
+
+/* =========================
+   FORM BOX
+========================= */
+
+.box {
+    max-width: 650px;
+    margin: auto;
+    background: white;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   ERROR
+========================= */
+
+.error {
+    background: #fee2e2;
+    color: #7f1d1d;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+/* =========================
+   KALENDARZ
+========================= */
+
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+
+.day {
+    background: white;
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.day-title {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--navy);
+}
+
+.slot {
+    font-size: 11px;
+    padding: 6px;
+    margin: 3px 0;
+    border-radius: 6px;
+    text-align: center;
+    background: #f1f5f9;
 }
