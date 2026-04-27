@@ -41,7 +41,7 @@ body {
 
 .logo {
     width: 600px;
-    height: 400px;
+    height: 200px;
     object-fit: contain;
     border-radius: 8px;
 }
