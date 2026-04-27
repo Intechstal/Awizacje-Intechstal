@@ -68,7 +68,7 @@ def create_users():
 
 create_users()
 
-# ================= LOGS =================
+# ================= LOGI =================
 
 def log_action(user, akcja):
     conn = sqlite3.connect("awizacje.db")
@@ -128,6 +128,32 @@ def get_days_and_slots():
     conn.close()
     return dni, godziny, zajete
 
+# ================= LOGIN =================
+
+@app.route("/login", methods=["GET","POST"])
+def login():
+    if request.method == "POST":
+        login = request.form["login"]
+        haslo = request.form["haslo"]
+
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login, haslo))
+        user = c.fetchone()
+        conn.close()
+
+        if user:
+            session["logged_in"] = True
+            session["user"] = login
+            return redirect("/admin")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
 # ================= FORM =================
 
 @app.route("/")
@@ -144,8 +170,7 @@ def index():
 def zapisz():
     dane = request.form.to_dict()
 
-    # ================= WALIDACJA =================
-
+    # WALIDACJA
     if not dane["telefon"].isdigit():
         dni, godziny, zajete = get_days_and_slots()
         return render_template("form.html",
@@ -164,8 +189,7 @@ def zapisz():
                                dane=dane,
                                error="Błędny email")
 
-    # ================= 🔥 FIX PRZESZŁOŚCI =================
-
+    # 🔥 BLOKADA PRZESZŁOŚCI
     slot = datetime.strptime(dane["data_godzina"], "%Y-%m-%dT%H:%M")
     now = datetime.now()
 
@@ -179,8 +203,6 @@ def zapisz():
             dane=dane,
             error="Nie można awizować dat z przeszłości"
         )
-
-    # ================= INSERT =================
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
@@ -203,6 +225,9 @@ def zapisz():
 
 @app.route("/admin")
 def admin():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
     c.execute("SELECT * FROM awizacje ORDER BY id DESC")
@@ -221,6 +246,9 @@ def admin():
 
 @app.route("/admin/update_status/<int:id>", methods=["POST"])
 def update_status(id):
+    if not session.get("logged_in"):
+        return redirect("/login")
+
     status = request.form["status"]
 
     conn = sqlite3.connect("awizacje.db")
@@ -229,6 +257,42 @@ def update_status(id):
     conn.commit()
     conn.close()
 
+    return redirect("/admin")
+
+# ================= LOGI =================
+
+@app.route("/admin/logi")
+def logi():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM logi ORDER BY id DESC")
+    logi = c.fetchall()
+    conn.close()
+
+    return render_template("logi.html", logi=logi)
+
+# ================= HISTORIA =================
+
+@app.route("/admin/historia")
+def historia():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
+    dane = c.fetchall()
+    conn.close()
+
+    return render_template("historia.html", awizacje=dane)
+
+# ================= FALLBACK (BRAK 404) =================
+
+@app.errorhandler(404)
+def not_found(e):
     return redirect("/admin")
 
 # ================= RUN =================
