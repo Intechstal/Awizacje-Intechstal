@@ -4,113 +4,14 @@
 <meta charset="UTF-8">
 <title>Panel logistyczny</title>
 
-<style>
-:root {
-    --navy: #0f172a;
-    --navy-2: #1e293b;
-    --gray: #f1f5f9;
-    --gray-2: #e2e8f0;
-}
-
-body {
-    font-family: system-ui;
-    background: var(--gray);
-    margin: 0;
-    padding: 20px;
-}
-
-/* HEADER */
-.header {
-    background: var(--navy);
-    color: white;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-
-.header a {
-    color: white;
-    margin-right: 10px;
-    text-decoration: none;
-}
-
-/* TABLE */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 30px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-}
-
-th {
-    background: var(--navy);
-    color: white;
-    padding: 10px;
-}
-
-td {
-    padding: 10px;
-    border-bottom: 1px solid var(--gray-2);
-    text-align: center;
-}
-
-/* BUTTONS */
-button {
-    background: var(--navy);
-    color: white;
-    border: none;
-    padding: 6px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-select {
-    padding: 5px;
-}
-
-/* STATUS */
-.oczekująca { background: #fef9c3; }
-.zaakceptowana { background: #dcfce7; }
-.odrzucona { background: #fee2e2; }
-
-/* CALENDAR */
-.calendar {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 12px;
-}
-
-.day {
-    background: white;
-    border-radius: 12px;
-    padding: 10px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-}
-
-.day-title {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: var(--navy);
-}
-
-.slot {
-    font-size: 11px;
-    padding: 5px;
-    margin: 3px 0;
-    border-radius: 6px;
-    text-align: center;
-}
-</style>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
 <div class="header">
     <h1 style="margin:0;">🚚 Panel logistyczny</h1>
+
     <div style="margin-top:10px;">
         <a href="/logout">Wyloguj</a>
         <a href="/admin/logi">Logi</a>
@@ -118,7 +19,7 @@ select {
     </div>
 </div>
 
-<h2>📦 Lista awizacji</h2>
+<h2>📦 Awizacje</h2>
 
 <table>
 <tr>
@@ -141,17 +42,15 @@ select {
     <td>{{ a[10] }}</td>
     <td>
 
-        <!-- STATUS -->
         <form action="/admin/update_status/{{ a[0] }}" method="post" style="display:inline;">
             <select name="status">
                 <option value="oczekująca">oczekująca</option>
                 <option value="zaakceptowana">zaakceptowana</option>
                 <option value="odrzucona">odrzucona</option>
             </select>
-            <button>Zmień</button>
+            <button type="submit">Zmień</button>
         </form>
 
-        <!-- EDIT -->
         <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
 
     </td>
@@ -159,7 +58,7 @@ select {
 {% endfor %}
 </table>
 
-<h2>📅 Kalendarz logistyczny</h2>
+<h2>📅 Kalendarz (widok operacyjny)</h2>
 
 <div class="calendar">
 
