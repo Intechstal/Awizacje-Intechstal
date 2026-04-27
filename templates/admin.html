@@ -11,80 +11,96 @@ body {
     padding: 20px;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
+h1 { margin-bottom: 20px; }
+
+a {
+    margin-right: 10px;
+    text-decoration: none;
+    padding: 6px 10px;
+    background: #333;
+    color: white;
+    border-radius: 6px;
+}
+
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.day {
     background: white;
+    border-radius: 12px;
+    padding: 10px;
     box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
-th {
-    background: #1f2937;
-    color: white;
-    padding: 10px;
+.day-title {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 13px;
 }
 
-td {
-    padding: 10px;
-    border-bottom: 1px solid #eee;
+.slot {
+    font-size: 11px;
+    padding: 5px;
+    margin: 3px 0;
+    border-radius: 6px;
     text-align: center;
 }
 
-.oczekująca { background: #fff3cd; }
-.zaakceptowana { background: #d1e7dd; }
-.odrzucona { background: #f8d7da; }
+.oczekująca {
+    background: #fff3cd;
+}
 
-a {
-    margin-right: 8px;
+.zaakceptowana {
+    background: #d1e7dd;
+}
+
+.odrzucona {
+    background: #f8d7da;
 }
 </style>
-
 </head>
 
 <body>
 
-<h1>🚚 Panel admina</h1>
+<h1>🚚 Panel administratora</h1>
 
-<a href="/logout">Wyloguj</a> |
-<a href="/admin/logi">Logi</a> |
+<a href="/logout">Wyloguj</a>
+<a href="/admin/logi">Logi</a>
 <a href="/admin/historia">Historia</a>
 
-<h2>Awizacje</h2>
+<div class="calendar">
 
-<table>
-<tr>
-    <th>ID</th>
-    <th>Firma</th>
-    <th>Rejestracja</th>
-    <th>Kierowca</th>
-    <th>Data</th>
-    <th>Status</th>
-    <th>Akcje</th>
-</tr>
+{% for d in dni %}
+<div class="day">
 
-{% for a in awizacje %}
-<tr class="{{ a[10] }}">
-    <td>{{ a[0] }}</td>
-    <td>{{ a[1] }}</td>
-    <td>{{ a[2] }}</td>
-    <td>{{ a[3] }}</td>
-    <td>{{ a[6] }}</td>
-    <td>{{ a[10] }}</td>
-    <td>
-        <form action="/admin/update_status/{{ a[0] }}" method="post">
-            <select name="status">
-                <option>oczekująca</option>
-                <option>zaakceptowana</option>
-                <option>odrzucona</option>
-            </select>
-            <button>OK</button>
-        </form>
+    <div class="day-title">
+        {{ d.strftime('%d.%m') }}
+    </div>
 
-        <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
-    </td>
-</tr>
+    {% for h in godziny %}
+        {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+
+        {% if slot in zajete %}
+            <div class="slot {{ zajete[slot]['status'] }}">
+                {{ h }}<br>
+                {{ zajete[slot]['firma'] }}
+            </div>
+        {% else %}
+            <div class="slot" style="background:#f1f5f9;">
+                {{ h }}
+            </div>
+        {% endif %}
+    {% endfor %}
+
+</div>
 {% endfor %}
-</table>
+
+</div>
 
 </body>
 </html>
