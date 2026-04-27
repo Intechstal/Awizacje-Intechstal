@@ -3,33 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <title>Panel logistyczny</title>
-
 <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<!-- HEADER -->
+<!-- TOPBAR -->
 <div class="topbar">
 
     <div class="topbar-left">
         <img src="/static/logo.png" class="logo">
-        <span>Panel logistyczny</span>
     </div>
 
-    <div style="display:flex; gap:10px;">
-        <button class="dark-btn" onclick="toggleDark()">🌙 / ☀️</button>
-        <a href="/logout" style="color:white; text-decoration:none;">Wyloguj</a>
-        <a href="/admin/logi" style="color:white; text-decoration:none;">Logi</a>
-        <a href="/admin/historia" style="color:white; text-decoration:none;">Historia</a>
+    <div class="topbar-center">
+        Awizacja transportu
+    </div>
+
+    <div class="topbar-right">
+        <button class="dark-btn" onclick="toggleDark()">🌙</button>
+        <a href="/admin/logi">Logi</a>
+        <a href="/admin/historia">Historia</a>
+        <a href="/logout">Wyloguj</a>
     </div>
 
 </div>
 
-<!-- TABLE -->
 <h2>📦 Awizacje</h2>
 
-<div style="overflow-x:auto;">
 <table>
 
 <tr>
@@ -55,8 +55,7 @@
         <span class="{{ a[10] }}">{{ a[10] }}</span>
     </td>
 
-    <td style="display:flex; gap:8px; justify-content:center;">
-
+    <td>
         <form action="/admin/update_status/{{ a[0] }}" method="post">
             <select name="status">
                 <option value="oczekująca">Oczekująca</option>
@@ -67,16 +66,13 @@
         </form>
 
         <a href="/admin/edit/{{ a[0] }}">Edytuj</a>
-
     </td>
 
 </tr>
 {% endfor %}
 
 </table>
-</div>
 
-<!-- CALENDAR -->
 <h2>📅 Kalendarz</h2>
 
 <div class="calendar">
@@ -97,7 +93,7 @@
                 {{ zajete[slot]['firma'] }}
             </div>
         {% else %}
-            <div class="slot" style="background:#f1f5f9;">
+            <div class="slot">
                 {{ h }}
             </div>
         {% endif %}
@@ -111,11 +107,11 @@
 <script>
 function toggleDark() {
     document.body.classList.toggle("dark");
-    localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+    localStorage.setItem("dark", document.body.classList.contains("dark"));
 }
 
-window.onload = function () {
-    if (localStorage.getItem("darkMode") === "true") {
+window.onload = () => {
+    if (localStorage.getItem("dark") === "true") {
         document.body.classList.add("dark");
     }
 };
