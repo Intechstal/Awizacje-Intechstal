@@ -1,86 +1,120 @@
+:root {
+    --navy: #0f172a;
+    --navy-2: #1e293b;
+    --gray: #f1f5f9;
+    --gray-2: #e2e8f0;
+    --white: #ffffff;
+    --black: #0b0f19;
+}
+
+/* GLOBAL */
 body {
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    background: #f4f6f9;
+    font-family: system-ui;
+    background: var(--gray);
     margin: 0;
-}
-
-/* kontener strony */
-.container-box {
-    max-width: 900px;
-    margin: 40px auto;
     padding: 20px;
+    color: var(--black);
 }
 
-/* karta formularza */
-.card {
-    background: white;
-    border-radius: 16px;
-    padding: 25px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+/* KARTY */
+.box, table, .day {
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 
-/* inputy */
-input, textarea, select {
+/* TYTUŁY */
+h1, h2 {
+    color: var(--navy);
+}
+
+/* INPUTY */
+input, select, textarea {
     width: 100%;
-    padding: 12px;
+    padding: 10px;
     margin: 6px 0 14px;
-    border-radius: 10px;
-    border: 1px solid #ddd;
+    border-radius: 8px;
+    border: 1px solid var(--gray-2);
+    background: white;
+}
+
+input:focus, select:focus, textarea:focus {
     outline: none;
-    transition: 0.2s;
+    border-color: var(--navy);
 }
 
-input:focus, textarea:focus {
-    border-color: #4a90e2;
-    box-shadow: 0 0 0 3px rgba(74,144,226,0.15);
-}
-
-/* przycisk */
+/* PRZYCISK */
 button {
-    background: #28a745;
+    background: var(--navy);
     color: white;
-    padding: 12px;
     border: none;
-    border-radius: 10px;
-    cursor: pointer;
+    padding: 12px;
     width: 100%;
-    font-weight: 600;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 button:hover {
-    background: #218838;
+    background: var(--navy-2);
 }
 
-/* alert */
+/* LINKI */
+a {
+    color: var(--navy);
+    text-decoration: none;
+}
+
+/* ERROR */
 .error {
-    background: #ffe0e0;
-    color: #a10000;
+    background: #fee2e2;
+    color: #7f1d1d;
     padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
 }
 
-/* admin tabela */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-}
+/* STATUSY */
+.oczekująca { background: #fef9c3; }
+.zaakceptowana { background: #dcfce7; }
+.odrzucona { background: #fee2e2; }
 
-th {
-    background: #343a40;
+/* HEADER ADMIN */
+.header {
+    background: var(--navy);
     color: white;
-    padding: 12px;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
 }
 
-td {
+.header a {
+    color: white;
+    margin-right: 10px;
+}
+
+/* CALENDAR */
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+
+.day {
     padding: 10px;
-    border-bottom: 1px solid #eee;
 }
 
-tr:hover {
-    background: #f1f5f9;
+.day-title {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--navy);
+}
+
+.slot {
+    font-size: 11px;
+    padding: 5px;
+    margin: 3px 0;
+    border-radius: 6px;
+    text-align: center;
 }
