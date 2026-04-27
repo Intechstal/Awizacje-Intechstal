@@ -1,9 +1,17 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, send_from_directory
 import sqlite3
+import os
 from datetime import datetime, timedelta
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
+
+# =======================
+# UPLOAD FOLDER
+# =======================
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ------------------ DB ------------------
 
@@ -23,6 +31,7 @@ def init_db():
             typ_ladunku TEXT,
             waga_ladunku TEXT,
             komentarz TEXT,
+            zdjecie TEXT,
             status TEXT DEFAULT 'oczekująca'
         )
     ''')
@@ -85,23 +94,6 @@ def log_action(user, akcja):
     conn.commit()
     conn.close()
 
-# ------------------ HELPERS ------------------
-
-def is_logged():
-    return session.get("logged_in")
-
-
-def render_form_error(dane, error):
-    dni, godziny, zajete = get_days_and_slots()
-    return render_template(
-        'form.html',
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete,
-        dane=dane,
-        error=error
-    )
-
 # ------------------ SLOTY ------------------
 
 def get_days_and_slots():
@@ -126,17 +118,98 @@ def get_days_and_slots():
     conn = sqlite3.connect('awizacje.db')
     c = conn.cursor()
     c.execute("SELECT data_godzina, firma, status FROM awizacje WHERE status!='odrzucona'")
-
     for d, f, s in c.fetchall():
         dt = datetime.strptime(d, '%Y-%m-%dT%H:%M')
         for i in range(-3, 4):
-            zajete[(dt + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M')] = {
+            zajete[(dt + timedelta(minutes=15*i)).strftime('%Y-%m-%dT%H:%M')] = {
                 "firma": f,
                 "status": s
             }
-
     conn.close()
+
     return dni, godziny, zajete
+
+# ------------------ FORM ------------------
+
+@app.route('/')
+def index():
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete, dane={}, error=None)
+
+@app.route('/zapisz', methods=['POST'])
+def zapisz():
+    dane = request.form.to_dict()
+
+    dt = datetime.strptime(dane['data_godzina'], "%Y-%m-%dT%H:%M")
+
+    if dt < datetime.now():
+        dni, godziny, zajete = get_days_and_slots()
+        return render_template('form.html', dni=dni, godziny=godziny, zajete=zajete,
+                               dane=dane, error="Nie można w przeszłość")
+
+    # ------------------ UPLOAD JPG ------------------
+    file = request.files.get("zdjecie")
+    filename = None
+
+    if file and file.filename != "":
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(UPLOAD_FOLDER, filename))
+
+    # ------------------ INSERT ------------------
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+
+    c.execute('''
+        INSERT INTO awizacje (
+            firma, rejestracja, kierowca, email, telefon,
+            data_godzina, typ_ladunku, waga_ladunku, komentarz, zdjecie
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        dane['firma'], dane['rejestracja'], dane['kierowca'],
+        dane['email'], dane['telefon'], dane['data_godzina'],
+        dane['typ_ladunku'], dane['waga_ladunku'],
+        dane.get('komentarz', ''),
+        filename
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return render_template('success.html')
+
+# ------------------ ADMIN ------------------
+
+@app.route('/admin')
+def admin():
+    if not session.get("logged_in"):
+        return redirect('/login')
+
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje WHERE status!='odrzucona'")
+    dane = c.fetchall()
+    conn.close()
+
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template("admin.html", awizacje=dane, dni=dni, godziny=godziny, zajete=zajete)
+
+# ------------------ STATUS ------------------
+
+@app.route('/admin/update_status/<int:id>', methods=['POST'])
+def update_status(id):
+    if not session.get("logged_in"):
+        return redirect('/login')
+
+    status = request.form['status']
+
+    conn = sqlite3.connect('awizacje.db')
+    c = conn.cursor()
+    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
+    conn.commit()
+    conn.close()
+
+    return redirect('/admin')
 
 # ------------------ LOGIN ------------------
 
@@ -157,7 +230,6 @@ def login():
         if user:
             session['logged_in'] = True
             session['user'] = login
-            log_action(login, "Zalogował się")
             return redirect('/admin')
         else:
             error = "Błędne dane"
@@ -166,183 +238,15 @@ def login():
 
 @app.route('/logout')
 def logout():
-    if session.get('user'):
-        log_action(session['user'], "Wylogował się")
     session.clear()
     return redirect('/login')
 
-# ------------------ FORMULARZ ------------------
+# ------------------ 🔥 TO JEST NAJWAŻNIEJSZE ------------------
+# 📷 SERWOWANIE ZDJĘĆ (TO MUSI BYĆ TU NA DOLE)
 
-@app.route('/')
-def index():
-    dni, godziny, zajete = get_days_and_slots()
-    return render_template(
-        'form.html',
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete,
-        dane={},
-        error=None
-    )
-
-@app.route('/zapisz', methods=['POST'])
-def zapisz():
-    dane = request.form.to_dict()
-
-    dt = datetime.strptime(dane['data_godzina'], "%Y-%m-%dT%H:%M")
-
-    if dt < datetime.now():
-        return render_form_error(dane, "Nie można w przeszłość")
-
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute("SELECT data_godzina FROM awizacje WHERE status!='odrzucona'")
-    rows = c.fetchall()
-    conn.close()
-
-    zajete_set = set()
-    for (d,) in rows:
-        base = datetime.strptime(d, '%Y-%m-%dT%H:%M')
-        for i in range(-3, 4):
-            zajete_set.add((base + timedelta(minutes=15 * i)).strftime('%Y-%m-%dT%H:%M'))
-
-    if dane['data_godzina'] in zajete_set:
-        return render_form_error(dane, "Termin zajęty")
-
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO awizacje (firma, rejestracja, kierowca, email, telefon, data_godzina,
-        typ_ladunku, waga_ladunku, komentarz)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        dane['firma'], dane['rejestracja'], dane['kierowca'],
-        dane['email'], dane['telefon'], dane['data_godzina'],
-        dane['typ_ladunku'], dane['waga_ladunku'], dane.get('komentarz', '')
-    ))
-
-    conn.commit()
-    conn.close()
-
-    return render_template('success.html')
-
-# ------------------ ADMIN ------------------
-
-@app.route('/admin')
-def admin():
-    if not is_logged():
-        return redirect('/login')
-
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM awizacje WHERE status!='odrzucona'")
-    dane = c.fetchall()
-    conn.close()
-
-    dni, godziny, zajete = get_days_and_slots()
-
-    return render_template(
-        "admin.html",
-        awizacje=dane,
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete
-    )
-
-@app.route('/admin/update_status/<int:id>', methods=['POST'])
-def update_status(id):
-    if not is_logged():
-        return redirect('/login')
-
-    status = request.form['status']
-
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
-    conn.commit()
-    conn.close()
-
-    log_action(session['user'], f"Zmiana statusu ID {id} → {status}")
-
-    return redirect('/admin')
-
-@app.route('/admin/edit/<int:id>', methods=['GET', 'POST'])
-def edit(id):
-    if not is_logged():
-        return redirect('/login')
-
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-
-    c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
-    old = c.fetchone()
-
-    if request.method == 'POST':
-        new = request.form.to_dict()
-
-        fields = ["firma","rejestracja","kierowca","email","telefon","data_godzina",
-                  "typ_ladunku","waga_ladunku","komentarz"]
-
-        changes = []
-
-        for i, field in enumerate(fields, start=1):
-            if str(old[i]) != new[field]:
-                changes.append(f"{field}: {old[i]} → {new[field]}")
-
-        if changes:
-            log_action(session['user'], f"Edycja ID {id}: " + " | ".join(changes))
-
-        c.execute('''
-            UPDATE awizacje SET firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
-            data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
-            WHERE id=?
-        ''', (
-            new['firma'], new['rejestracja'], new['kierowca'],
-            new['email'], new['telefon'], new['data_godzina'],
-            new['typ_ladunku'], new['waga_ladunku'], new['komentarz'], id
-        ))
-
-        conn.commit()
-        conn.close()
-        return redirect('/admin')
-
-    conn.close()
-
-    dni, godziny, zajete = get_days_and_slots()
-
-    return render_template(
-        "edit.html",
-        awizacja=old,
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete
-    )
-
-@app.route('/admin/historia')
-def historia():
-    if not is_logged():
-        return redirect('/login')
-
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
-    dane = c.fetchall()
-    conn.close()
-
-    return render_template("historia.html", awizacje=dane)
-
-@app.route('/admin/logi')
-def logi():
-    if not is_logged():
-        return redirect('/login')
-
-    conn = sqlite3.connect('awizacje.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM logi ORDER BY id DESC")
-    dane = c.fetchall()
-    conn.close()
-
-    return render_template("logi.html", logi=dane)
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 # ------------------ RUN ------------------
 
