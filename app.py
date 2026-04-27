@@ -49,7 +49,7 @@ def create_users():
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
 
-    users = [("admin1","1234"),("admin2","1234"),("admin3","1234"),("admin4","1234")]
+    users = [("SebastianKsawery","963852"),("BartoszLobodzinski","1234"),("JaroslawUmiecki","1234"),("KrzysztofJagusz","1234")]
 
     for u in users:
         try:
