@@ -16,23 +16,30 @@ body {
     color: #0b0f19;
 }
 
-/* ================= TOPBAR ================= */
+/* ================= TOPBAR (CENTER TITLE FIX) ================= */
 .topbar {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     background: var(--navy);
     color: white;
     padding: 10px 20px;
 }
 
-.logo {
-    height: 70px;
+.topbar-left {
+    display: flex;
+    align-items: center;
 }
 
 .topbar-center {
+    justify-self: center;
     font-size: 22px;
     font-weight: 700;
+    text-align: center;
+}
+
+.topbar-right {
+    justify-self: end;
 }
 
 .topbar-right a {
@@ -41,7 +48,12 @@ body {
     text-decoration: none;
 }
 
-/* ================= FORM (IZOLACJA!) ================= */
+/* logo */
+.logo {
+    height: 70px;
+}
+
+/* ================= FORM ================= */
 .form-box {
     max-width: 650px;
     margin: 30px auto;
@@ -49,10 +61,6 @@ body {
     padding: 25px;
     border-radius: 14px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-}
-
-.form-box h1 {
-    margin-top: 0;
 }
 
 .form-box input,
@@ -85,7 +93,7 @@ body {
     margin-bottom: 10px;
 }
 
-/* ================= ADMIN TABLE ================= */
+/* ================= TABLE ================= */
 .table {
     width: 100%;
     border-collapse: collapse;
