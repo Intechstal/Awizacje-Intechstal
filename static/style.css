@@ -1,155 +1,261 @@
 :root {
-    --navy: #0f172a;
-    --navy2: #1e293b;
-    --gray: #f1f5f9;
-    --gray2: #e2e8f0;
-    --white: #ffffff;
+--navy: #0f172a;
+--navy-2: #1e293b;
+--gray: #f1f5f9;
+--gray-2: #e2e8f0;
+--white: #ffffff;
 }
 
-/* ===== GLOBAL ===== */
+/* =========================
+  GLOBAL
+========================= */
+
 body {
-    margin: 0;
-    font-family: system-ui;
-    background: var(--gray);
-    color: #0b0f19;
+font-family: system-ui;
+background: var(--gray);
+margin: 0;
+padding: 20px;
+color: #0b0f19;
 }
 
-/* ===== TOPBAR ===== */
+/* =========================
+  TOPBAR (HEADER)
+========================= */
+
 .topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--navy);
-    color: white;
-    padding: 10px 20px;
+display: grid;
+grid-template-columns: 1fr 2fr 1fr;
+align-items: center;
+background: var(--navy);
+color: white;
+padding: 14px 18px;
+border-radius: 12px;
+margin-bottom: 20px;
+}
+
+/* LEWA STRONA (LOGO) */
+.topbar-left {
+display: flex;
+align-items: center;
 }
 
 .logo {
-    height: 70px;
+    width: 600px;
+height: 200px;
+object-fit: contain;
+border-radius: 8px;
 }
 
+/* ŚRODEK (TYTUŁ) */
 .topbar-center {
-    font-size: 22px;
-    font-weight: 700;
+text-align: center;
+font-size: 26px;
+font-weight: 800;
+letter-spacing: 0.5px;
 }
 
-/* ===== LINKS ===== */
+/* PRAWA STRONA */
+.topbar-right {
+display: flex;
+justify-content: flex-end;
+gap: 12px;
+align-items: center;
+}
+
 .topbar-right a {
-    color: white;
-    margin-left: 15px;
-    text-decoration: none;
-    font-weight: 500;
+color: white;
+text-decoration: none;
+font-size: 13px;
 }
 
-/* ===== CONTAINER ===== */
-.container {
-    padding: 20px;
+/* DARK BUTTON */
+.dark-btn {
+background: var(--navy-2);
+color: white;
+border: none;
+padding: 6px 10px;
+font-size: 12px;
+border-radius: 6px;
+cursor: pointer;
+width: auto;
 }
 
-/* ===== TABLE ===== */
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
+/* =========================
+  FORM BOX
+========================= */
+
+.box {
+max-width: 650px;
+margin: auto;
+background: var(--white);
+padding: 25px;
+border-radius: 14px;
+box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
-.table th {
-    background: var(--navy);
-    color: white;
-    padding: 10px;
+/* =========================
+  INPUTS
+========================= */
+
+input, select, textarea {
+width: 100%;
+padding: 10px;
+margin: 6px 0 14px;
+border-radius: 8px;
+border: 1px solid var(--gray-2);
+font-size: 14px;
 }
 
-.table td {
-    padding: 10px;
-    border-bottom: 1px solid var(--gray2);
-    text-align: center;
+input:focus, select:focus, textarea:focus {
+border-color: var(--navy);
+outline: none;
 }
 
-/* ===== STATUS (TABELA) ===== */
-.status-oczekująca {
-    background: #fef9c3;
+/* =========================
+  BUTTON
+========================= */
+
+button {
+background: var(--navy);
+color: white;
+border: none;
+padding: 12px;
+width: 100%;
+border-radius: 10px;
+font-weight: bold;
+cursor: pointer;
 }
 
-.status-zaakceptowana {
-    background: #dcfce7;
+button:hover {
+background: var(--navy-2);
 }
 
-.status-odrzucona {
-    background: #fee2e2;
+/* =========================
+  ERROR
+========================= */
+
+.error {
+background: #fee2e2;
+color: #7f1d1d;
+padding: 10px;
+border-radius: 8px;
+margin-bottom: 10px;
 }
 
-/* ===== BUTTON ===== */
-.btn {
-    background: var(--navy);
-    color: white;
-    border: none;
-    padding: 6px 10px;
-    border-radius: 6px;
-    cursor: pointer;
+/* =========================
+  TABLE (ADMIN)
+========================= */
+
+table {
+width: 100%;
+border-collapse: collapse;
+background: white;
+border-radius: 12px;
+overflow: hidden;
+box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
-/* ===== LINK ===== */
-.link {
-    margin-left: 10px;
-    color: var(--navy);
-    font-weight: 600;
+th {
+background: var(--navy);
+color: white;
+padding: 10px;
 }
 
-/* ===== CALENDAR ===== */
+td {
+padding: 10px;
+border-bottom: 1px solid var(--gray-2);
+text-align: center;
+font-size: 13px;
+}
+
+/* =========================
+  STATUSY
+========================= */
+
+.oczekująca,
+.zaakceptowana,
+.odrzucona {
+display: inline-block;
+padding: 3px 8px;
+border-radius: 999px;
+font-size: 11px;
+font-weight: 600;
+}
+
+.oczekująca {
+background: #fef9c3;
+color: #854d0e;
+}
+
+.zaakceptowana {
+background: #dcfce7;
+color: #166534;
+}
+
+.odrzucona {
+background: #fee2e2;
+color: #991b1b;
+}
+
+/* =========================
+  CALENDAR
+========================= */
+
 .calendar {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    margin-top: 10px;
+display: grid;
+grid-template-columns: repeat(5, 1fr);
+gap: 12px;
 }
 
-.calendar th {
-    background: var(--navy);
-    color: white;
-    padding: 10px;
+.day {
+background: white;
+border-radius: 12px;
+padding: 10px;
+box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 
-.calendar td {
-    border: 1px solid var(--gray2);
-    padding: 8px;
-    text-align: center;
+.day-title {
+text-align: center;
+font-weight: bold;
+margin-bottom: 10px;
+color: var(--navy);
 }
 
-/* godziny */
-.time {
-    background: #f1f5f9;
-    font-weight: 600;
-}
-
-/* puste */
-.empty {
-    color: #94a3b8;
-}
-
-/* ===== SLOTY ===== */
 .slot {
-    padding: 6px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
+font-size: 11px;
+padding: 5px;
+margin: 3px 0;
+border-radius: 6px;
+text-align: center;
 }
 
-/* MAIN (termin) */
-.slot-main {
-    background: #0f172a;
-    color: white;
+/* =========================
+  DARK MODE
+========================= */
+
+body.dark {
+background: #0b1220;
+color: #e5e7eb;
 }
 
-/* FUTURE +1 +2 +3 = TYLKO zaakceptowany kolor */
-.slot-future {
-    background: #dcfce7;
-    color: #0f172a;
+body.dark .box,
+body.dark table,
+body.dark .day {
+background: #111827;
 }
 
-/* ===== SMALL TEXT ===== */
-.small {
-    font-size: 10px;
-    color: #334155;
+body.dark input,
+body.dark select,
+body.dark textarea {
+background: #0f172a;
+color: #e5e7eb;
+border: 1px solid #334155;
+}
+
+body.dark .topbar {
+background: #020617;
+}
+
+body.dark .dark-btn {
+background: #111827;
 }
