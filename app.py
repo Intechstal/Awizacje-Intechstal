@@ -308,8 +308,8 @@ def permissions():
     if not session.get("logged_in"):
         return redirect("/login")
 
-    return "PERMISSIONS PANEL (do implementacji)"
-
+    return render_template("permissions.html")
+    
 # ================= RUN =================
 
 aplication = app
