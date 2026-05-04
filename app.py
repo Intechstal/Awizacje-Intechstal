@@ -31,6 +31,13 @@ def init_db():
         haslo TEXT
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS permissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        login TEXT UNIQUE,
+        can_edit INTEGER DEFAULT 1,
+        can_status INTEGER DEFAULT 1
+    )''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS logi (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user TEXT,
@@ -49,19 +56,13 @@ def create_users():
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
 
-    users = [
-        ("SK", "1234"),
-        ("JU", "1234"),
-        ("BL", "1234"),
-        ("KJ", "1234"),
-        ("TR", "1234"),
-        ("MAGAZYN", "1234"),
-        ("EK", "1234"),
-    ]
+    users = ["SK","JU","BL","KJ","TR","MAGAZYN","EK"]
 
-    for u, p in users:
+    for u in users:
         try:
-            c.execute("INSERT INTO users (login, haslo) VALUES (?,?)", (u, p))
+            c.execute("INSERT INTO users (login, haslo) VALUES (?,?)", (u, "1234"))
+            c.execute("INSERT INTO permissions (login, can_edit, can_status) VALUES (?,?,?)",
+                      (u, 1, 1))
         except:
             pass
 
@@ -70,65 +71,25 @@ def create_users():
 
 create_users()
 
-# ================= LOGI =================
+# ================= LOG =================
 
 def log_action(user, akcja):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute(
-        "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
-        (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    )
+    c.execute("INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
+              (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     conn.commit()
     conn.close()
 
-# ================= SLOTY =================
+# ================= PERMISSIONS =================
 
-def get_days_and_slots():
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-    dni = []
-    d = today
-    while len(dni) < 5:
-        if d.weekday() < 5:
-            dni.append(d)
-        d += timedelta(days=1)
-
-    godziny = []
-    for start, end in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-        s = datetime.strptime(start, "%H:%M")
-        e = datetime.strptime(end, "%H:%M")
-        while s < e:
-            godziny.append(s.strftime("%H:%M"))
-            s += timedelta(minutes=15)
-
-    zajete = {}
-
+def get_perm(login):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
-    c.execute("""SELECT id,firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz 
-                 FROM awizacje WHERE status!='odrzucona'""")
-
-    for id_, f, s, dt, typ, waga, kom in c.fetchall():
-        base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
-
-        for i in range(-3, 4):
-            key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
-
-            zajete[key] = {
-                "id": id_,
-                "firma": f,
-                "status": s,
-                "typ_ladunku": typ,
-                "waga": waga,
-                "komentarz": kom,
-                "main": (i == 0),
-                "future_block": (i > 0)
-            }
-
+    c.execute("SELECT can_edit, can_status FROM permissions WHERE login=?", (login,))
+    p = c.fetchone()
     conn.close()
-    return dni, godziny, zajete
+    return p if p else (1,1)
 
 # ================= LOGIN =================
 
@@ -170,18 +131,9 @@ def index():
 def zapisz():
     dane = request.form.to_dict()
 
-    if not dane["telefon"].isdigit():
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Telefon tylko cyfry")
-
-    if "@" not in dane["email"]:
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Błędny email")
-
     slot = datetime.strptime(dane["data_godzina"], "%Y-%m-%dT%H:%M")
     if slot <= datetime.now():
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Nie można awizować dat z przeszłości")
+        return redirect("/")
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
@@ -195,7 +147,7 @@ def zapisz():
     conn.commit()
     conn.close()
 
-    log_action("FORM", f"NOWA AWIZACJA {dane['firma']}")
+    log_action("FORM", "NOWA AWIZACJA")
 
     return render_template("success.html")
 
@@ -215,12 +167,17 @@ def admin():
     dni, godziny, zajete = get_days_and_slots()
     return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete)
 
-# ================= STATUS (NAPRAWIONE) =================
+# ================= STATUS =================
 
 @app.route("/admin/update_status/<int:id>", methods=["POST"])
 def update_status(id):
     if not session.get("logged_in"):
         return redirect("/login")
+
+    can_edit, can_status = get_perm(session["user"])
+
+    if not can_status:
+        return redirect("/admin")
 
     status = request.form["status"]
 
@@ -230,16 +187,21 @@ def update_status(id):
     conn.commit()
     conn.close()
 
-    log_action(session["user"], f"STATUS ID {id} -> {status}")
+    log_action(session["user"], f"STATUS {id}")
 
     return redirect("/admin")
 
-# ================= EDYCJA =================
+# ================= EDIT =================
 
 @app.route("/admin/edit/<int:id>", methods=["GET","POST"])
 def edit(id):
     if not session.get("logged_in"):
         return redirect("/login")
+
+    can_edit, _ = get_perm(session["user"])
+
+    if not can_edit:
+        return redirect("/admin")
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
@@ -259,50 +221,46 @@ def edit(id):
         conn.commit()
         conn.close()
 
-        log_action(session["user"], f"EDYCJA ID {id}")
+        log_action(session["user"], f"EDIT {id}")
         return redirect("/admin")
 
     c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
     awizacja = c.fetchone()
     conn.close()
 
-    dni, godziny, zajete = get_days_and_slots()
-    return render_template("edit.html", awizacja=awizacja, dni=dni, godziny=godziny, zajete=zajete)
+    return render_template("edit.html", awizacja=awizacja)
 
-# ================= LOGI =================
+# ================= PANEL UPRAWNIEŃ =================
 
-@app.route("/admin/logi")
-def logi():
+@app.route("/admin/permissions", methods=["GET","POST"])
+def permissions():
     if not session.get("logged_in"):
         return redirect("/login")
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT * FROM logi ORDER BY id DESC")
-    logi = c.fetchall()
+
+    if request.method == "POST":
+        login = request.form["login"]
+        can_edit = 1 if "can_edit" in request.form else 0
+        can_status = 1 if "can_status" in request.form else 0
+
+        c.execute("""UPDATE permissions
+                     SET can_edit=?, can_status=?
+                     WHERE login=?""",
+                  (can_edit, can_status, login))
+        conn.commit()
+
+    c.execute("""SELECT u.login, p.can_edit, p.can_status
+                 FROM users u
+                 LEFT JOIN permissions p ON u.login=p.login""")
+
+    users = c.fetchall()
     conn.close()
 
-    return render_template("logi.html", logi=logi)
-
-# ================= HISTORIA =================
-
-@app.route("/admin/historia")
-def historia():
-    if not session.get("logged_in"):
-        return redirect("/login")
-
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
-    dane = c.fetchall()
-    conn.close()
-
-    return render_template("historia.html", awizacje=dane)
+    return render_template("permissions.html", users=users)
 
 # ================= RUN =================
 
-# 👇 DLA CYBER_FOLKS / PASSENGER 
-aplication = app # 
-
-# 👇 lokalne uruchamianie 
-if __name__ == "__main__": app.run()
+if __name__ == "__main__":
+    app.run()
