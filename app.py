@@ -35,7 +35,11 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         login TEXT UNIQUE,
         can_edit INTEGER DEFAULT 1,
-        can_status INTEGER DEFAULT 1
+        can_status INTEGER DEFAULT 1,
+        calendar_only INTEGER DEFAULT 0,
+        show_logi INTEGER DEFAULT 1,
+        show_historia INTEGER DEFAULT 1,
+        show_permissions INTEGER DEFAULT 1
     )''')
 
     c.execute('''CREATE TABLE IF NOT EXISTS logi (
@@ -65,7 +69,10 @@ def create_users():
             pass
 
         try:
-            c.execute("INSERT INTO permissions (login, can_edit, can_status) VALUES (?,?,?)", (u, 1, 1))
+            c.execute("""INSERT INTO permissions 
+                (login, can_edit, can_status, calendar_only, show_logi, show_historia, show_permissions)
+                VALUES (?,?,?,?,?,?,?)""",
+                (u,1,1,0,1,1,1))
         except:
             pass
 
@@ -87,19 +94,17 @@ def log_action(user, akcja):
 # ================= PERMISSIONS =================
 
 def get_perm(login):
-    try:
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
-        c.execute("SELECT can_edit, can_status FROM permissions WHERE login=?", (login,))
-        p = c.fetchone()
-        conn.close()
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("""SELECT can_edit, can_status, calendar_only,
+                 show_logi, show_historia, show_permissions
+                 FROM permissions WHERE login=?""", (login,))
+    p = c.fetchone()
+    conn.close()
 
-        if p is None:
-            return (1,1)
-
-        return (p[0], p[1])
-    except:
-        return (1,1)
+    if p:
+        return p
+    return (1,1,0,1,1,1)
 
 # ================= SLOTY =================
 
@@ -223,7 +228,17 @@ def admin():
     conn.close()
 
     dni, godziny, zajete = get_days_and_slots()
-    return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete)
+
+    perms = get_perm(session["user"])
+
+    return render_template(
+        "admin.html",
+        awizacje=awizacje,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        perms=perms
+    )
 
 # ================= STATUS =================
 
@@ -232,7 +247,7 @@ def update_status(id):
     if not session.get("logged_in"):
         return redirect("/login")
 
-    _, can_status = get_perm(session["user"])
+    _, can_status, *_ = get_perm(session["user"])
     if not can_status:
         return redirect("/admin")
 
@@ -244,8 +259,6 @@ def update_status(id):
     conn.commit()
     conn.close()
 
-    log_action(session["user"], f"STATUS {id}")
-
     return redirect("/admin")
 
 # ================= EDIT =================
@@ -255,7 +268,7 @@ def edit(id):
     if not session.get("logged_in"):
         return redirect("/login")
 
-    can_edit, _ = get_perm(session["user"])
+    can_edit, *_ = get_perm(session["user"])
     if not can_edit:
         return redirect("/admin")
 
@@ -276,8 +289,6 @@ def edit(id):
 
         conn.commit()
         conn.close()
-
-        log_action(session["user"], f"EDIT {id}")
         return redirect("/admin")
 
     c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
@@ -285,46 +296,6 @@ def edit(id):
     conn.close()
 
     return render_template("edit.html", awizacja=awizacja)
-
-# ================= PERMISSIONS LOGIN =================
-
-@app.route("/permissions_login", methods=["POST"])
-def permissions_login():
-    if request.form["haslo"] == "963852":
-        session["perm_access"] = True
-        return redirect("/admin/permissions")
-    return render_template("permissions_login.html", error="Błędne hasło")
-
-# ================= PERMISSIONS PANEL =================
-
-@app.route("/admin/permissions", methods=["GET","POST"])
-def permissions():
-    if not session.get("logged_in"):
-        return redirect("/login")
-
-    if not session.get("perm_access"):
-        return render_template("permissions_login.html")
-
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-
-    if request.method == "POST":
-        login = request.form["login"]
-        can_edit = 1 if "can_edit" in request.form else 0
-        can_status = 1 if "can_status" in request.form else 0
-
-        c.execute("UPDATE permissions SET can_edit=?, can_status=? WHERE login=?",
-                  (can_edit, can_status, login))
-        conn.commit()
-
-    c.execute("""SELECT u.login, p.can_edit, p.can_status
-                 FROM users u
-                 LEFT JOIN permissions p ON u.login=p.login""")
-
-    users = c.fetchall()
-    conn.close()
-
-    return render_template("permissions.html", users=users)
 
 # ================= LOGI =================
 
@@ -340,7 +311,6 @@ def logi():
     conn.close()
 
     return render_template("logi.html", logi=logi)
-
 
 # ================= HISTORIA =================
 
