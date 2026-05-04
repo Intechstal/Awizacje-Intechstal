@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Hasło</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="form-box">
+<h2>Dostęp do uprawnień</h2>
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="/permissions_login">
+    <input type="password" name="haslo" placeholder="Hasło">
+    <button>Zaloguj</button>
+</form>
+
+</div>
+
+</body>
+</html>
