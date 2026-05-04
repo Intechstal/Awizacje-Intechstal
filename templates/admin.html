@@ -20,16 +20,25 @@
     </div>
 
     <div class="topbar-right">
-        {% if show_logi %}<a href="/admin/logi">Logi</a>{% endif %}
-        {% if show_historia %}<a href="/admin/historia">Historia</a>{% endif %}
-        {% if show_permissions %}<a href="/admin/permissions">Permissions</a>{% endif %}
+
+        {% if show_logi %}
+        <a href="/admin/logi">Logi</a>
+        {% endif %}
+
+        {% if show_historia %}
+        <a href="/admin/historia">Historia</a>
+        {% endif %}
+
+        {% if show_permissions %}
+        <a href="/admin/permissions">Permissions</a>
+        {% endif %}
+
         <a href="/logout">Wyloguj</a>
+
     </div>
 </div>
 
-<!-- ================= AWIZACJE ================= -->
-
-{% if not calendar_only %}
+<!-- ================= AWIZACJE (NIC NIE ZMIENIONE) ================= -->
 
 <h2>Awizacje</h2>
 
@@ -81,9 +90,7 @@
 {% endfor %}
 </table>
 
-{% endif %}
-
-<!-- ================= KALENDARZ (ZAWSZE) ================= -->
+<!-- ================= KALENDARZ (NIC NIE ZMIENIONE) ================= -->
 
 <h2>Kalendarz</h2>
 
@@ -103,12 +110,8 @@
         {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
         {% set data = zajete.get(slot) %}
 
-        {% if data and data.main %}
-            <td>
-                {{ data.firma }}
-            </td>
-        {% elif data and data.future_block %}
-            <td>—</td>
+        {% if data %}
+            <td>{{ data.firma }}</td>
         {% else %}
             <td></td>
         {% endif %}
