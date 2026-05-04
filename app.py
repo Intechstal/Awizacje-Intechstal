@@ -111,7 +111,16 @@ def get_days_and_slots():
                  FROM awizacje WHERE status!='odrzucona'""")
 
     for id_, f, s, dt, typ, waga, kom in c.fetchall():
-        base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+
+        # ================= FIX 500 =================
+        if not dt:
+            continue
+
+        try:
+            base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+        except:
+            continue
+        # ===========================================
 
         for i in range(-3, 4):
             key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
@@ -169,10 +178,6 @@ def index():
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
     dane = request.form.to_dict()
-
-    if "rodo" not in request.form:
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Musisz zaakceptować RODO")
 
     if not dane["telefon"].isdigit():
         dni, godziny, zajete = get_days_and_slots()
