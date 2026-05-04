@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <title>Awizacja</title>
 
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
-
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
 </head>
 
 <body>
 
 <div class="topbar">
+
     <div class="topbar-left">
         <img src="{{ url_for('static', filename='logo.png') }}" class="logo">
     </div>
@@ -19,7 +19,10 @@
         Awizacja transportu
     </div>
 
-    <div class="topbar-right"></div>
+    <div class="topbar-right">
+        <a href="/admin" class="top-link">Admin</a>
+    </div>
+
 </div>
 
 <div class="form-box">
@@ -80,15 +83,11 @@
     {% endfor %}
 </select>
 
-<!-- 🔒 RODO -->
-<div class="rodo-box">
-    <label>
-        <input type="checkbox" required>
-        Akceptuję <a href="https://intechstal.pl/rodo/" target="_blank">RODO</a>
-    </label>
-</div>
+<button type="submit" class="submit-btn">Wyślij awizację</button>
 
-<button>Wyślij awizację</button>
+<a href="https://intechstal.pl/rodo/" target="_blank" class="rodo-btn">
+    RODO
+</a>
 
 </form>
 
