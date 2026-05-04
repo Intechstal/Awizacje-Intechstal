@@ -97,19 +97,79 @@ def log_action(user, akcja):
     conn.commit()
     conn.close()
 
-# ================= PERMISSIONS LOAD =================
+# ================= PERMISSIONS =================
 
 def get_perms(login):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
     c.execute("""
-        SELECT can_edit, can_status, calendar_only, show_logi, show_historia, show_permissions
+        SELECT can_edit, can_status, calendar_only,
+               show_logi, show_historia, show_permissions
         FROM permissions WHERE login=?
     """, (login,))
     row = c.fetchone()
     conn.close()
 
     return row if row else (1,1,0,1,1,1)
+
+# ================= SLOTY =================
+
+def get_days_and_slots():
+    today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
+
+    dni=[]
+    d=today
+    while len(dni)<5:
+        if d.weekday()<5:
+            dni.append(d)
+        d += timedelta(days=1)
+
+    godziny=[]
+    for s,e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
+        t=datetime.strptime(s,"%H:%M")
+        e=datetime.strptime(e,"%H:%M")
+        while t<e:
+            godziny.append(t.strftime("%H:%M"))
+            t += timedelta(minutes=15)
+
+    return dni,godziny,{}
+
+# ================= FORM (NAPRAWIONE 404) =================
+
+@app.route("/")
+def index():
+    dni, godziny, zajete = get_days_and_slots()
+
+    return render_template(
+        "form.html",
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        dane={},
+        error=None
+    )
+
+# ================= ZAPIS =================
+
+@app.route("/zapisz", methods=["POST"])
+def zapisz():
+    dane = request.form.to_dict()
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    c.execute("""INSERT INTO awizacje
+        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
+        VALUES (?,?,?,?,?,?,?,?,?)""",
+        (dane["firma"],dane["rejestracja"],dane["kierowca"],
+         dane["email"],dane["telefon"],dane["data_godzina"],
+         dane["typ_ladunku"],dane["waga_ladunku"],dane.get("komentarz",""))
+    )
+
+    conn.commit()
+    conn.close()
+
+    return render_template("success.html")
 
 # ================= LOGIN =================
 
@@ -164,7 +224,7 @@ def admin():
         perms=perms
     )
 
-# ================= UPDATE STATUS =================
+# ================= STATUS =================
 
 @app.route("/admin/update_status/<int:id>", methods=["POST"])
 def update_status(id):
@@ -208,7 +268,7 @@ def edit(id):
 
     return render_template("edit.html", awizacja=awizacja)
 
-# ================= LOGS =================
+# ================= LOGI =================
 
 @app.route("/admin/logi")
 def logi():
@@ -223,7 +283,7 @@ def logi():
 
     return render_template("logi.html", logi=logi)
 
-# ================= HISTORY =================
+# ================= HISTORIA =================
 
 @app.route("/admin/historia")
 def historia():
@@ -276,25 +336,6 @@ def permissions():
     conn.close()
 
     return render_template("permissions.html", users=users)
-
-# ================= SLOTY =================
-
-def get_days_and_slots():
-    today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
-    dni=[]; d=today
-    while len(dni)<5:
-        if d.weekday()<5: dni.append(d)
-        d+=timedelta(days=1)
-
-    godziny=[]
-    for s,e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-        t=datetime.strptime(s,"%H:%M")
-        e=datetime.strptime(e,"%H:%M")
-        while t<e:
-            godziny.append(t.strftime("%H:%M"))
-            t+=timedelta(minutes=15)
-
-    return dni,godziny,{}
 
 # ================= RUN =================
 
