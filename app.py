@@ -326,6 +326,37 @@ def permissions():
 
     return render_template("permissions.html", users=users)
 
+# ================= LOGI =================
+
+@app.route("/admin/logi")
+def logi():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM logi ORDER BY id DESC")
+    logi = c.fetchall()
+    conn.close()
+
+    return render_template("logi.html", logi=logi)
+
+
+# ================= HISTORIA =================
+
+@app.route("/admin/historia")
+def historia():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
+    dane = c.fetchall()
+    conn.close()
+
+    return render_template("historia.html", awizacje=dane)
+
 # ================= RUN =================
 
 aplication = app
