@@ -156,3 +156,32 @@ body {
     font-size: 12px;
     font-weight: 600;
 }
+
+/* RODO */
+
+.rodo-box {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #334155;
+}
+
+.rodo-box label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rodo-box input {
+    transform: scale(1.2);
+    cursor: pointer;
+}
+
+.rodo-box a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.rodo-box a:hover {
+    text-decoration: underline;
+}
