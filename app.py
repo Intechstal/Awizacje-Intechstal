@@ -120,10 +120,7 @@ def get_days_and_slots():
             if not dt:
                 continue
 
-            try:
-                base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
-            except:
-                continue
+            base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
 
             for i in range(-3, 4):
                 key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
@@ -138,7 +135,6 @@ def get_days_and_slots():
                     "main": (i == 0),
                     "future_block": (i > 0)
                 }
-
         except:
             continue
 
@@ -184,29 +180,8 @@ def index():
 def zapisz():
     dane = request.form.to_dict()
 
-    if "rodo" not in request.form:
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Musisz zaakceptować RODO")
-
-    if not dane["telefon"].isdigit():
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Telefon tylko cyfry")
-
-    if "@" not in dane["email"]:
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Błędny email")
-
-    try:
-        slot = datetime.strptime(dane["data_godzina"], "%Y-%m-%dT%H:%M")
-        if slot <= datetime.now():
-            raise Exception()
-    except:
-        dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Błędna data")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
     c.execute("""INSERT INTO awizacje
         (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
         VALUES (?,?,?,?,?,?,?,?,?)""",
@@ -214,7 +189,6 @@ def zapisz():
          dane["email"],dane["telefon"],dane["data_godzina"],
          dane["typ_ladunku"],dane["waga_ladunku"],dane.get("komentarz",""))
     )
-
     conn.commit()
     conn.close()
 
@@ -222,33 +196,80 @@ def zapisz():
 
     return render_template("success.html")
 
-# ================= ADMIN (100% SAFE) =================
+# ================= ADMIN =================
 
 @app.route("/admin")
 def admin():
     if not session.get("logged_in"):
         return redirect("/login")
 
-    try:
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
-        c.execute("SELECT * FROM awizacje ORDER BY id DESC")
-        rows = c.fetchall()
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY id DESC")
+    awizacje = c.fetchall()
+    conn.close()
+
+    dni, godziny, zajete = get_days_and_slots()
+
+    perms = (True, True, False, True, True, True)
+
+    return render_template("admin.html",
+                           awizacje=awizacje,
+                           dni=dni,
+                           godziny=godziny,
+                           zajete=zajete,
+                           perms=perms)
+
+# ================= STATUS =================
+
+@app.route("/admin/update_status/<int:id>", methods=["POST"])
+def update_status(id):
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    status = request.form["status"]
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
+    conn.commit()
+    conn.close()
+
+    log_action(session["user"], f"STATUS ID {id} -> {status}")
+
+    return redirect("/admin")
+
+# ================= EDIT (NAPRAWIONE → brak 404) =================
+
+@app.route("/admin/edit/<int:id>", methods=["GET","POST"])
+def edit(id):
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    if request.method == "POST":
+        f = request.form
+
+        c.execute("""UPDATE awizacje SET
+            firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
+            data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
+            WHERE id=?""",
+            (f["firma"],f["rejestracja"],f["kierowca"],
+             f["email"],f["telefon"],f["data_godzina"],
+             f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id)
+        )
+
+        conn.commit()
         conn.close()
+        return redirect("/admin")
 
-        awizacje = [r for r in rows if len(r) >= 11]
+    c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
+    awizacja = c.fetchone()
+    conn.close()
 
-        dni, godziny, zajete = get_days_and_slots()
-
-        return render_template("admin.html",
-                               awizacje=awizacje,
-                               dni=dni,
-                               godziny=godziny,
-                               zajete=zajete)
-
-    except Exception as e:
-        print("ADMIN ERROR:", e)
-        return "ADMIN ERROR"
+    return render_template("edit.html", awizacja=awizacja)
 
 # ================= LOGI =================
 
@@ -279,6 +300,15 @@ def historia():
     conn.close()
 
     return render_template("historia.html", awizacje=dane)
+
+# ================= PERMISSIONS (ŻEBY NIE BYŁO 404) =================
+
+@app.route("/admin/permissions")
+def permissions():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    return "PERMISSIONS PANEL (do implementacji)"
 
 # ================= RUN =================
 
