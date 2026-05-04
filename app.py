@@ -92,7 +92,7 @@ def log_action(user, akcja):
     conn.commit()
     conn.close()
 
-# ================= PERM =================
+# ================= PERMISSIONS =================
 
 def get_perm(login):
     conn = sqlite3.connect("awizacje.db")
@@ -104,6 +104,29 @@ def get_perm(login):
     conn.close()
 
     return p if p else (1,1,0,1,1,1)
+
+# ================= SLOTY =================
+
+def get_days_and_slots():
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    dni = []
+    d = today
+    while len(dni) < 5:
+        if d.weekday() < 5:
+            dni.append(d)
+        d += timedelta(days=1)
+
+    godziny = []
+    for start, end in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
+        s = datetime.strptime(start, "%H:%M")
+        e = datetime.strptime(end, "%H:%M")
+        while s < e:
+            godziny.append(s.strftime("%H:%M"))
+            s += timedelta(minutes=15)
+
+    zajete = {}
+    return dni, godziny, zajete
 
 # ================= LOGIN =================
 
@@ -132,6 +155,13 @@ def logout():
     session.clear()
     return redirect("/login")
 
+# ================= FORM =================
+
+@app.route("/")
+def index():
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane={}, error=None)
+
 # ================= ADMIN =================
 
 @app.route("/admin")
@@ -148,7 +178,44 @@ def admin():
     dni, godziny, zajete = get_days_and_slots()
     perms = get_perm(session["user"])
 
-    return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete, perms=perms)
+    return render_template(
+        "admin.html",
+        awizacje=awizacje,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        perms=perms
+    )
+
+# ================= LOGI =================
+
+@app.route("/admin/logi")
+def logi():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM logi ORDER BY id DESC")
+    logi = c.fetchall()
+    conn.close()
+
+    return render_template("logi.html", logi=logi)
+
+# ================= HISTORIA =================
+
+@app.route("/admin/historia")
+def historia():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
+    dane = c.fetchall()
+    conn.close()
+
+    return render_template("historia.html", awizacje=dane)
 
 # ================= PERMISSIONS LOGIN =================
 
@@ -178,8 +245,12 @@ def permissions():
         login = request.form["login"]
 
         c.execute("""UPDATE permissions SET
-            can_edit=?, can_status=?, calendar_only=?,
-            show_logi=?, show_historia=?, show_permissions=?
+            can_edit=?,
+            can_status=?,
+            calendar_only=?,
+            show_logi=?,
+            show_historia=?,
+            show_permissions=?
             WHERE login=?""",
             (
                 "can_edit" in request.form,
@@ -201,29 +272,6 @@ def permissions():
     conn.close()
 
     return render_template("permissions.html", users=users)
-
-# ================= SLOTY =================
-
-def get_days_and_slots():
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-    dni = []
-    d = today
-    while len(dni) < 5:
-        if d.weekday() < 5:
-            dni.append(d)
-        d += timedelta(days=1)
-
-    godziny = []
-    for start, end in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-        s = datetime.strptime(start, "%H:%M")
-        e = datetime.strptime(end, "%H:%M")
-        while s < e:
-            godziny.append(s.strftime("%H:%M"))
-            s += timedelta(minutes=15)
-
-    zajete = {}
-    return dni, godziny, zajete
 
 # ================= RUN =================
 
