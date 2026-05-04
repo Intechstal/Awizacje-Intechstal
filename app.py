@@ -286,12 +286,24 @@ def edit(id):
 
     return render_template("edit.html", awizacja=awizacja)
 
+# ================= PERMISSIONS LOGIN =================
+
+@app.route("/permissions_login", methods=["POST"])
+def permissions_login():
+    if request.form["haslo"] == "963852":
+        session["perm_access"] = True
+        return redirect("/admin/permissions")
+    return render_template("permissions_login.html", error="Błędne hasło")
+
 # ================= PERMISSIONS PANEL =================
 
 @app.route("/admin/permissions", methods=["GET","POST"])
 def permissions():
     if not session.get("logged_in"):
         return redirect("/login")
+
+    if not session.get("perm_access"):
+        return render_template("permissions_login.html")
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
@@ -301,9 +313,7 @@ def permissions():
         can_edit = 1 if "can_edit" in request.form else 0
         can_status = 1 if "can_status" in request.form else 0
 
-        c.execute("""UPDATE permissions
-                     SET can_edit=?, can_status=?
-                     WHERE login=?""",
+        c.execute("UPDATE permissions SET can_edit=?, can_status=? WHERE login=?",
                   (can_edit, can_status, login))
         conn.commit()
 
