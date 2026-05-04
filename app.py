@@ -110,33 +110,38 @@ def get_days_and_slots():
     c.execute("""SELECT id,firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz 
                  FROM awizacje WHERE status!='odrzucona'""")
 
-    for id_, f, s, dt, typ, waga, kom in c.fetchall():
+    rows = c.fetchall()
+    conn.close()
 
-        # ================= FIX 500 =================
-        if not dt:
-            continue
-
+    for r in rows:
         try:
-            base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+            id_, f, s, dt, typ, waga, kom = r
+
+            if not dt:
+                continue
+
+            try:
+                base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+            except:
+                continue
+
+            for i in range(-3, 4):
+                key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
+
+                zajete[key] = {
+                    "id": id_,
+                    "firma": f,
+                    "status": s,
+                    "typ_ladunku": typ,
+                    "waga": waga,
+                    "komentarz": kom,
+                    "main": (i == 0),
+                    "future_block": (i > 0)
+                }
+
         except:
             continue
-        # ===========================================
 
-        for i in range(-3, 4):
-            key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
-
-            zajete[key] = {
-                "id": id_,
-                "firma": f,
-                "status": s,
-                "typ_ladunku": typ,
-                "waga": waga,
-                "komentarz": kom,
-                "main": (i == 0),
-                "future_block": (i > 0)
-            }
-
-    conn.close()
     return dni, godziny, zajete
 
 # ================= LOGIN =================
@@ -179,6 +184,10 @@ def index():
 def zapisz():
     dane = request.form.to_dict()
 
+    if "rodo" not in request.form:
+        dni, godziny, zajete = get_days_and_slots()
+        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Musisz zaakceptować RODO")
+
     if not dane["telefon"].isdigit():
         dni, godziny, zajete = get_days_and_slots()
         return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Telefon tylko cyfry")
@@ -187,11 +196,13 @@ def zapisz():
         dni, godziny, zajete = get_days_and_slots()
         return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Błędny email")
 
-    slot = datetime.strptime(dane["data_godzina"], "%Y-%m-%dT%H:%M")
-
-    if slot <= datetime.now():
+    try:
+        slot = datetime.strptime(dane["data_godzina"], "%Y-%m-%dT%H:%M")
+        if slot <= datetime.now():
+            raise Exception()
+    except:
         dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Nie można awizować dat z przeszłości")
+        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Błędna data")
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
@@ -211,21 +222,33 @@ def zapisz():
 
     return render_template("success.html")
 
-# ================= ADMIN =================
+# ================= ADMIN (100% SAFE) =================
 
 @app.route("/admin")
 def admin():
     if not session.get("logged_in"):
         return redirect("/login")
 
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute("SELECT * FROM awizacje ORDER BY id DESC")
-    awizacje = c.fetchall()
-    conn.close()
+    try:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM awizacje ORDER BY id DESC")
+        rows = c.fetchall()
+        conn.close()
 
-    dni, godziny, zajete = get_days_and_slots()
-    return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete)
+        awizacje = [r for r in rows if len(r) >= 11]
+
+        dni, godziny, zajete = get_days_and_slots()
+
+        return render_template("admin.html",
+                               awizacje=awizacje,
+                               dni=dni,
+                               godziny=godziny,
+                               zajete=zajete)
+
+    except Exception as e:
+        print("ADMIN ERROR:", e)
+        return "ADMIN ERROR"
 
 # ================= LOGI =================
 
