@@ -43,6 +43,33 @@ def init_db():
 
 init_db()
 
+# ================= USERS =================
+
+def create_users():
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    users = [
+        ("SK", "1234"),
+        ("JU", "1234"),
+        ("BL", "1234"),
+        ("KJ", "1234"),
+        ("TR", "1234"),
+        ("MAGAZYN", "1234"),
+        ("EK", "1234"),
+    ]
+
+    for u, p in users:
+        try:
+            c.execute("INSERT INTO users (login, haslo) VALUES (?,?)", (u, p))
+        except:
+            pass
+
+    conn.commit()
+    conn.close()
+
+create_users()
+
 # ================= LOGI =================
 
 def log_action(user, akcja):
@@ -119,17 +146,15 @@ def zapisz():
 
     dane = request.form.to_dict()
 
-    # ================= RODO =================
+    # RODO
     if "rodo" not in request.form:
         dni, godziny, zajete = get_days_and_slots()
-        return render_template(
-            "form.html",
-            dni=dni,
-            godziny=godziny,
-            zajete=zajete,
-            dane=dane,
-            error="Musisz zaakceptować RODO"
-        )
+        return render_template("form.html",
+                               dni=dni,
+                               godziny=godziny,
+                               zajete=zajete,
+                               dane=dane,
+                               error="Musisz zaakceptować RODO")
 
     if not dane["telefon"].isdigit():
         dni, godziny, zajete = get_days_and_slots()
