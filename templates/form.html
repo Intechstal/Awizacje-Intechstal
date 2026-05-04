@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <title>Awizacja</title>
-<link rel="stylesheet" href="/static/style.css">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
+
 </head>
 
 <body>
 
 <div class="topbar">
     <div class="topbar-left">
-        <img src="/static/logo.png" class="logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" class="logo">
     </div>
 
     <div class="topbar-center">
         Awizacja transportu
     </div>
 
-    <div class="topbar-right">
-        <a href="/login">Admin</a>
-    </div>
+    <div class="topbar-right"></div>
 </div>
 
 <div class="form-box">
@@ -49,9 +49,12 @@
 
 <label>Typ ładunku</label>
 <select name="typ_ladunku" required>
-    <option>Odbiór złomu</option>
-    <option>Odbiór zamówienia</option>
-    <option>Dostawa materiału</option>
+    {% set opcje = ["Odbiór złomu","Odbiór zamówienia","Dostawa materiału"] %}
+    {% for opcja in opcje %}
+        <option value="{{ opcja }}" {% if dane.typ_ladunku == opcja %}selected{% endif %}>
+            {{ opcja }}
+        </option>
+    {% endfor %}
 </select>
 
 <label>Waga</label>
@@ -67,7 +70,8 @@
         {% for h in godziny %}
             {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
             {% if slot not in zajete %}
-                <option value="{{ slot }}">
+                <option value="{{ slot }}"
+                    {% if dane.data_godzina == slot %}selected{% endif %}>
                     {{ d.strftime('%d.%m') }} {{ h }}
                 </option>
             {% endif %}
@@ -76,7 +80,15 @@
     {% endfor %}
 </select>
 
-<button type="submit">Wyślij awizację</button>
+<!-- 🔒 RODO -->
+<div class="rodo-box">
+    <label>
+        <input type="checkbox" required>
+        Akceptuję <a href="https://intechstal.pl/rodo/" target="_blank">RODO</a>
+    </label>
+</div>
+
+<button>Wyślij awizację</button>
 
 </form>
 
