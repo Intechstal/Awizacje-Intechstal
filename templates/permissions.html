@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Uprawnienia</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="topbar">
+    <div class="topbar-center">UPRAWNIENIA</div>
+</div>
+
+<div class="form-box">
+
+<table class="table">
+<tr>
+    <th>User</th>
+    <th>Edycja</th>
+    <th>Status</th>
+    <th></th>
+</tr>
+
+{% for u in users %}
+<tr>
+<form method="post">
+    <td>{{ u[0] }}</td>
+
+    <td><input type="checkbox" name="can_edit" {% if u[1] %}checked{% endif %}></td>
+    <td><input type="checkbox" name="can_status" {% if u[2] %}checked{% endif %}></td>
+
+    <td>
+        <input type="hidden" name="login" value="{{ u[0] }}">
+        <button>Zapisz</button>
+    </td>
+</form>
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>
