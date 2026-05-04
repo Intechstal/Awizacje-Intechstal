@@ -2,22 +2,19 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Hasło</title>
+<title>Permissions login</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
 <div class="form-box">
-<h2>Dostęp do uprawnień</h2>
 
-{% if error %}
-<div class="error">{{ error }}</div>
-{% endif %}
+<h2>Wejście do Permissions</h2>
 
-<form method="post" action="/permissions_login">
-    <input type="password" name="haslo" placeholder="Hasło">
-    <button>Zaloguj</button>
+<form method="post">
+    <input type="password" name="password" placeholder="Hasło" required>
+    <button>Wejdź</button>
 </form>
 
 </div>
