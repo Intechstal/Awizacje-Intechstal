@@ -26,10 +26,8 @@
 <tr>
 <form method="post">
     <td>{{ u[0] }}</td>
-
     <td><input type="checkbox" name="can_edit" {% if u[1] %}checked{% endif %}></td>
     <td><input type="checkbox" name="can_status" {% if u[2] %}checked{% endif %}></td>
-
     <td>
         <input type="hidden" name="login" value="{{ u[0] }}">
         <button>Zapisz</button>
