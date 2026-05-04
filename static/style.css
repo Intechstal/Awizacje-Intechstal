@@ -1,18 +1,29 @@
-/* ===== GLOBAL ===== */
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f8fafc;
+* {
+    box-sizing: border-box;
 }
 
-/* ===== TOPBAR ===== */
+:root {
+    --navy: #0f172a;
+    --gray: #f1f5f9;
+    --gray2: #e2e8f0;
+}
+
+/* ================= BODY ================= */
+body {
+    margin: 0;
+    font-family: system-ui;
+    background: var(--gray);
+    color: #0b0f19;
+}
+
+/* ================= TOPBAR (CENTER TITLE FIX) ================= */
 .topbar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
-    padding: 10px 20px;
-    background: #0f172a;
+    background: var(--navy);
     color: white;
+    padding: 10px 20px;
 }
 
 .topbar-left {
@@ -21,156 +32,145 @@ body {
 }
 
 .topbar-center {
-    flex: 1;
-    text-align: center;
+    justify-self: center;
     font-size: 22px;
-    font-weight: 800;
+    font-weight: 700;
+    text-align: center;
 }
 
-.logo {
-    height: 80px;
+.topbar-right {
+    justify-self: end;
 }
 
-/* ===== ADMIN LINK ===== */
-.top-link {
+.topbar-right a {
     color: white;
+    margin-left: 15px;
     text-decoration: none;
-    font-weight: 600;
-    padding: 8px 12px;
-    border-radius: 6px;
-    background: #1e293b;
 }
 
-.top-link:hover {
-    background: #334155;
+/* logo */
+.logo {
+    height: 70px;
 }
 
-/* ===== FORM ===== */
+/* ================= FORM ================= */
 .form-box {
-    max-width: 600px;
+    max-width: 650px;
     margin: 30px auto;
     background: white;
-    padding: 20px;
-    border-radius: 12px;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
-label {
-    display: block;
-    margin-top: 10px;
-    font-weight: 600;
-}
-
-input, select, textarea {
+.form-box input,
+.form-box select,
+.form-box textarea {
     width: 100%;
     padding: 10px;
-    margin-top: 5px;
-    border: 1px solid #cbd5e1;
+    margin: 6px 0 14px;
     border-radius: 8px;
+    border: 1px solid var(--gray2);
 }
 
-textarea {
-    resize: vertical;
-}
-
-/* ===== SUBMIT ===== */
-button {
-    margin-top: 15px;
+.form-box button {
     width: 100%;
     padding: 12px;
-    background: #0f172a;
+    background: var(--navy);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     font-weight: 700;
     cursor: pointer;
 }
 
-button:hover {
-    background: #1e293b;
-}
-
-/* ===== RODO BUTTON ===== */
-.rodo-btn {
-    display: block;
-    margin-top: 10px;
-    text-align: center;
-    padding: 10px;
-    background: #e2e8f0;
-    color: #0f172a;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.rodo-btn:hover {
-    background: #cbd5e1;
-}
-
-/* ===== ERROR ===== */
+/* ================= ERROR ================= */
 .error {
     background: #fee2e2;
-    color: #991b1b;
+    color: #7f1d1d;
     padding: 10px;
     border-radius: 8px;
     margin-bottom: 10px;
 }
 
-/* ===== TABLES (ADMIN) ===== */
-table {
-    width: 95%;
-    margin: 20px auto;
+/* ================= TABLE ================= */
+.table {
+    width: 100%;
     border-collapse: collapse;
     background: white;
     border-radius: 10px;
     overflow: hidden;
 }
 
-th, td {
+.table th {
+    background: var(--navy);
+    color: white;
     padding: 10px;
-    border: 1px solid #e2e8f0;
+}
+
+.table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--gray2);
     text-align: center;
 }
 
-th {
-    background: #0f172a;
-    color: white;
-}
+/* ================= STATUS ================= */
+.oczekująca { background: #fef9c3; }
+.zaakceptowana { background: #dcfce7; }
+.odrzucona { background: #fee2e2; }
 
-/* ===== CALENDAR ===== */
+/* ================= CALENDAR ================= */
 .calendar {
-    width: 95%;
-    margin: 20px auto;
+    width: 100%;
     border-collapse: collapse;
     background: white;
-    border-radius: 10px;
-    overflow: hidden;
+    table-layout: fixed;
 }
 
 .calendar th {
-    background: #0f172a;
+    background: var(--navy);
     color: white;
     padding: 10px;
 }
 
 .calendar td {
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--gray2);
     padding: 8px;
     text-align: center;
 }
 
-/* SLOTY */
+.time {
+    background: #f1f5f9;
+    font-weight: 600;
+    width: 90px;
+}
+
+.empty {
+    color: #94a3b8;
+}
+
+/* ================= SLOT ================= */
 .slot {
     padding: 6px;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
 }
 
-.oczekująca { background: #fef9c3; }
-.zaakceptowana { background: #dcfce7; }
-.odrzucona { background: #fee2e2; }
+.rodo-btn {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: var(--gray2);
+    color: var(--navy);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    width: 100%;
+    transition: 0.2s;
+}
 
-/* EMPTY */
-.empty {
-    color: #94a3b8;
+.rodo-btn:hover {
+    background: #cbd5e1;
 }
