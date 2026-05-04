@@ -1,10 +1,11 @@
+/* ===== GLOBAL ===== */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     background: #f8fafc;
 }
 
-/* TOPBAR */
+/* ===== TOPBAR ===== */
 .topbar {
     display: flex;
     align-items: center;
@@ -30,7 +31,7 @@ body {
     height: 80px;
 }
 
-/* LINK ADMIN */
+/* ===== ADMIN LINK ===== */
 .top-link {
     color: white;
     text-decoration: none;
@@ -38,14 +39,13 @@ body {
     padding: 8px 12px;
     border-radius: 6px;
     background: #1e293b;
-    transition: 0.2s;
 }
 
 .top-link:hover {
     background: #334155;
 }
 
-/* FORM */
+/* ===== FORM ===== */
 .form-box {
     max-width: 600px;
     margin: 30px auto;
@@ -72,8 +72,8 @@ textarea {
     resize: vertical;
 }
 
-/* SUBMIT */
-.submit-btn {
+/* ===== SUBMIT ===== */
+button {
     margin-top: 15px;
     width: 100%;
     padding: 12px;
@@ -85,14 +85,14 @@ textarea {
     cursor: pointer;
 }
 
-.submit-btn:hover {
+button:hover {
     background: #1e293b;
 }
 
-/* RODO */
+/* ===== RODO BUTTON ===== */
 .rodo-btn {
     display: block;
-    margin-top: 12px;
+    margin-top: 10px;
     text-align: center;
     padding: 10px;
     background: #e2e8f0;
@@ -100,18 +100,77 @@ textarea {
     border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
-    transition: 0.2s;
 }
 
 .rodo-btn:hover {
     background: #cbd5e1;
 }
 
-/* ERROR */
+/* ===== ERROR ===== */
 .error {
     background: #fee2e2;
     color: #991b1b;
     padding: 10px;
     border-radius: 8px;
     margin-bottom: 10px;
+}
+
+/* ===== TABLES (ADMIN) ===== */
+table {
+    width: 95%;
+    margin: 20px auto;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+th {
+    background: #0f172a;
+    color: white;
+}
+
+/* ===== CALENDAR ===== */
+.calendar {
+    width: 95%;
+    margin: 20px auto;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.calendar th {
+    background: #0f172a;
+    color: white;
+    padding: 10px;
+}
+
+.calendar td {
+    border: 1px solid #e2e8f0;
+    padding: 8px;
+    text-align: center;
+}
+
+/* SLOTY */
+.slot {
+    padding: 6px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.oczekująca { background: #fef9c3; }
+.zaakceptowana { background: #dcfce7; }
+.odrzucona { background: #fee2e2; }
+
+/* EMPTY */
+.empty {
+    color: #94a3b8;
 }
