@@ -157,20 +157,18 @@ body {
     font-weight: 600;
 }
 
-.rodo-btn {
-    display: inline-block;
-    margin-top: 12px;
-    padding: 10px 14px;
-    background: var(--gray2);
-    color: var(--navy);
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
+.rodo-small {
+    margin-top: 8px;
     text-align: center;
-    width: 100%;
-    transition: 0.2s;
+    font-size: 12px;
 }
 
-.rodo-btn:hover {
-    background: #cbd5e1;
+.rodo-small a {
+    color: #64748b;
+    text-decoration: none;
+}
+
+.rodo-small a:hover {
+    text-decoration: underline;
+    color: #0f172a;
 }
