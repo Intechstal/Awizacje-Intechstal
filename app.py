@@ -228,17 +228,9 @@ def admin():
     conn.close()
 
     dni, godziny, zajete = get_days_and_slots()
-
     perms = get_perm(session["user"])
 
-    return render_template(
-        "admin.html",
-        awizacje=awizacje,
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete,
-        perms=perms
-    )
+    return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete, perms=perms)
 
 # ================= STATUS =================
 
@@ -326,6 +318,44 @@ def historia():
     conn.close()
 
     return render_template("historia.html", awizacje=dane)
+
+# ================= PERMISSIONS =================
+
+@app.route("/admin/permissions", methods=["GET","POST"])
+def permissions():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    if request.method == "POST":
+        login = request.form["login"]
+
+        can_edit = 1 if "can_edit" in request.form else 0
+        can_status = 1 if "can_status" in request.form else 0
+        calendar_only = 1 if "calendar_only" in request.form else 0
+        show_logi = 1 if "show_logi" in request.form else 0
+        show_historia = 1 if "show_historia" in request.form else 0
+        show_permissions = 1 if "show_permissions" in request.form else 0
+
+        c.execute("""UPDATE permissions SET 
+            can_edit=?, can_status=?, calendar_only=?,
+            show_logi=?, show_historia=?, show_permissions=?
+            WHERE login=?""",
+            (can_edit, can_status, calendar_only,
+             show_logi, show_historia, show_permissions, login))
+
+        conn.commit()
+
+    c.execute("""SELECT login, can_edit, can_status, calendar_only,
+                 show_logi, show_historia, show_permissions
+                 FROM permissions""")
+
+    users = c.fetchall()
+    conn.close()
+
+    return render_template("permissions.html", users=users)
 
 # ================= RUN =================
 
