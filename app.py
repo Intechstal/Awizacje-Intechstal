@@ -103,6 +103,31 @@ def get_days_and_slots():
             s += timedelta(minutes=15)
 
     zajete = {}
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    c.execute("""SELECT id,firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz 
+                 FROM awizacje WHERE status!='odrzucona'""")
+
+    for id_, f, s, dt, typ, waga, kom in c.fetchall():
+        base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+
+        for i in range(-3, 4):
+            key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
+
+            zajete[key] = {
+                "id": id_,
+                "firma": f,
+                "status": s,
+                "typ_ladunku": typ,
+                "waga": waga,
+                "komentarz": kom,
+                "main": (i == 0),
+                "future_block": (i > 0)
+            }
+
+    conn.close()
     return dni, godziny, zajete
 
 # ================= LOGIN =================
@@ -143,18 +168,11 @@ def index():
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
-
     dane = request.form.to_dict()
 
-    # RODO
     if "rodo" not in request.form:
         dni, godziny, zajete = get_days_and_slots()
-        return render_template("form.html",
-                               dni=dni,
-                               godziny=godziny,
-                               zajete=zajete,
-                               dane=dane,
-                               error="Musisz zaakceptować RODO")
+        return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane=dane, error="Musisz zaakceptować RODO")
 
     if not dane["telefon"].isdigit():
         dni, godziny, zajete = get_days_and_slots()
@@ -202,7 +220,6 @@ def admin():
     conn.close()
 
     dni, godziny, zajete = get_days_and_slots()
-
     return render_template("admin.html", awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete)
 
 # ================= LOGI =================
