@@ -61,8 +61,11 @@ def create_users():
     for u in users:
         try:
             c.execute("INSERT INTO users (login, haslo) VALUES (?,?)", (u, "1234"))
-            c.execute("INSERT INTO permissions (login, can_edit, can_status) VALUES (?,?,?)",
-                      (u, 1, 1))
+        except:
+            pass
+
+        try:
+            c.execute("INSERT INTO permissions (login, can_edit, can_status) VALUES (?,?,?)", (u, 1, 1))
         except:
             pass
 
@@ -71,7 +74,7 @@ def create_users():
 
 create_users()
 
-# ================= LOG =================
+# ================= LOGI =================
 
 def log_action(user, akcja):
     conn = sqlite3.connect("awizacje.db")
@@ -84,12 +87,67 @@ def log_action(user, akcja):
 # ================= PERMISSIONS =================
 
 def get_perm(login):
+    try:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT can_edit, can_status FROM permissions WHERE login=?", (login,))
+        p = c.fetchone()
+        conn.close()
+
+        if p is None:
+            return (1,1)
+
+        return (p[0], p[1])
+    except:
+        return (1,1)
+
+# ================= SLOTY =================
+
+def get_days_and_slots():
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    dni = []
+    d = today
+    while len(dni) < 5:
+        if d.weekday() < 5:
+            dni.append(d)
+        d += timedelta(days=1)
+
+    godziny = []
+    for start, end in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
+        s = datetime.strptime(start, "%H:%M")
+        e = datetime.strptime(end, "%H:%M")
+        while s < e:
+            godziny.append(s.strftime("%H:%M"))
+            s += timedelta(minutes=15)
+
+    zajete = {}
+
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT can_edit, can_status FROM permissions WHERE login=?", (login,))
-    p = c.fetchone()
+
+    c.execute("""SELECT id,firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz 
+                 FROM awizacje WHERE status!='odrzucona'""")
+
+    for id_, f, s, dt, typ, waga, kom in c.fetchall():
+        base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+
+        for i in range(-3, 4):
+            key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
+
+            zajete[key] = {
+                "id": id_,
+                "firma": f,
+                "status": s,
+                "typ_ladunku": typ,
+                "waga": waga,
+                "komentarz": kom,
+                "main": (i == 0),
+                "future_block": (i > 0)
+            }
+
     conn.close()
-    return p if p else (1,1)
+    return dni, godziny, zajete
 
 # ================= LOGIN =================
 
@@ -174,8 +232,7 @@ def update_status(id):
     if not session.get("logged_in"):
         return redirect("/login")
 
-    can_edit, can_status = get_perm(session["user"])
-
+    _, can_status = get_perm(session["user"])
     if not can_status:
         return redirect("/admin")
 
@@ -199,7 +256,6 @@ def edit(id):
         return redirect("/login")
 
     can_edit, _ = get_perm(session["user"])
-
     if not can_edit:
         return redirect("/admin")
 
@@ -230,7 +286,7 @@ def edit(id):
 
     return render_template("edit.html", awizacja=awizacja)
 
-# ================= PANEL UPRAWNIEŃ =================
+# ================= PERMISSIONS PANEL =================
 
 @app.route("/admin/permissions", methods=["GET","POST"])
 def permissions():
@@ -262,5 +318,6 @@ def permissions():
 
 # ================= RUN =================
 
+aplication = app
 if __name__ == "__main__":
     app.run()
