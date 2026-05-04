@@ -50,14 +50,14 @@ def create_users():
     c = conn.cursor()
 
     users = [
-    ("SK", "1234", "admin"),
-    ("JU", "1234", "admin"),
-    ("BL", "1234", "admin"),
-    ("KJ", "1234", "admin"),
-    ("TR", "1234", "admin"),
-    ("MAGAZYN", "1234", "magazyn"),
-    ("EK", "1234", "admin"),
-]
+        ("SK", "1234"),
+        ("JU", "1234"),
+        ("BL", "1234"),
+        ("KJ", "1234"),
+        ("TR", "1234"),
+        ("MAGAZYN", "1234"),
+        ("EK", "1234"),
+    ]
 
     for u, p in users:
         try:
