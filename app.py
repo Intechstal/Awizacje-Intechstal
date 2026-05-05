@@ -99,7 +99,7 @@ def log_action(user, akcja):
     except:
         pass
 
-# ================= PERMISSIONS (DICT VERSION) =================
+# ================= PERMISSIONS (SAFE DICT) =================
 
 def get_perms(login):
     try:
@@ -179,38 +179,6 @@ def get_days_and_slots():
 
     return dni, godziny, zajete
 
-# ================= ADMIN =================
-
-@app.route("/admin")
-def admin():
-    try:
-        if not session.get("logged_in"):
-            return redirect("/login")
-
-        login = session.get("user", "UNKNOWN")
-
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
-        c.execute("SELECT * FROM awizacje ORDER BY id DESC")
-        awizacje = c.fetchall()
-        conn.close()
-
-        dni, godziny, zajete = get_days_and_slots()
-        perms = get_perms(login)
-
-        return render_template(
-            "admin.html",
-            awizacje=awizacje,
-            dni=dni,
-            godziny=godziny,
-            zajete=zajete,
-            perms=perms
-        )
-
-    except Exception as e:
-        traceback.print_exc()
-        return f"ADMIN ERROR: {e}", 500
-
 # ================= FORM =================
 
 @app.route("/")
@@ -225,6 +193,46 @@ def index():
         dane={},
         error=None
     )
+
+# ================= ZAPIS =================
+
+@app.route("/zapisz", methods=["POST"])
+def zapisz():
+    try:
+        f = request.form
+
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+
+        c.execute("""INSERT INTO awizacje
+        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
+        VALUES (?,?,?,?,?,?,?,?,?)""",
+        (
+            f.get("firma",""),
+            f.get("rejestracja",""),
+            f.get("kierowca",""),
+            f.get("email",""),
+            f.get("telefon",""),
+            f.get("data_godzina",""),
+            f.get("typ_ladunku",""),
+            f.get("waga_ladunku",""),
+            f.get("komentarz","")
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/success")
+
+    except Exception as e:
+        print("ZAPIS ERROR:", e)
+        return redirect("/")
+
+# ================= SUCCESS (TO FIX 404) =================
+
+@app.route("/success")
+def success():
+    return render_template("success.html")
 
 # ================= LOGIN =================
 
@@ -252,6 +260,38 @@ def login():
 def logout():
     session.clear()
     return redirect("/login")
+
+# ================= ADMIN =================
+
+@app.route("/admin")
+def admin():
+    try:
+        if not session.get("logged_in"):
+            return redirect("/login")
+
+        login = session.get("user","UNKNOWN")
+
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM awizacje ORDER BY id DESC")
+        awizacje = c.fetchall()
+        conn.close()
+
+        dni, godziny, zajete = get_days_and_slots()
+        perms = get_perms(login)
+
+        return render_template(
+            "admin.html",
+            awizacje=awizacje,
+            dni=dni,
+            godziny=godziny,
+            zajete=zajete,
+            perms=perms
+        )
+
+    except Exception as e:
+        traceback.print_exc()
+        return f"ADMIN ERROR: {e}", 500
 
 # ================= OTHER ROUTES =================
 
