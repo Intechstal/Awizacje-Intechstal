@@ -244,6 +244,7 @@ def login():
 
 @app.route("/logout")
 def logout():
+    log_action(session.get("user"), "LOGOUT")
     session.clear()
     return redirect("/login")
 
@@ -256,7 +257,7 @@ def admin():
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT * FROM awizacje ORDER BY id DESC")
+    c.execute("SELECT * FROM awizacje WHERE status != 'odrzucona' ORDER BY id DESC")
     awizacje = c.fetchall()
     conn.close()
 
@@ -283,10 +284,17 @@ def update_status(id):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
 
+    # Pobierz firmę do loga
+    c.execute("SELECT firma FROM awizacje WHERE id=?", (id,))
+    row = c.fetchone()
+    firma = row[0] if row else f"ID:{id}"
+
     c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
 
     conn.commit()
     conn.close()
+
+    log_action(session.get("user"), f"ZMIANA STATUSU: {firma} → {status}")
 
     return redirect("/admin")
 
@@ -315,6 +323,9 @@ def edit(id):
 
         conn.commit()
         conn.close()
+
+        log_action(session.get("user"), f"EDYCJA AWIZACJI: ID:{id} firma:{f['firma']}")
+
         return redirect("/admin")
 
     c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
@@ -390,8 +401,9 @@ def permissions():
 
         conn.commit()
 
+        log_action(session.get("user"), f"ZMIANA UPRAWNIEŃ: {login}")
+
     c.execute("SELECT * FROM permissions")
-    users = c.fetchall()
     conn.close()
 
     return render_template("permissions.html", users=users)
