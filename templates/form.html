@@ -5,68 +5,53 @@
 <title>Awizacja</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
-
 <body>
-
 <div class="topbar">
     <div class="topbar-left">
         <img src="/static/logo.png" class="logo">
     </div>
-
     <div class="topbar-center">
         Awizacja transportu
     </div>
-
     <div class="topbar-right">
         <a href="/login">Admin</a>
     </div>
 </div>
-
 <div class="form-box">
-
 <h1>Awizacja transportu</h1>
-
 {% if error %}
 <div class="error">{{ error }}</div>
 {% endif %}
-
 <form action="/zapisz" method="post">
-
 <label>Firma</label>
 <input name="firma" value="{{ dane.firma or '' }}" required>
-
 <label>Rejestracja</label>
 <input name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
-
 <label>Kierowca</label>
 <input name="kierowca" value="{{ dane.kierowca or '' }}" required>
-
 <label>Email</label>
 <input name="email" value="{{ dane.email or '' }}" required>
-
 <label>Telefon</label>
 <input name="telefon" value="{{ dane.telefon or '' }}" required>
-
 <label>Typ ładunku</label>
 <select name="typ_ladunku" required>
     <option>Odbiór złomu</option>
     <option>Odbiór zamówienia</option>
     <option>Dostawa materiału</option>
 </select>
-
 <label>Waga</label>
 <input name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
-
 <label>Komentarz</label>
 <textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
-
 <label>Termin</label>
 <select name="data_godzina" required>
     {% for d in dni %}
         <optgroup label="{{ d.strftime('%d.%m') }}">
         {% for h in godziny %}
             {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
-            {% if slot not in zajete %}
+            {% set info = zajete.get(slot) %}
+            {# Pokaż slot tylko jeśli: wolny LUB przeszły (is_past) — przeszłe są w zajete po zmianie w app.py #}
+            {% if not info or info.is_past %}
                 <option value="{{ slot }}">
                     {{ d.strftime('%d.%m') }} {{ h }}
                 </option>
@@ -75,23 +60,14 @@
         </optgroup>
     {% endfor %}
 </select>
-
-<!-- ================= RODO CENTER ================= -->
-<!-- ================= RODO CENTER ================= -->
 <div style="text-align:center; margin:15px 0; font-size:14px;">
-
     <label>
         <input type="checkbox" name="rodo" required>
         Akceptuję <a href="https://intechstal.pl/rodo/" target="_blank">RODO</a>
     </label>
-
 </div>
-
 <button type="submit">Wyślij awizację</button>
-
 </form>
-
 </div>
-
 </body>
 </html>
