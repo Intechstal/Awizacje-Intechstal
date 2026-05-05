@@ -5,9 +5,7 @@
 <title>Panel logistyczny</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
-
 <body>
-
 <!-- ================= SAFE PERMS FIX ================= -->
 {% set can_edit = True %}
 {% set can_status = True %}
@@ -15,7 +13,6 @@
 {% set show_logi = True %}
 {% set show_historia = True %}
 {% set show_permissions = True %}
-
 {% if perms %}
     {% set can_edit = perms[0] %}
     {% set can_status = perms[1] %}
@@ -25,42 +22,31 @@
     {% set show_permissions = perms[5] %}
 {% endif %}
 <!-- =============================================== -->
-
 <div class="topbar">
     <div class="topbar-left">
         <img src="/static/logo.png" class="logo">
     </div>
-
     <div class="topbar-center">
         Awizacja transportu
     </div>
-
     <div class="topbar-right">
-
         {% if show_logi %}
             <a href="/admin/logi">Logi</a>
         {% endif %}
-
         {% if show_historia %}
             <a href="/admin/historia">Historia</a>
         {% endif %}
-
         {% if show_permissions %}
             <a href="/admin/permissions">Permissions</a>
         {% endif %}
-
         <a href="/logout">Wyloguj</a>
     </div>
 </div>
-
 <div class="container">
 
 <!-- ================= AWIZACJE ================= -->
-
 {% if not calendar_only %}
-
 <h2>Awizacje</h2>
-
 <table class="table">
 <tr>
     <th>ID</th>
@@ -74,7 +60,6 @@
     <th>Status</th>
     <th>Akcje</th>
 </tr>
-
 {% for a in awizacje %}
 <tr>
     <td>{{ a[0] }}</td>
@@ -86,9 +71,7 @@
     <td>{{ a[8] }}</td>
     <td>{{ a[9] }}</td>
     <td class="{{ a[10] }}">{{ a[10] }}</td>
-
     <td>
-
         {% if can_status %}
         <form action="/admin/update_status/{{ a[0] }}" method="post">
             <select name="status">
@@ -99,22 +82,17 @@
             <button class="btn">OK</button>
         </form>
         {% endif %}
-
         {% if can_edit %}
         <a class="link" href="/admin/edit/{{ a[0] }}">Edytuj</a>
         {% endif %}
-
     </td>
 </tr>
 {% endfor %}
 </table>
-
 {% endif %}
 
 <!-- ================= KALENDARZ ================= -->
-
 <h2>Kalendarz</h2>
-
 <table class="calendar">
 <tr>
     <th>Godzina</th>
@@ -122,46 +100,44 @@
         <th>{{ d.strftime('%d.%m') }}</th>
     {% endfor %}
 </tr>
-
 {% for h in godziny %}
 <tr>
     <td class="time">{{ h }}</td>
-
     {% for d in dni %}
         {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
         {% set data = zajete.get(slot) %}
 
-        {% if data and data.main %}
+        {% if data and data.is_past %}
+            {# Przeszły slot — niewidoczny w kalendarzu admina #}
+            <td class="empty">—</td>
 
+        {% elif data and data.main %}
+            {# Slot główny — pełna informacja, kolor = status awizacji #}
             <td>
                 <div class="slot {{ data.status }}">
                     {{ data.firma }}
-
                     <div class="small">{{ data.typ_ladunku }}</div>
-                    <div class="small">{{ data.waga }}</div>
                     <div class="small">{{ data.komentarz }}</div>
                 </div>
             </td>
 
         {% elif data and data.future_block %}
-
+            {# Slot blokujący — tylko firma, ten sam kolor co status #}
             <td>
-                <div class="slot zaakceptowana">
+                <div class="slot {{ data.status }}">
                     {{ data.firma }}
                 </div>
             </td>
 
         {% else %}
-
             <td class="empty">—</td>
-
         {% endif %}
+
     {% endfor %}
 </tr>
 {% endfor %}
 </table>
 
 </div>
-
 </body>
 </html>
