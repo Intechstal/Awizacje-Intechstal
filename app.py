@@ -159,11 +159,12 @@ def get_days_and_slots():
                 zajete[key] = {
                     "main": i == 0,
                     "future_block": i != 0,
+                    "is_before": i < 0,
                     "firma": firma,
                     "typ_ladunku": typ,
                     "komentarz": komentarz,
-                    "status": status,        # ← status przekazywany dla każdego slotu
-                    "is_past": slot_time < now   # ← znacznik przeszłości
+                    "status": status,
+                    "is_past": slot_time < now
                 }
 
         except:
@@ -191,6 +192,7 @@ def index():
 def zapisz():
     f = request.form
 
+    # Blokada przeszłych slotów
     try:
         wybrana = datetime.strptime(f["data_godzina"], "%Y-%m-%dT%H:%M")
         if wybrana < datetime.now():
@@ -199,11 +201,12 @@ def zapisz():
                 dni=dni, godziny=godziny, zajete=zajete,
                 dane=f, error="Nie można awizować się na termin w przeszłości."
             )
-    except ValueError:
+    except:
         pass
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
+
     c.execute("""INSERT INTO awizacje VALUES (NULL,?,?,?,?,?,?,?,?,?,?)""",
     (
         f["firma"], f["rejestracja"], f["kierowca"],
@@ -211,6 +214,7 @@ def zapisz():
         f["typ_ladunku"], f["waga_ladunku"], f["komentarz"],
         "oczekująca"
     ))
+
     conn.commit()
     conn.close()
 
