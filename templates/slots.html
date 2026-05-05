@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Sloty</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="form-box">
+
+<h2>Ustawienia blokowania slotów</h2>
+
+<table class="table">
+<tr>
+    <th>Typ</th>
+    <th>Ilość slotów (w jedną stronę)</th>
+    <th></th>
+</tr>
+
+{% for s in settings %}
+<tr>
+<form method="post">
+    <td>{{ s[0] }}</td>
+
+    <td>
+        <input type="number" name="zakres" value="{{ s[1] }}" min="0">
+    </td>
+
+    <td>
+        <input type="hidden" name="typ" value="{{ s[0] }}">
+        <button>Zapisz</button>
+    </td>
+</form>
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>
