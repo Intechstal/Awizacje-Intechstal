@@ -404,6 +404,7 @@ def permissions():
         log_action(session.get("user"), f"ZMIANA UPRAWNIEŃ: {login}")
 
     c.execute("SELECT * FROM permissions")
+    users = c.fetchall()
     conn.close()
 
     return render_template("permissions.html", users=users)
