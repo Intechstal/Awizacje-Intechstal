@@ -23,17 +23,17 @@
 <div class="error">{{ error }}</div>
 {% endif %}
 <form action="/zapisz" method="post">
-<label>Firma</label>
+<label>Firma <span style="color:red">*</span></label>
 <input name="firma" value="{{ dane.firma or '' }}" required>
-<label>Rejestracja</label>
+<label>Rejestracja <span style="color:red">*</span></label>
 <input name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
-<label>Kierowca</label>
+<label>Kierowca <span style="color:red">*</span></label>
 <input name="kierowca" value="{{ dane.kierowca or '' }}" required>
-<label>Email</label>
+<label>Email <span style="color:red">*</span></label>
 <input name="email" value="{{ dane.email or '' }}" required>
-<label>Telefon</label>
+<label>Telefon <span style="color:red">*</span></label>
 <input name="telefon" value="{{ dane.telefon or '' }}" required>
-<label>Typ ładunku</label>
+<label>Typ ładunku <span style="color:red">*</span></label>
 <select name="typ_ladunku" required>
     <option>Odbiór złomu</option>
     <option>Odbiór zamówienia</option>
@@ -43,7 +43,7 @@
 <input name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
 <label>Komentarz</label>
 <textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
-<label>Termin</label>
+<label>Termin <span style="color:red">*</span></label>
 <select name="data_godzina" required>
     {% for d in dni %}
         <optgroup label="{{ d.strftime('%d.%m') }}">
