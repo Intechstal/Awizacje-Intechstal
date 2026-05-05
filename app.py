@@ -317,6 +317,21 @@ def slots():
 
     return render_template("slots.html", data=data)
 
+# ================= SLOTS (404 FIX) =================
+
+@app.route("/admin/permissions")
+def slots():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje")
+    data = c.fetchall()
+    conn.close()
+
+    return render_template("permissions.html", data=data)
+
 # ================= RUN =================
 
 if __name__ == "__main__":
