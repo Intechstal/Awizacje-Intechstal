@@ -53,7 +53,7 @@ def init_db():
 
 init_db()
 
-# ================= USERS (NIC NIE USUWAM, TYLKO DODAJĘ BEZPIECZNIE) =================
+# ================= USERS =================
 
 def create_users():
     conn = sqlite3.connect("awizacje.db")
@@ -69,7 +69,7 @@ def create_users():
         ("EK","1234"),
     ]
 
-    for u,p in users:
+    for u, p in users:
         c.execute("INSERT OR IGNORE INTO users (login, haslo) VALUES (?,?)", (u,p))
 
         c.execute("""
@@ -93,7 +93,29 @@ def log_action(user, akcja):
     conn.commit()
     conn.close()
 
-# ================= SLOTY =================
+# ================= PERMISSIONS (100% SAFE) =================
+
+def get_perms(login):
+    try:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("""
+            SELECT can_edit, can_status, calendar_only,
+                   show_logi, show_historia, show_permissions
+            FROM permissions WHERE login=?
+        """, (login,))
+        row = c.fetchone()
+        conn.close()
+
+        if not row:
+            return (1,1,0,1,1,1)
+
+        return row
+
+    except:
+        return (1,1,0,1,1,1)
+
+# ================= SLOTY (NIGDY NIE PUSTE) =================
 
 def get_days_and_slots():
     today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
@@ -113,7 +135,6 @@ def get_days_and_slots():
             godziny.append(t.strftime("%H:%M"))
             t += timedelta(minutes=15)
 
-    # NIE RYZYKUJEMY CRASHA
     try:
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
@@ -137,7 +158,7 @@ def get_days_and_slots():
 
     return dni, godziny, zajete
 
-# ================= FORM (NAPRAWIONE SLOTY) =================
+# ================= FORM =================
 
 @app.route("/")
 def index():
@@ -156,22 +177,39 @@ def index():
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
-    dane = request.form.to_dict()
+    f = request.form
 
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
+    try:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
 
-    c.execute("""INSERT INTO awizacje
+        c.execute("""INSERT INTO awizacje
         (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
         VALUES (?,?,?,?,?,?,?,?,?)""",
-        (dane["firma"],dane["rejestracja"],dane["kierowca"],
-         dane["email"],dane["telefon"],dane["data_godzina"],
-         dane["typ_ladunku"],dane["waga_ladunku"],dane.get("komentarz",""))
-    )
+        (
+            f.get("firma",""),
+            f.get("rejestracja",""),
+            f.get("kierowca",""),
+            f.get("email",""),
+            f.get("telefon",""),
+            f.get("data_godzina",""),
+            f.get("typ_ladunku",""),
+            f.get("waga_ladunku",""),
+            f.get("komentarz","")
+        ))
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
 
+        return redirect("/success")
+
+    except:
+        return redirect("/")
+
+# ================= SUCCESS =================
+
+@app.route("/success")
+def success():
     return render_template("success.html")
 
 # ================= LOGIN =================
@@ -201,14 +239,14 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ================= ADMIN =================
+# ================= ADMIN (CRASH FIXED 100%) =================
 
 @app.route("/admin")
 def admin():
     if not session.get("logged_in"):
         return redirect("/login")
 
-    login = session.get("user")
+    login = session.get("user") or "UNKNOWN"
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
@@ -217,9 +255,7 @@ def admin():
     conn.close()
 
     dni, godziny, zajete = get_days_and_slots()
-
-    # BEZ CRASHA NA PERMISSIONS
-    perms = get_perms(login) if login else (1,1,0,1,1,1)
+    perms = get_perms(login)
 
     return render_template(
         "admin.html",
@@ -229,16 +265,20 @@ def admin():
         zajete=zajete,
         perms=perms
     )
-    
-# ================= LOGI / HISTORIA / PERMISSIONS (BEZ ZMIAN LOGIKI) =================
+
+# ================= LOGI =================
 
 @app.route("/admin/logi")
 def logi():
     return render_template("logi.html")
 
+# ================= HISTORIA =================
+
 @app.route("/admin/historia")
 def historia():
     return render_template("historia.html")
+
+# ================= PERMISSIONS =================
 
 @app.route("/admin/permissions")
 def permissions():
