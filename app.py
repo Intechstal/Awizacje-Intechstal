@@ -5,6 +5,14 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
 
+# ================= HARD CODE SLOTY (OPCJA B) =================
+
+SLOT_BLOCKS = {
+    "Odbiór złomu": 2,
+    "Odbiór zamówienia": 1,
+    "Dostawa materiału": 3
+}
+
 # ================= DB =================
 
 def init_db():
@@ -70,17 +78,13 @@ def create_users():
     ]
 
     for u,p in users:
-        try:
-            c.execute("INSERT INTO users (login, haslo) VALUES (?,?)", (u,p))
+        c.execute("INSERT OR IGNORE INTO users (login, haslo) VALUES (?,?)", (u,p))
 
-            c.execute("""
-                INSERT OR IGNORE INTO permissions
-                (login, can_edit, can_status, calendar_only, show_logi, show_historia, show_permissions)
-                VALUES (?,?,?,?,?,?,?)
-            """, (u,1,1,0,1,1,1))
-
-        except:
-            pass
+        c.execute("""
+            INSERT OR IGNORE INTO permissions
+            (login, can_edit, can_status, calendar_only, show_logi, show_historia, show_permissions)
+            VALUES (?,?,?,?,?,?,?)
+        """, (u,1,1,0,1,1,1))
 
     conn.commit()
     conn.close()
@@ -132,9 +136,45 @@ def get_days_and_slots():
             godziny.append(t.strftime("%H:%M"))
             t += timedelta(minutes=15)
 
-    return dni,godziny,{}
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("""
+        SELECT id, firma, data_godzina, typ_ladunku,
+               waga_ladunku, komentarz, status
+        FROM awizacje
+    """)
+    rows = c.fetchall()
+    conn.close()
 
-# ================= FORM (NAPRAWIONE 404) =================
+    zajete = {}
+
+    for r in rows:
+        try:
+            aid, firma, data, typ, waga, komentarz, status = r
+
+            base = datetime.strptime(data, "%Y-%m-%dT%H:%M")
+
+            # 🔥 HARD CODE SLOTY
+            blokada = SLOT_BLOCKS.get(typ, 1)
+
+            for i in range(-blokada, blokada+1):
+                key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
+
+                zajete[key] = {
+                    "main": i == 0,
+                    "future_block": i != 0,
+                    "firma": firma,
+                    "typ_ladunku": typ,
+                    "komentarz": komentarz,
+                    "status": status
+                }
+
+        except:
+            continue
+
+    return dni, godziny, zajete
+
+# ================= FORM =================
 
 @app.route("/")
 def index():
@@ -159,11 +199,20 @@ def zapisz():
     c = conn.cursor()
 
     c.execute("""INSERT INTO awizacje
-        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
+        (firma,rejestracja,kierowca,email,telefon,
+         data_godzina,typ_ladunku,waga_ladunku,komentarz)
         VALUES (?,?,?,?,?,?,?,?,?)""",
-        (dane["firma"],dane["rejestracja"],dane["kierowca"],
-         dane["email"],dane["telefon"],dane["data_godzina"],
-         dane["typ_ladunku"],dane["waga_ladunku"],dane.get("komentarz",""))
+        (
+            dane["firma"],
+            dane["rejestracja"],
+            dane["kierowca"],
+            dane["email"],
+            dane["telefon"],
+            dane["data_godzina"],
+            dane["typ_ladunku"],
+            dane["waga_ladunku"],
+            dane.get("komentarz","")
+        )
     )
 
     conn.commit()
@@ -224,21 +273,6 @@ def admin():
         perms=perms
     )
 
-# ================= STATUS =================
-
-@app.route("/admin/update_status/<int:id>", methods=["POST"])
-def update_status(id):
-    if not session.get("logged_in"):
-        return redirect("/login")
-
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute("UPDATE awizacje SET status=? WHERE id=?", (request.form["status"], id))
-    conn.commit()
-    conn.close()
-
-    return redirect("/admin")
-
 # ================= EDIT =================
 
 @app.route("/admin/edit/<int:id>", methods=["GET","POST"])
@@ -251,13 +285,17 @@ def edit(id):
 
     if request.method == "POST":
         f = request.form
+
         c.execute("""UPDATE awizacje SET
             firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
             data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
             WHERE id=?""",
-            (f["firma"],f["rejestracja"],f["kierowca"],
-             f["email"],f["telefon"],f["data_godzina"],
-             f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id))
+        (
+            f["firma"], f["rejestracja"], f["kierowca"],
+            f["email"], f["telefon"], f["data_godzina"],
+            f["typ_ladunku"], f["waga_ladunku"], f["komentarz"], id
+        ))
+
         conn.commit()
         conn.close()
         return redirect("/admin")
@@ -311,16 +349,11 @@ def permissions():
     if request.method == "POST":
         login = request.form["login"]
 
-        c.execute("""
-            UPDATE permissions SET
-            can_edit=?,
-            can_status=?,
-            calendar_only=?,
-            show_logi=?,
-            show_historia=?,
-            show_permissions=?
-            WHERE login=?
-        """, (
+        c.execute("""UPDATE permissions SET
+            can_edit=?, can_status=?, calendar_only=?,
+            show_logi=?, show_historia=?, show_permissions=?
+            WHERE login=?""",
+        (
             int("can_edit" in request.form),
             int("can_status" in request.form),
             int("calendar_only" in request.form),
@@ -329,6 +362,7 @@ def permissions():
             int("show_permissions" in request.form),
             login
         ))
+
         conn.commit()
 
     c.execute("SELECT * FROM permissions")
@@ -339,7 +373,5 @@ def permissions():
 
 # ================= RUN =================
 
-aplication = app
-
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
