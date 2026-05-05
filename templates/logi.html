@@ -1,37 +1,29 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Logi</title>
-<link rel="stylesheet" href="/static/style.css">
+    <title>Logi</title>
 </head>
-
 <body>
 
-<div class="container">
+<h1>Logi systemu</h1>
 
-<h2>Logi systemowe</h2>
+<a href="/admin">Powrót</a>
 
-<table class="table">
+<table border="1">
 <tr>
-    <th>ID</th>
-    <th>User</th>
-    <th>Akcja</th>
-    <th>Data</th>
+<th>ID</th><th>Użytkownik</th><th>Akcja</th><th>Data</th>
 </tr>
 
 {% for l in logi %}
 <tr>
-    <td>{{ l[0] }}</td>
-    <td>{{ l[1] }}</td>
-    <td>{{ l[2] }}</td>
-    <td>{{ l[3] }}</td>
+<td>{{ l[0] }}</td>
+<td>{{ l[1] }}</td>
+<td>{{ l[2] }}</td>
+<td>{{ l[3] }}</td>
 </tr>
 {% endfor %}
 
 </table>
-
-</div>
 
 </body>
 </html>
