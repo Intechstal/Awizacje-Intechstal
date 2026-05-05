@@ -10,7 +10,7 @@ app.secret_key = "sekretnyklucz"
 def now_pl():
     return datetime.utcnow() + timedelta(hours=2)
 
-# ================= DB =================
+# ================= DB INIT =================
 
 def init_db():
     conn = sqlite3.connect("awizacje.db")
@@ -94,39 +94,37 @@ def log_action(user, akcja):
     try:
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
-
         c.execute(
             "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
             (user if user else "UNKNOWN",
              akcja,
              now_pl().strftime("%Y-%m-%d %H:%M:%S"))
         )
-
         conn.commit()
         conn.close()
     except:
         pass
 
-# ================= SLOTY (NAPRAWIONE) =================
+# ================= SLOTY (NAPRAWIONE – KLUCZOWE) =================
 
 def get_days_and_slots():
-    today = now_pl().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     dni = []
     d = today
-
     while len(dni) < 5:
         if d.weekday() < 5:
             dni.append(d)
         d += timedelta(days=1)
 
     godziny = []
-    t = datetime.strptime("07:30", "%H:%M")
-    end = datetime.strptime("20:00", "%H:%M")
+    for s, e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
+        t = datetime.strptime(s, "%H:%M")
+        end = datetime.strptime(e, "%H:%M")
 
-    while t <= end:
-        godziny.append(t.strftime("%H:%M"))
-        t += timedelta(minutes=15)
+        while t < end:
+            godziny.append(t.strftime("%H:%M"))
+            t += timedelta(minutes=15)
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
@@ -160,11 +158,10 @@ def get_days_and_slots():
 
     return dni, godziny, zajete
 
-# ================= FORM (FIX 500) =================
+# ================= FORM =================
 
 @app.route("/")
 def index():
-    # FIX: form.html wymaga "dane"
     dane = {
         "firma": "",
         "rejestracja": "",
@@ -247,7 +244,8 @@ def admin():
 
     dni, godziny, zajete = get_days_and_slots()
 
-    return render_template("admin.html",
+    return render_template(
+        "admin.html",
         awizacje=awizacje,
         dni=dni,
         godziny=godziny,
