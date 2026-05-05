@@ -5,11 +5,8 @@
 <title>Permissions</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
-
 <body>
-
 <div class="form-box">
-
 <table class="table">
 <tr>
     <th>User</th>
@@ -19,21 +16,20 @@
     <th>Logi</th>
     <th>Historia</th>
     <th>Permissions</th>
+    <th>Auto-refresh</th>
     <th></th>
 </tr>
-
 {% for u in users %}
 <tr>
     <form method="post">
         <td>{{ u[0] }}</td>
-
         <td><input type="checkbox" name="can_edit" {% if u[1] %}checked{% endif %}></td>
         <td><input type="checkbox" name="can_status" {% if u[2] %}checked{% endif %}></td>
         <td><input type="checkbox" name="calendar_only" {% if u[3] %}checked{% endif %}></td>
         <td><input type="checkbox" name="show_logi" {% if u[4] %}checked{% endif %}></td>
         <td><input type="checkbox" name="show_historia" {% if u[5] %}checked{% endif %}></td>
         <td><input type="checkbox" name="show_permissions" {% if u[6] %}checked{% endif %}></td>
-
+        <td><input type="checkbox" name="auto_refresh" {% if u[7] %}checked{% endif %}></td>
         <td>
             <input type="hidden" name="login" value="{{ u[0] }}">
             <button type="submit">Zapisz</button>
@@ -41,10 +37,7 @@
     </form>
 </tr>
 {% endfor %}
-
 </table>
-
 </div>
-
 </body>
 </html>
