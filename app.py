@@ -107,11 +107,64 @@ def log_action(user, akcja):
     except:
         pass
 
-# ================= FORM FIX (500) =================
+# ================= SLOTY (NAPRAWIONE) =================
+
+def get_days_and_slots():
+    today = now_pl().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    dni = []
+    d = today
+
+    while len(dni) < 5:
+        if d.weekday() < 5:
+            dni.append(d)
+        d += timedelta(days=1)
+
+    godziny = []
+    t = datetime.strptime("07:30", "%H:%M")
+    end = datetime.strptime("20:00", "%H:%M")
+
+    while t <= end:
+        godziny.append(t.strftime("%H:%M"))
+        t += timedelta(minutes=15)
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje")
+    rows = c.fetchall()
+    conn.close()
+
+    zajete = {}
+
+    for r in rows:
+        try:
+            base = datetime.strptime(r[6], "%Y-%m-%dT%H:%M")
+        except:
+            continue
+
+        typ = r[7] if r[7] else "default"
+        zakres = 3
+
+        for i in range(-zakres, zakres + 1):
+            key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
+
+            zajete[key] = {
+                "firma": r[1],
+                "status": r[10],
+                "typ_ladunku": r[7],
+                "waga": r[8],
+                "komentarz": r[9],
+                "main": (i == 0),
+                "future_block": (i > 0)
+            }
+
+    return dni, godziny, zajete
+
+# ================= FORM (FIX 500) =================
 
 @app.route("/")
 def index():
-    # FIX: brak "dane" w template = 500
+    # FIX: form.html wymaga "dane"
     dane = {
         "firma": "",
         "rejestracja": "",
@@ -192,8 +245,13 @@ def admin():
     awizacje = c.fetchall()
     conn.close()
 
+    dni, godziny, zajete = get_days_and_slots()
+
     return render_template("admin.html",
         awizacje=awizacje,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
         perms=(1,1,0,1,1,1,1)
     )
 
@@ -298,7 +356,7 @@ def permissions():
 
     return render_template("permissions.html", users=users)
 
-# ================= SLOTS (FIX WYBORÓW) =================
+# ================= SLOTS =================
 
 @app.route("/admin/slots", methods=["GET","POST"])
 def slots():
@@ -313,13 +371,8 @@ def slots():
     c.execute("SELECT * FROM slot_settings")
     data = c.fetchall()
 
-    # FIX: jeśli puste → zawsze pokazuj opcje
     if not data:
-        data = [
-            ("złom", 3),
-            ("dostawa", 2),
-            ("materiał", 4)
-        ]
+        data = [("złom",3),("dostawa",2),("materiał",4)]
 
     conn.close()
 
