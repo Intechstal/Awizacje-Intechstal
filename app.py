@@ -5,19 +5,7 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
 
-# ================= LOGS =================
-
-def log_action(user, akcja):
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute(
-        "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
-        (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    )
-    conn.commit()
-    conn.close()
-
-# ================= DB INIT SAFE =================
+# ================= DB =================
 
 def init_db():
     conn = sqlite3.connect("awizacje.db")
@@ -54,6 +42,45 @@ def init_db():
     conn.close()
 
 init_db()
+
+# ================= USERS (PRZYWRÓCONE) =================
+
+def create_users():
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    users = [
+        ("SK", "1234"),
+        ("JU", "1234"),
+        ("BL", "1234"),
+        ("KJ", "1234"),
+        ("TR", "1234"),
+        ("MAGAZYN", "1234"),
+        ("EK", "1234"),
+    ]
+
+    for u, p in users:
+        try:
+            c.execute("INSERT INTO users (login, haslo) VALUES (?,?)", (u, p))
+        except:
+            pass
+
+    conn.commit()
+    conn.close()
+
+create_users()
+
+# ================= LOGI =================
+
+def log_action(user, akcja):
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
+        (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    )
+    conn.commit()
+    conn.close()
 
 # ================= SLOTY =================
 
@@ -105,7 +132,7 @@ def get_days_and_slots():
     conn.close()
     return dni, godziny, zajete
 
-# ================= FORM (FIX 404) =================
+# ================= FORM (NAPRAWIONE 404) =================
 
 @app.route("/")
 def index():
@@ -169,18 +196,12 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ================= ADMIN (FIX 500) =================
-
-def get_perms():
-    # fallback jeśli nie masz permissions table
-    return (1,1,0,1,1,1,1)
+# ================= ADMIN =================
 
 @app.route("/admin")
 def admin():
     if not session.get("logged_in"):
         return redirect("/login")
-
-    perms = get_perms()
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
@@ -195,7 +216,7 @@ def admin():
         dni=dni,
         godziny=godziny,
         zajete=zajete,
-        perms=perms
+        perms=(1,1,0,1,1,1,1)
     )
 
 # ================= STATUS =================
@@ -251,7 +272,7 @@ def edit(id):
 
     return render_template("edit.html", awizacja=awizacja)
 
-# ================= LOGI =================
+# ================= LOGI (404 FIX) =================
 
 @app.route("/admin/logi")
 def logi():
@@ -265,6 +286,36 @@ def logi():
     conn.close()
 
     return render_template("logi.html", logi=logi)
+
+# ================= HISTORIA (404 FIX) =================
+
+@app.route("/admin/historia")
+def historia():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
+    dane = c.fetchall()
+    conn.close()
+
+    return render_template("historia.html", awizacje=dane)
+
+# ================= SLOTS (404 FIX) =================
+
+@app.route("/admin/slots")
+def slots():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje")
+    data = c.fetchall()
+    conn.close()
+
+    return render_template("slots.html", data=data)
 
 # ================= RUN =================
 
