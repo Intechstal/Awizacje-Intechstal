@@ -115,24 +115,35 @@ def get_perms(user_login):
 # ================= SLOTY =================
 
 def get_days_and_slots():
-    today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
+    now = datetime.now()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    dni=[]
-    d=today
-    while len(dni)<5:
-        if d.weekday()<5:
+    dni = []
+    d = today
+    while len(dni) < 5:
+        if d.weekday() < 5:
             dni.append(d)
         d += timedelta(days=1)
 
-    godziny=[]
-    for s,e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-        t=datetime.strptime(s,"%H:%M")
-        e=datetime.strptime(e,"%H:%M")
-        while t<e:
+    godziny = []
+    for s, e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
+        t = datetime.strptime(s, "%H:%M")
+        e = datetime.strptime(e, "%H:%M")
+        while t < e:
             godziny.append(t.strftime("%H:%M"))
             t += timedelta(minutes=15)
 
-    return dni,godziny,{}
+    # filtruj sloty które już minęły
+    zajete = {}
+    for d in dni:
+        for h in godziny:
+            slot_dt = datetime.strptime(
+                d.strftime("%Y-%m-%d") + "T" + h, "%Y-%m-%dT%H:%M"
+            )
+            if slot_dt <= now:
+                zajete[slot_dt.strftime("%Y-%m-%dT%H:%M")] = True
+
+    return dni, godziny, zajete
 
 # ================= FORM =================
 
