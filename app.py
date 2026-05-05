@@ -7,8 +7,6 @@ import traceback
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
 
-# ================= DEBUG LOGGING =================
-
 logging.basicConfig(level=logging.DEBUG)
 app.config["PROPAGATE_EXCEPTIONS"] = True
 
@@ -80,9 +78,7 @@ def create_users():
         c.execute("INSERT OR IGNORE INTO users (login, haslo) VALUES (?,?)", (u,p))
 
         c.execute("""
-            INSERT OR IGNORE INTO permissions
-            (login, can_edit, can_status, calendar_only, show_logi, show_historia, show_permissions)
-            VALUES (?,?,?,?,?,?,?)
+            INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?)
         """, (u,1,1,0,1,1,1))
 
     conn.commit()
@@ -103,7 +99,7 @@ def log_action(user, akcja):
     except:
         pass
 
-# ================= PERMISSIONS SAFE =================
+# ================= PERMISSIONS (DICT VERSION) =================
 
 def get_perms(login):
     try:
@@ -119,138 +115,71 @@ def get_perms(login):
         row = c.fetchone()
         conn.close()
 
-        return row if row and len(row) == 6 else (1,1,0,1,1,1)
+        if not row:
+            row = (1,1,0,1,1,1)
 
-    except Exception:
-        return (1,1,0,1,1,1)
+        return {
+            "can_edit": row[0],
+            "can_status": row[1],
+            "calendar_only": row[2],
+            "show_logi": row[3],
+            "show_historia": row[4],
+            "show_permissions": row[5]
+        }
 
-# ================= SLOTY SAFE =================
+    except:
+        return {
+            "can_edit": 1,
+            "can_status": 1,
+            "calendar_only": 0,
+            "show_logi": 1,
+            "show_historia": 1,
+            "show_permissions": 1
+        }
+
+# ================= SLOTY =================
 
 def get_days_and_slots():
+    today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
+
+    dni = []
+    d = today
+    while len(dni) < 5:
+        if d.weekday() < 5:
+            dni.append(d)
+        d += timedelta(days=1)
+
+    godziny = []
+    for s,e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
+        t = datetime.strptime(s,"%H:%M")
+        e = datetime.strptime(e,"%H:%M")
+        while t < e:
+            godziny.append(t.strftime("%H:%M"))
+            t += timedelta(minutes=15)
+
     try:
-        today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
-
-        dni = []
-        d = today
-        while len(dni) < 5:
-            if d.weekday() < 5:
-                dni.append(d)
-            d += timedelta(days=1)
-
-        godziny = []
-        for s,e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-            t = datetime.strptime(s,"%H:%M")
-            e = datetime.strptime(e,"%H:%M")
-            while t < e:
-                godziny.append(t.strftime("%H:%M"))
-                t += timedelta(minutes=15)
-
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
         c.execute("SELECT data_godzina FROM awizacje")
         rows = c.fetchall()
         conn.close()
+    except:
+        rows = []
 
-        zajete = {}
+    zajete = {}
 
-        for r in rows:
-            try:
-                base = datetime.strptime(r[0], "%Y-%m-%dT%H:%M")
-                for i in range(-3, 4):
-                    key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
-                    zajete[key] = True
-            except:
-                continue
+    for r in rows:
+        try:
+            base = datetime.strptime(r[0], "%Y-%m-%dT%H:%M")
+            for i in range(-3,4):
+                key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
+                zajete[key] = True
+        except:
+            continue
 
-        return dni, godziny, zajete
+    return dni, godziny, zajete
 
-    except Exception:
-        return [], [], {}
-
-# ================= FORM =================
-
-@app.route("/")
-def index():
-    dni, godziny, zajete = get_days_and_slots()
-
-    return render_template(
-        "form.html",
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete,
-        dane={},
-        error=None
-    )
-
-# ================= ZAPIS =================
-
-@app.route("/zapisz", methods=["POST"])
-def zapisz():
-    try:
-        f = request.form
-
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
-
-        c.execute("""INSERT INTO awizacje
-        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
-        VALUES (?,?,?,?,?,?,?,?,?)""",
-        (
-            f.get("firma",""),
-            f.get("rejestracja",""),
-            f.get("kierowca",""),
-            f.get("email",""),
-            f.get("telefon",""),
-            f.get("data_godzina",""),
-            f.get("typ_ladunku",""),
-            f.get("waga_ladunku",""),
-            f.get("komentarz","")
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/success")
-
-    except Exception as e:
-        print("ZAPIS ERROR:", e)
-        traceback.print_exc()
-        return redirect("/")
-
-# ================= SUCCESS =================
-
-@app.route("/success")
-def success():
-    return render_template("success.html")
-
-# ================= LOGIN =================
-
-@app.route("/login", methods=["GET","POST"])
-def login():
-    if request.method == "POST":
-        login = request.form["login"]
-        haslo = request.form["haslo"]
-
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login,haslo))
-        user = c.fetchone()
-        conn.close()
-
-        if user:
-            session["logged_in"] = True
-            session["user"] = login
-            log_action(login,"LOGIN")
-            return redirect("/admin")
-
-    return render_template("login.html")
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
-
-# ================= ADMIN (ANTI-CRASH FINAL) =================
+# ================= ADMIN =================
 
 @app.route("/admin")
 def admin():
@@ -279,23 +208,60 @@ def admin():
         )
 
     except Exception as e:
-        print("ADMIN CRASH:", e)
         traceback.print_exc()
         return f"ADMIN ERROR: {e}", 500
 
-# ================= LOGI =================
+# ================= FORM =================
+
+@app.route("/")
+def index():
+    dni, godziny, zajete = get_days_and_slots()
+
+    return render_template(
+        "form.html",
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        dane={},
+        error=None
+    )
+
+# ================= LOGIN =================
+
+@app.route("/login", methods=["GET","POST"])
+def login():
+    if request.method == "POST":
+        login = request.form["login"]
+        haslo = request.form["haslo"]
+
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login,haslo))
+        user = c.fetchone()
+        conn.close()
+
+        if user:
+            session["logged_in"] = True
+            session["user"] = login
+            log_action(login,"LOGIN")
+            return redirect("/admin")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+# ================= OTHER ROUTES =================
 
 @app.route("/admin/logi")
 def logi():
     return render_template("logi.html")
 
-# ================= HISTORIA =================
-
 @app.route("/admin/historia")
 def historia():
     return render_template("historia.html")
-
-# ================= PERMISSIONS =================
 
 @app.route("/admin/permissions")
 def permissions():
