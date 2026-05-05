@@ -120,8 +120,8 @@ def get_perms(login):
 # ================= SLOTY =================
 
 def get_days_and_slots():
+def get_days_and_slots():
     now = datetime.now()
-
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     dni = []
@@ -132,22 +132,16 @@ def get_days_and_slots():
         d += timedelta(days=1)
 
     godziny = []
-    for s,e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-        t = datetime.strptime(s,"%H:%M")
-        e = datetime.strptime(e,"%H:%M")
+    for s, e in [("07:30", "09:30"), ("11:00", "13:15"), ("14:15", "20:00")]:
+        t = datetime.strptime(s, "%H:%M")
+        e = datetime.strptime(e, "%H:%M")
         while t < e:
             godziny.append(t.strftime("%H:%M"))
             t += timedelta(minutes=15)
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
-    c.execute("""
-        SELECT id,firma,data_godzina,typ_ladunku,
-               waga_ladunku,komentarz,status
-        FROM awizacje
-    """)
-
+    c.execute("SELECT id, firma, data_godzina, typ_ladunku, waga_ladunku, komentarz, status FROM awizacje")
     rows = c.fetchall()
     conn.close()
 
@@ -155,21 +149,12 @@ def get_days_and_slots():
 
     for r in rows:
         try:
-            aid,firma,data,typ,waga,komentarz,status = r
+            aid, firma, data, typ, waga, komentarz, status = r
+            base = datetime.strptime(data, "%Y-%m-%dT%H:%M")
+            blokada = SLOT_BLOCKS.get(typ, 1)
 
-            base = datetime.strptime(data,"%Y-%m-%dT%H:%M")
-            blokada = SLOT_BLOCKS.get(typ,1)
-
-            for i in range(-blokada, blokada+1):
-
-                slot_time = base + timedelta(minutes=15*i)
-
-                # =========================
-                # ❌ UKRYJ PRZESZŁE SLOTY
-                # =========================
-                if slot_time < now:
-                    continue
-
+            for i in range(-blokada, blokada + 1):
+                slot_time = base + timedelta(minutes=15 * i)
                 key = slot_time.strftime("%Y-%m-%dT%H:%M")
 
                 zajete[key] = {
@@ -178,7 +163,8 @@ def get_days_and_slots():
                     "firma": firma,
                     "typ_ladunku": typ,
                     "komentarz": komentarz,
-                    "status": status
+                    "status": status,        # ← status przekazywany dla każdego slotu
+                    "is_past": slot_time < now   # ← znacznik przeszłości
                 }
 
         except:
