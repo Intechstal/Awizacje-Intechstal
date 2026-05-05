@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
 
-# ================= HARD CODE SLOTY (OPCJA B) =================
+# ================= HARD CODE SLOTY =================
 
 SLOT_BLOCKS = {
     "Odbiór złomu": 2,
@@ -106,11 +106,13 @@ def log_action(user, akcja):
 def get_perms(login):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
+
     c.execute("""
         SELECT can_edit, can_status, calendar_only,
                show_logi, show_historia, show_permissions
         FROM permissions WHERE login=?
     """, (login,))
+
     row = c.fetchone()
     conn.close()
 
@@ -119,7 +121,9 @@ def get_perms(login):
 # ================= SLOTY =================
 
 def get_days_and_slots():
-    today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
+    now = datetime.now()
+
+    today = now.replace(hour=0,minute=0,second=0,microsecond=0)
 
     dni=[]
     d=today
@@ -138,6 +142,7 @@ def get_days_and_slots():
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
+
     c.execute("""
         SELECT id, firma, data_godzina, typ_ladunku,
                waga_ladunku, komentarz, status
@@ -152,13 +157,20 @@ def get_days_and_slots():
         try:
             aid, firma, data, typ, waga, komentarz, status = r
 
-            base = datetime.strptime(data, "%Y-%m-%dT%H:%M")
-
-            # 🔥 HARD CODE SLOTY
+            base = datetime.strptime(data,"%Y-%m-%dT%H:%M")
             blokada = SLOT_BLOCKS.get(typ, 1)
 
             for i in range(-blokada, blokada+1):
-                key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
+
+                slot_time = base + timedelta(minutes=15*i)
+
+                # =========================
+                # ❌ NIE POKAZUJ PRZESZŁYCH
+                # =========================
+                if slot_time < now:
+                    continue
+
+                key = slot_time.strftime("%Y-%m-%dT%H:%M")
 
                 zajete[key] = {
                     "main": i == 0,
