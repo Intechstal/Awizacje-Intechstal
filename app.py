@@ -1,9 +1,16 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
 from datetime import datetime, timedelta
+import logging
+import traceback
 
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
+
+# ================= DEBUG LOGGING =================
+
+logging.basicConfig(level=logging.DEBUG)
+app.config["PROPAGATE_EXCEPTIONS"] = True
 
 # ================= DB =================
 
@@ -69,7 +76,7 @@ def create_users():
         ("EK","1234"),
     ]
 
-    for u, p in users:
+    for u,p in users:
         c.execute("INSERT OR IGNORE INTO users (login, haslo) VALUES (?,?)", (u,p))
 
         c.execute("""
@@ -86,77 +93,79 @@ create_users()
 # ================= LOG =================
 
 def log_action(user, akcja):
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute("INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
-              (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
+                  (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        conn.commit()
+        conn.close()
+    except:
+        pass
 
-# ================= PERMISSIONS (100% SAFE) =================
+# ================= PERMISSIONS SAFE =================
 
 def get_perms(login):
     try:
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
+
         c.execute("""
             SELECT can_edit, can_status, calendar_only,
                    show_logi, show_historia, show_permissions
             FROM permissions WHERE login=?
         """, (login,))
+
         row = c.fetchone()
         conn.close()
 
-        if not row:
-            return (1,1,0,1,1,1)
+        return row if row and len(row) == 6 else (1,1,0,1,1,1)
 
-        return row
-
-    except:
+    except Exception:
         return (1,1,0,1,1,1)
 
-# ================= SLOTY (NIGDY NIE PUSTE) =================
+# ================= SLOTY SAFE =================
 
 def get_days_and_slots():
-    today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
-
-    dni = []
-    d = today
-    while len(dni) < 5:
-        if d.weekday() < 5:
-            dni.append(d)
-        d += timedelta(days=1)
-
-    godziny = []
-    for s,e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-        t = datetime.strptime(s,"%H:%M")
-        e = datetime.strptime(e,"%H:%M")
-        while t < e:
-            godziny.append(t.strftime("%H:%M"))
-            t += timedelta(minutes=15)
-
     try:
+        today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
+
+        dni = []
+        d = today
+        while len(dni) < 5:
+            if d.weekday() < 5:
+                dni.append(d)
+            d += timedelta(days=1)
+
+        godziny = []
+        for s,e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
+            t = datetime.strptime(s,"%H:%M")
+            e = datetime.strptime(e,"%H:%M")
+            while t < e:
+                godziny.append(t.strftime("%H:%M"))
+                t += timedelta(minutes=15)
+
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
         c.execute("SELECT data_godzina FROM awizacje")
         rows = c.fetchall()
         conn.close()
-    except:
-        rows = []
 
-    zajete = {}
+        zajete = {}
 
-    for r in rows:
-        try:
-            base = datetime.strptime(r[0], "%Y-%m-%dT%H:%M")
-        except:
-            continue
+        for r in rows:
+            try:
+                base = datetime.strptime(r[0], "%Y-%m-%dT%H:%M")
+                for i in range(-3, 4):
+                    key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
+                    zajete[key] = True
+            except:
+                continue
 
-        for i in range(-3, 4):
-            key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
-            zajete[key] = True
+        return dni, godziny, zajete
 
-    return dni, godziny, zajete
+    except Exception:
+        return [], [], {}
 
 # ================= FORM =================
 
@@ -177,9 +186,9 @@ def index():
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
-    f = request.form
-
     try:
+        f = request.form
+
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
 
@@ -203,7 +212,9 @@ def zapisz():
 
         return redirect("/success")
 
-    except:
+    except Exception as e:
+        print("ZAPIS ERROR:", e)
+        traceback.print_exc()
         return redirect("/")
 
 # ================= SUCCESS =================
@@ -239,32 +250,38 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ================= ADMIN (CRASH FIXED 100%) =================
+# ================= ADMIN (ANTI-CRASH FINAL) =================
 
 @app.route("/admin")
 def admin():
-    if not session.get("logged_in"):
-        return redirect("/login")
+    try:
+        if not session.get("logged_in"):
+            return redirect("/login")
 
-    login = session.get("user") or "UNKNOWN"
+        login = session.get("user", "UNKNOWN")
 
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute("SELECT * FROM awizacje ORDER BY id DESC")
-    awizacje = c.fetchall()
-    conn.close()
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM awizacje ORDER BY id DESC")
+        awizacje = c.fetchall()
+        conn.close()
 
-    dni, godziny, zajete = get_days_and_slots()
-    perms = get_perms(login)
+        dni, godziny, zajete = get_days_and_slots()
+        perms = get_perms(login)
 
-    return render_template(
-        "admin.html",
-        awizacje=awizacje,
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete,
-        perms=perms
-    )
+        return render_template(
+            "admin.html",
+            awizacje=awizacje,
+            dni=dni,
+            godziny=godziny,
+            zajete=zajete,
+            perms=perms
+        )
+
+    except Exception as e:
+        print("ADMIN CRASH:", e)
+        traceback.print_exc()
+        return f"ADMIN ERROR: {e}", 500
 
 # ================= LOGI =================
 
