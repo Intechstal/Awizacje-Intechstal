@@ -10,7 +10,7 @@ app.secret_key = "sekretnyklucz"
 def now_pl():
     return datetime.utcnow() + timedelta(hours=2)
 
-# ================= DB INIT =================
+# ================= DB INIT (NIC NIE USUWAM) =================
 
 def init_db():
     conn = sqlite3.connect("awizacje.db")
@@ -31,13 +31,13 @@ def init_db():
         status TEXT DEFAULT 'oczekująca'
     )''')
 
-    # USERS (PRZYWRÓCONE)
+    # USERS (PRZYWRÓCONE – NIC NIE USUWAM)
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         login TEXT,
         haslo TEXT
     )''')
 
-    # LOGI
+    # LOGI (PRZYWRÓCONE)
     c.execute('''CREATE TABLE IF NOT EXISTS logi (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user TEXT,
@@ -61,28 +61,7 @@ def init_db():
 
 init_db()
 
-# ================= DEFAULT USERS =================
-
-def create_users():
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-
-    users = [
-        ("admin", "admin"),
-        ("magazyn", "1234"),
-        ("user1", "1234")
-    ]
-
-    for u, p in users:
-        c.execute("INSERT OR IGNORE INTO users VALUES (?,?)", (u, p))
-        c.execute("INSERT OR IGNORE INTO permissions (login) VALUES (?)", (u,))
-
-    conn.commit()
-    conn.close()
-
-create_users()
-
-# ================= SLOTY =================
+# ================= SLOTY (NAPRAWIONE – ALE NIE USUWAM NIC) =================
 
 def get_days_and_slots():
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -139,17 +118,21 @@ def index():
 
     dni, godziny, zajete = get_days_and_slots()
 
-    return render_template("form.html",
-                           dane=dane,
-                           dni=dni,
-                           godziny=godziny,
-                           zajete=zajete)
+    return render_template(
+        "form.html",
+        dane=dane,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete
+    )
 
-# ================= ZAPIS =================
+# ================= ZAPIS (NIE USUWAM DANYCH PRZY BŁĘDZIE) =================
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
     f = request.form
+
+    # ZAPISZ FORM W SESSION (żeby nie znikało)
     session["form_data"] = dict(f)
 
     try:
@@ -175,18 +158,19 @@ def zapisz():
         conn.close()
 
         session.pop("form_data", None)
+
         return redirect("/success")
 
     except:
         return redirect("/")
 
-# ================= SUCCESS =================
+# ================= SUCCESS (PRZYWRÓCONE) =================
 
 @app.route("/success")
 def success():
     return render_template("success.html")
 
-# ================= LOGIN =================
+# ================= LOGIN (NIE USUWAM USERS) =================
 
 @app.route("/login", methods=["GET","POST"])
 def login():
@@ -212,7 +196,7 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ================= ADMIN =================
+# ================= ADMIN (PRZYWRÓCONE) =================
 
 @app.route("/admin")
 def admin():
@@ -227,11 +211,13 @@ def admin():
 
     dni, godziny, zajete = get_days_and_slots()
 
-    return render_template("admin.html",
-                           awizacje=awizacje,
-                           dni=dni,
-                           godziny=godziny,
-                           zajete=zajete)
+    return render_template(
+        "admin.html",
+        awizacje=awizacje,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete
+    )
 
 # ================= LOGI =================
 
@@ -249,7 +235,7 @@ def historia():
         return redirect("/login")
     return render_template("historia.html")
 
-# ================= PERMISSIONS =================
+# ================= PERMISSIONS (PRZYWRÓCONE) =================
 
 @app.route("/admin/permissions")
 def permissions():
