@@ -75,11 +75,9 @@ def create_users():
     ]
 
     for u,p in users:
-        c.execute("INSERT OR IGNORE INTO users (login, haslo) VALUES (?,?)", (u,p))
-
-        c.execute("""
-            INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?)
-        """, (u,1,1,0,1,1,1))
+        c.execute("INSERT OR IGNORE INTO users VALUES (NULL,?,?)", (u,p))
+        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?)",
+                  (u,1,1,0,1,1,1))
 
     defaults = [
         ("Odbiór złomu", 2),
@@ -115,7 +113,7 @@ def log_action(user, akcja):
     conn.commit()
     conn.close()
 
-# ================= PERMISSIONS =================
+# ================= PERMS =================
 
 def get_perms(login):
     conn = sqlite3.connect("awizacje.db")
@@ -133,14 +131,7 @@ def get_perms(login):
     if not row:
         row = (1,1,0,1,1,1)
 
-    return {
-        "can_edit": row[0],
-        "can_status": row[1],
-        "calendar_only": row[2],
-        "show_logi": row[3],
-        "show_historia": row[4],
-        "show_permissions": row[5]
-    }
+    return row
 
 # ================= SLOTY =================
 
@@ -164,8 +155,9 @@ def get_days_and_slots():
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
+
     c.execute("""
-        SELECT firma, data_godzina, typ_ladunku, waga_ladunku, komentarz, status
+        SELECT id,firma,data_godzina,typ_ladunku,waga_ladunku,komentarz,status
         FROM awizacje
     """)
     rows = c.fetchall()
@@ -176,12 +168,12 @@ def get_days_and_slots():
 
     for r in rows:
         try:
-            firma, data, typ, waga, komentarz, status = r
+            aid,firma,data,typ,waga,komentarz,status = r
 
-            base = datetime.strptime(data, "%Y-%m-%dT%H:%M")
-            blokada = settings.get(typ, 1)
+            base = datetime.strptime(data,"%Y-%m-%dT%H:%M")
+            blokada = settings.get(typ,1)
 
-            for i in range(-blokada, blokada+1):
+            for i in range(-blokada,blokada+1):
                 key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
 
                 zajete[key] = {
@@ -189,7 +181,6 @@ def get_days_and_slots():
                     "future_block": i != 0,
                     "firma": firma,
                     "typ_ladunku": typ,
-                    "waga": waga,
                     "komentarz": komentarz,
                     "status": status
                 }
@@ -204,13 +195,7 @@ def get_days_and_slots():
 @app.route("/")
 def index():
     dni, godziny, zajete = get_days_and_slots()
-    return render_template("form.html",
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete,
-        dane={},
-        error=None
-    )
+    return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane={}, error=None)
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
@@ -268,7 +253,7 @@ def admin():
         perms=perms
     )
 
-# ================= EDIT (FIX 404) =================
+# ================= EDIT =================
 
 @app.route("/admin/edit/<int:aid>", methods=["GET","POST"])
 def edit(aid):
@@ -281,19 +266,11 @@ def edit(aid):
     if request.method == "POST":
         f = request.form
 
-        c.execute("""
-            UPDATE awizacje SET
-                firma=?,
-                rejestracja=?,
-                kierowca=?,
-                email=?,
-                telefon=?,
-                data_godzina=?,
-                typ_ladunku=?,
-                waga_ladunku=?,
-                komentarz=?
-            WHERE id=?
-        """, (
+        c.execute("""UPDATE awizacje SET
+            firma=?,rejestracja=?,kierowca=?,email=?,telefon=?,
+            data_godzina=?,typ_ladunku=?,waga_ladunku=?,komentarz=?
+            WHERE id=?""",
+        (
             f.get("firma"),
             f.get("rejestracja"),
             f.get("kierowca"),
@@ -316,7 +293,7 @@ def edit(aid):
 
     return render_template("edit.html", awizacja=awizacja)
 
-# ================= LOGI =================
+# ================= LOGI / HISTORIA / PERMS =================
 
 @app.route("/admin/logi")
 def logi():
@@ -331,8 +308,6 @@ def logi():
 
     return render_template("logi.html", logi=logi)
 
-# ================= HISTORIA =================
-
 @app.route("/admin/historia")
 def historia():
     if not session.get("logged_in"):
@@ -346,8 +321,6 @@ def historia():
 
     return render_template("historia.html", awizacje=dane)
 
-# ================= PERMISSIONS =================
-
 @app.route("/admin/permissions", methods=["GET","POST"])
 def permissions():
     if not session.get("logged_in"):
@@ -359,16 +332,11 @@ def permissions():
     if request.method == "POST":
         login = request.form["login"]
 
-        c.execute("""
-            UPDATE permissions SET
-            can_edit=?,
-            can_status=?,
-            calendar_only=?,
-            show_logi=?,
-            show_historia=?,
-            show_permissions=?
-            WHERE login=?
-        """, (
+        c.execute("""UPDATE permissions SET
+            can_edit=?,can_status=?,calendar_only=?,
+            show_logi=?,show_historia=?,show_permissions=?
+            WHERE login=?""",
+        (
             int("can_edit" in request.form),
             int("can_status" in request.form),
             int("calendar_only" in request.form),
