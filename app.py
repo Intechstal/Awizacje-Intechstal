@@ -78,17 +78,12 @@ def create_users():
     ]
 
     for u,p in users:
-        try:
-            c.execute("INSERT INTO users (login, haslo) VALUES (?,?)", (u,p))
+        c.execute("INSERT OR IGNORE INTO users VALUES (NULL,?,?)", (u,p))
 
-            c.execute("""
-                INSERT OR IGNORE INTO permissions
-                (login, can_edit, can_status, calendar_only, show_logi, show_historia, show_permissions)
-                VALUES (?,?,?,?,?,?,?)
-            """, (u,1,1,0,1,1,1))
-
-        except:
-            pass
+        c.execute("""
+            INSERT OR IGNORE INTO permissions
+            VALUES (?,?,?,?,?,?,?)
+        """, (u,1,1,0,1,1,1))
 
     conn.commit()
     conn.close()
@@ -100,7 +95,7 @@ create_users()
 def log_action(user, akcja):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
+    c.execute("INSERT INTO logi VALUES (NULL,?,?,?)",
               (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     conn.commit()
     conn.close()
@@ -110,11 +105,13 @@ def log_action(user, akcja):
 def get_perms(login):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
+
     c.execute("""
         SELECT can_edit, can_status, calendar_only,
                show_logi, show_historia, show_permissions
         FROM permissions WHERE login=?
     """, (login,))
+
     row = c.fetchone()
     conn.close()
 
@@ -123,33 +120,79 @@ def get_perms(login):
 # ================= SLOTY =================
 
 def get_days_and_slots():
-    today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
+    now = datetime.now()
 
-    dni=[]
-    d=today
-    while len(dni)<5:
-        if d.weekday()<5:
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    dni = []
+    d = today
+    while len(dni) < 5:
+        if d.weekday() < 5:
             dni.append(d)
         d += timedelta(days=1)
 
-    godziny=[]
+    godziny = []
     for s,e in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
-        t=datetime.strptime(s,"%H:%M")
-        e=datetime.strptime(e,"%H:%M")
-        while t<e:
+        t = datetime.strptime(s,"%H:%M")
+        e = datetime.strptime(e,"%H:%M")
+        while t < e:
             godziny.append(t.strftime("%H:%M"))
             t += timedelta(minutes=15)
 
-    return dni,godziny,{}
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
 
-# ================= FORM (NAPRAWIONE 404) =================
+    c.execute("""
+        SELECT id,firma,data_godzina,typ_ladunku,
+               waga_ladunku,komentarz,status
+        FROM awizacje
+    """)
+
+    rows = c.fetchall()
+    conn.close()
+
+    zajete = {}
+
+    for r in rows:
+        try:
+            aid,firma,data,typ,waga,komentarz,status = r
+
+            base = datetime.strptime(data,"%Y-%m-%dT%H:%M")
+            blokada = SLOT_BLOCKS.get(typ,1)
+
+            for i in range(-blokada, blokada+1):
+
+                slot_time = base + timedelta(minutes=15*i)
+
+                # =========================
+                # ❌ UKRYJ PRZESZŁE SLOTY
+                # =========================
+                if slot_time < now:
+                    continue
+
+                key = slot_time.strftime("%Y-%m-%dT%H:%M")
+
+                zajete[key] = {
+                    "main": i == 0,
+                    "future_block": i != 0,
+                    "firma": firma,
+                    "typ_ladunku": typ,
+                    "komentarz": komentarz,
+                    "status": status
+                }
+
+        except:
+            continue
+
+    return dni, godziny, zajete
+
+# ================= FORM =================
 
 @app.route("/")
 def index():
     dni, godziny, zajete = get_days_and_slots()
 
-    return render_template(
-        "form.html",
+    return render_template("form.html",
         dni=dni,
         godziny=godziny,
         zajete=zajete,
@@ -161,18 +204,18 @@ def index():
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
-    dane = request.form.to_dict()
+    f = request.form
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
 
-    c.execute("""INSERT INTO awizacje
-        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
-        VALUES (?,?,?,?,?,?,?,?,?)""",
-        (dane["firma"],dane["rejestracja"],dane["kierowca"],
-         dane["email"],dane["telefon"],dane["data_godzina"],
-         dane["typ_ladunku"],dane["waga_ladunku"],dane.get("komentarz",""))
-    )
+    c.execute("""INSERT INTO awizacje VALUES (NULL,?,?,?,?,?,?,?,?,?,?)""",
+    (
+        f["firma"], f["rejestracja"], f["kierowca"],
+        f["email"], f["telefon"], f["data_godzina"],
+        f["typ_ladunku"], f["waga_ladunku"], f["komentarz"],
+        "oczekująca"
+    ))
 
     conn.commit()
     conn.close()
@@ -213,9 +256,6 @@ def admin():
     if not session.get("logged_in"):
         return redirect("/login")
 
-    login = session.get("user")
-    perms = get_perms(login)
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
     c.execute("SELECT * FROM awizacje ORDER BY id DESC")
@@ -223,6 +263,7 @@ def admin():
     conn.close()
 
     dni, godziny, zajete = get_days_and_slots()
+    perms = get_perms(session.get("user"))
 
     return render_template("admin.html",
         awizacje=awizacje,
@@ -239,9 +280,13 @@ def update_status(id):
     if not session.get("logged_in"):
         return redirect("/login")
 
+    status = request.form.get("status")
+
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("UPDATE awizacje SET status=? WHERE id=?", (request.form["status"], id))
+
+    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
+
     conn.commit()
     conn.close()
 
@@ -259,13 +304,17 @@ def edit(id):
 
     if request.method == "POST":
         f = request.form
+
         c.execute("""UPDATE awizacje SET
-            firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
-            data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
+            firma=?,rejestracja=?,kierowca=?,email=?,telefon=?,
+            data_godzina=?,typ_ladunku=?,waga_ladunku=?,komentarz=?
             WHERE id=?""",
-            (f["firma"],f["rejestracja"],f["kierowca"],
-             f["email"],f["telefon"],f["data_godzina"],
-             f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id))
+        (
+            f["firma"],f["rejestracja"],f["kierowca"],
+            f["email"],f["telefon"],f["data_godzina"],
+            f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id
+        ))
+
         conn.commit()
         conn.close()
         return redirect("/admin")
@@ -274,7 +323,15 @@ def edit(id):
     awizacja = c.fetchone()
     conn.close()
 
-    return render_template("edit.html", awizacja=awizacja)
+    dni, godziny, zajete = get_days_and_slots()
+
+    return render_template(
+        "edit.html",
+        awizacja=awizacja,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete
+    )
 
 # ================= LOGI =================
 
@@ -319,16 +376,11 @@ def permissions():
     if request.method == "POST":
         login = request.form["login"]
 
-        c.execute("""
-            UPDATE permissions SET
-            can_edit=?,
-            can_status=?,
-            calendar_only=?,
-            show_logi=?,
-            show_historia=?,
-            show_permissions=?
-            WHERE login=?
-        """, (
+        c.execute("""UPDATE permissions SET
+            can_edit=?,can_status=?,calendar_only=?,
+            show_logi=?,show_historia=?,show_permissions=?
+            WHERE login=?""",
+        (
             int("can_edit" in request.form),
             int("can_status" in request.form),
             int("calendar_only" in request.form),
@@ -337,6 +389,7 @@ def permissions():
             int("show_permissions" in request.form),
             login
         ))
+
         conn.commit()
 
     c.execute("SELECT * FROM permissions")
@@ -347,7 +400,5 @@ def permissions():
 
 # ================= RUN =================
 
-aplication = app
-
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
