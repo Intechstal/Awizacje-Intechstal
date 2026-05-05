@@ -105,13 +105,16 @@ def log_action(user, akcja):
 def get_perms(login):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
+
     c.execute("""
         SELECT can_edit, can_status, calendar_only,
                show_logi, show_historia, show_permissions
         FROM permissions WHERE login=?
     """, (login,))
+
     row = c.fetchone()
     conn.close()
+
     return row if row else (1,1,0,1,1,1)
 
 # ================= SLOTY =================
@@ -138,6 +141,7 @@ def get_days_and_slots():
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
+
     c.execute("""
         SELECT id,firma,data_godzina,typ_ladunku,
                waga_ladunku,komentarz,status
@@ -163,7 +167,6 @@ def get_days_and_slots():
                 zajete[key] = {
                     "main": i == 0,
                     "future_block": i != 0,
-                    "past": False,   # NIE BLOKUJEMY WIDOKU
                     "firma": firma,
                     "typ_ladunku": typ,
                     "komentarz": komentarz,
@@ -180,7 +183,15 @@ def get_days_and_slots():
 @app.route("/")
 def index():
     dni, godziny, zajete = get_days_and_slots()
-    return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete, dane={}, error=None)
+    return render_template("form.html",
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        dane={},
+        error=None
+    )
+
+# ================= ZAPIS =================
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
@@ -253,7 +264,26 @@ def admin():
         perms=perms
     )
 
-# ================= EDIT =================
+# ================= STATUS (FIX 404) =================
+
+@app.route("/admin/update_status/<int:id>", methods=["POST"])
+def update_status(id):
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    status = request.form.get("status")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin")
+
+# ================= EDIT (FIX DNI/GODZINY) =================
 
 @app.route("/admin/edit/<int:id>", methods=["GET","POST"])
 def edit(id):
@@ -284,9 +314,17 @@ def edit(id):
     awizacja = c.fetchone()
     conn.close()
 
-    return render_template("edit.html", awizacja=awizacja)
+    dni, godziny, zajete = get_days_and_slots()
 
-# ================= LOGI / HISTORIA / PERMS =================
+    return render_template(
+        "edit.html",
+        awizacja=awizacja,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete
+    )
+
+# ================= LOGI =================
 
 @app.route("/admin/logi")
 def logi():
@@ -301,6 +339,8 @@ def logi():
 
     return render_template("logi.html", logi=logi)
 
+# ================= HISTORIA =================
+
 @app.route("/admin/historia")
 def historia():
     if not session.get("logged_in"):
@@ -313,6 +353,8 @@ def historia():
     conn.close()
 
     return render_template("historia.html", awizacje=dane)
+
+# ================= PERMISSIONS =================
 
 @app.route("/admin/permissions", methods=["GET","POST"])
 def permissions():
