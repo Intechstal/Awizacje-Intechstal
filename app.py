@@ -35,6 +35,21 @@ def init_db():
         haslo TEXT
     )''')
 
+    users = [
+        ("SK","1234"),
+        ("JU","1234"),
+        ("BL","1234"),
+        ("KJ","1234"),
+        ("TR","1234"),
+        ("MAGAZYN","1234"),
+        ("EK","1234"),
+    ]
+
+    for user_login, haslo in users:
+        c.execute("SELECT * FROM users WHERE login=?", (user_login,))
+        if not c.fetchone():
+            c.execute("INSERT INTO users (login, haslo) VALUES (?,?)", (user_login, haslo))
+
     conn.commit()
     conn.close()
 
