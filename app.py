@@ -10,7 +10,7 @@ app.secret_key = "sekretnyklucz"
 def now_pl():
     return datetime.utcnow() + timedelta(hours=2)
 
-# ================= DB INIT =================
+# ================= DB =================
 
 def init_db():
     conn = sqlite3.connect("awizacje.db")
@@ -94,18 +94,20 @@ def log_action(user, akcja):
     try:
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
+
         c.execute(
             "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
             (user if user else "UNKNOWN",
              akcja,
              now_pl().strftime("%Y-%m-%d %H:%M:%S"))
         )
+
         conn.commit()
         conn.close()
     except:
         pass
 
-# ================= SLOTY (NAPRAWIONE – KLUCZOWE) =================
+# ================= SLOTY KALENDARZ =================
 
 def get_days_and_slots():
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -140,7 +142,6 @@ def get_days_and_slots():
         except:
             continue
 
-        typ = r[7] if r[7] else "default"
         zakres = 3
 
         for i in range(-zakres, zakres + 1):
@@ -158,7 +159,7 @@ def get_days_and_slots():
 
     return dni, godziny, zajete
 
-# ================= FORM =================
+# ================= FORM (FIX SLOTY DROPDOWN) =================
 
 @app.route("/")
 def index():
@@ -170,7 +171,17 @@ def index():
         "telefon": ""
     }
 
-    return render_template("form.html", dane=dane)
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT typ FROM slot_settings")
+    sloty = [r[0] for r in c.fetchall()]
+    conn.close()
+
+    # fallback jeśli brak danych
+    if not sloty:
+        sloty = ["złom", "dostawa", "materiał"]
+
+    return render_template("form.html", dane=dane, sloty=sloty)
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
@@ -244,8 +255,7 @@ def admin():
 
     dni, godziny, zajete = get_days_and_slots()
 
-    return render_template(
-        "admin.html",
+    return render_template("admin.html",
         awizacje=awizacje,
         dni=dni,
         godziny=godziny,
@@ -253,7 +263,7 @@ def admin():
         perms=(1,1,0,1,1,1,1)
     )
 
-# ================= STATUS =================
+# ================= RESZTA BEZ ZMIAN =================
 
 @app.route("/admin/update_status/<int:id>", methods=["POST"])
 def update_status(id):
@@ -267,10 +277,7 @@ def update_status(id):
     conn.close()
 
     log_action(session.get("user"), f"STATUS ID {id}")
-
     return redirect("/admin")
-
-# ================= EDIT =================
 
 @app.route("/admin/edit/<int:id>", methods=["GET","POST"])
 def edit(id):
@@ -300,8 +307,6 @@ def edit(id):
 
     return render_template("edit.html", awizacja=a)
 
-# ================= LOGI =================
-
 @app.route("/admin/logi")
 def logi():
     conn = sqlite3.connect("awizacje.db")
@@ -311,8 +316,6 @@ def logi():
     conn.close()
     return render_template("logi.html", logi=data)
 
-# ================= HISTORIA =================
-
 @app.route("/admin/historia")
 def historia():
     conn = sqlite3.connect("awizacje.db")
@@ -321,8 +324,6 @@ def historia():
     data = c.fetchall()
     conn.close()
     return render_template("historia.html", awizacje=data)
-
-# ================= PERMISSIONS =================
 
 @app.route("/admin/permissions", methods=["GET","POST"])
 def permissions():
@@ -353,8 +354,6 @@ def permissions():
     conn.close()
 
     return render_template("permissions.html", users=users)
-
-# ================= SLOTS =================
 
 @app.route("/admin/slots", methods=["GET","POST"])
 def slots():
