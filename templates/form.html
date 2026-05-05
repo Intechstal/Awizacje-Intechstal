@@ -50,8 +50,8 @@
         {% for h in godziny %}
             {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
             {% set info = zajete.get(slot) %}
-            {# Pokaż slot tylko jeśli: wolny LUB przeszły (is_past) — przeszłe są w zajete po zmianie w app.py #}
-            {% if not info or info.is_past %}
+            {# Pokaż slot tylko jeśli nie ma go w zajete (wolny i nie jest przeszły) #}
+            {% if not info %}
                 <option value="{{ slot }}">
                     {{ d.strftime('%d.%m') }} {{ h }}
                 </option>
