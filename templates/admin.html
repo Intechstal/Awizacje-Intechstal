@@ -8,23 +8,7 @@
 
 <body>
 
-<!-- ================= SAFE PERMS FIX ================= -->
-{% set can_edit = True %}
-{% set can_status = True %}
-{% set calendar_only = False %}
-{% set show_logi = True %}
-{% set show_historia = True %}
-{% set show_permissions = True %}
-
-{% if perms %}
-    {% set can_edit = perms[0] %}
-    {% set can_status = perms[1] %}
-    {% set calendar_only = perms[2] %}
-    {% set show_logi = perms[3] %}
-    {% set show_historia = perms[4] %}
-    {% set show_permissions = perms[5] %}
-{% endif %}
-<!-- =============================================== -->
+{% set can_edit, can_status, calendar_only, show_logi, show_historia, show_permissions, show_slots = perms %}
 
 <div class="topbar">
     <div class="topbar-left">
@@ -47,6 +31,10 @@
 
         {% if show_permissions %}
             <a href="/admin/permissions">Permissions</a>
+        {% endif %}
+
+        {% if show_slots %}
+            <a href="/admin/slots">Sloty</a>
         {% endif %}
 
         <a href="/logout">Wyloguj</a>
