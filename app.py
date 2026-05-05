@@ -140,7 +140,7 @@ def get_days_and_slots():
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT id, firma, data_godzina, typ_ladunku, waga_ladunku, komentarz, status FROM awizacje")
+    c.execute("SELECT id, firma, data_godzina, typ_ladunku, waga_ladunku, komentarz, status FROM awizacje WHERE status != 'odrzucona'")
     rows = c.fetchall()
     conn.close()
 
