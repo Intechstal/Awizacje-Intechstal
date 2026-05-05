@@ -30,6 +30,11 @@ def init_db():
         status TEXT DEFAULT 'oczekująca'
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+        login TEXT,
+        haslo TEXT
+    )''')
+
     conn.commit()
     conn.close()
 
@@ -76,11 +81,11 @@ def get_days_and_slots():
 
     return dni, godziny, zajete
 
-# ================= FORM =================
+# ================= HOME =================
 
 @app.route("/")
 def index():
-    dane = {
+    dane = session.get("form_data", {
         "firma": "",
         "rejestracja": "",
         "kierowca": "",
@@ -88,7 +93,7 @@ def index():
         "telefon": "",
         "waga_ladunku": "",
         "komentarz": ""
-    }
+    })
 
     dni, godziny, zajete = get_days_and_slots()
 
@@ -100,34 +105,108 @@ def index():
         zajete=zajete
     )
 
+# ================= SUCCESS =================
+
+@app.route("/success")
+def success():
+    return render_template("success.html")
+
 # ================= ZAPIS =================
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
     f = request.form
 
+    # ZACHOWAJ DANE JEŚLI BŁĄD
+    session["form_data"] = dict(f)
+
+    try:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+
+        c.execute("""INSERT INTO awizacje
+        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
+        VALUES (?,?,?,?,?,?,?,?,?)""",
+        (
+            f.get("firma",""),
+            f.get("rejestracja",""),
+            f.get("kierowca",""),
+            f.get("email",""),
+            f.get("telefon",""),
+            f.get("data_godzina",""),
+            f.get("typ_ladunku",""),
+            f.get("waga_ladunku",""),
+            f.get("komentarz","")
+        ))
+
+        conn.commit()
+        conn.close()
+
+        session.pop("form_data", None)
+
+        return redirect("/success")
+
+    except:
+        return redirect("/")
+
+# ================= LOGIN =================
+
+@app.route("/login", methods=["GET","POST"])
+def login():
+    if request.method == "POST":
+        login = request.form["login"]
+        haslo = request.form["haslo"]
+
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login,haslo))
+        u = c.fetchone()
+        conn.close()
+
+        if u:
+            session["logged_in"] = True
+            session["user"] = login
+            return redirect("/admin")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+# ================= ADMIN =================
+
+@app.route("/admin")
+def admin():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
-    c.execute("""INSERT INTO awizacje
-    (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
-    VALUES (?,?,?,?,?,?,?,?,?)""",
-    (
-        f.get("firma",""),
-        f.get("rejestracja",""),
-        f.get("kierowca",""),
-        f.get("email",""),
-        f.get("telefon",""),
-        f.get("data_godzina",""),
-        f.get("typ_ladunku",""),
-        f.get("waga_ladunku",""),
-        f.get("komentarz","")
-    ))
-
-    conn.commit()
+    c.execute("SELECT * FROM awizacje")
+    awizacje = c.fetchall()
     conn.close()
 
-    return redirect("/")
+    dni, godziny, zajete = get_days_and_slots()
+
+    return render_template(
+        "admin.html",
+        awizacje=awizacje,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete
+    )
+
+# ================= LOGI / HISTORIA =================
+
+@app.route("/admin/logi")
+def logi():
+    return render_template("logi.html")
+
+@app.route("/admin/historia")
+def historia():
+    return render_template("historia.html")
 
 # ================= RUN =================
 
