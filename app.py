@@ -191,9 +191,19 @@ def index():
 def zapisz():
     f = request.form
 
+    try:
+        wybrana = datetime.strptime(f["data_godzina"], "%Y-%m-%dT%H:%M")
+        if wybrana < datetime.now():
+            dni, godziny, zajete = get_days_and_slots()
+            return render_template("form.html",
+                dni=dni, godziny=godziny, zajete=zajete,
+                dane=f, error="Nie można awizować się na termin w przeszłości."
+            )
+    except ValueError:
+        pass
+
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
     c.execute("""INSERT INTO awizacje VALUES (NULL,?,?,?,?,?,?,?,?,?,?)""",
     (
         f["firma"], f["rejestracja"], f["kierowca"],
@@ -201,7 +211,6 @@ def zapisz():
         f["typ_ladunku"], f["waga_ladunku"], f["komentarz"],
         "oczekująca"
     ))
-
     conn.commit()
     conn.close()
 
