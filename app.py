@@ -218,15 +218,18 @@ def admin():
 
     dni, godziny, zajete = get_days_and_slots()
 
+    # BEZ CRASHA NA PERMISSIONS
+    perms = get_perms(login) if login else (1,1,0,1,1,1)
+
     return render_template(
         "admin.html",
         awizacje=awizacje,
         dni=dni,
         godziny=godziny,
         zajete=zajete,
-        perms=(1,1,0,1,1,1)
+        perms=perms
     )
-
+    
 # ================= LOGI / HISTORIA / PERMISSIONS (BEZ ZMIAN LOGIKI) =================
 
 @app.route("/admin/logi")
