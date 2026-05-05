@@ -8,6 +8,24 @@
 
 <body>
 
+<!-- ================= SAFE PERMS FIX ================= -->
+{% set can_edit = True %}
+{% set can_status = True %}
+{% set calendar_only = False %}
+{% set show_logi = True %}
+{% set show_historia = True %}
+{% set show_permissions = True %}
+
+{% if perms %}
+    {% set can_edit = perms[0] %}
+    {% set can_status = perms[1] %}
+    {% set calendar_only = perms[2] %}
+    {% set show_logi = perms[3] %}
+    {% set show_historia = perms[4] %}
+    {% set show_permissions = perms[5] %}
+{% endif %}
+<!-- =============================================== -->
+
 <div class="topbar">
     <div class="topbar-left">
         <img src="/static/logo.png" class="logo">
@@ -19,15 +37,15 @@
 
     <div class="topbar-right">
 
-        {% if perms.show_logi %}
+        {% if show_logi %}
             <a href="/admin/logi">Logi</a>
         {% endif %}
 
-        {% if perms.show_historia %}
+        {% if show_historia %}
             <a href="/admin/historia">Historia</a>
         {% endif %}
 
-        {% if perms.show_permissions %}
+        {% if show_permissions %}
             <a href="/admin/permissions">Permissions</a>
         {% endif %}
 
@@ -39,7 +57,7 @@
 
 <!-- ================= AWIZACJE ================= -->
 
-{% if not perms.calendar_only %}
+{% if not calendar_only %}
 
 <h2>Awizacje</h2>
 
@@ -49,8 +67,6 @@
     <th>Firma</th>
     <th>Rejestracja</th>
     <th>Kierowca</th>
-    <th>Email</th>
-    <th>Telefon</th>
     <th>Data</th>
     <th>Typ</th>
     <th>Waga</th>
@@ -65,8 +81,6 @@
     <td>{{ a[1] }}</td>
     <td>{{ a[2] }}</td>
     <td>{{ a[3] }}</td>
-    <td>{{ a[4] }}</td>
-    <td>{{ a[5] }}</td>
     <td>{{ a[6] }}</td>
     <td>{{ a[7] }}</td>
     <td>{{ a[8] }}</td>
@@ -75,7 +89,7 @@
 
     <td>
 
-        {% if perms.can_status %}
+        {% if can_status %}
         <form action="/admin/update_status/{{ a[0] }}" method="post">
             <select name="status">
                 <option value="oczekująca">oczekująca</option>
@@ -86,7 +100,7 @@
         </form>
         {% endif %}
 
-        {% if perms.can_edit %}
+        {% if can_edit %}
         <a class="link" href="/admin/edit/{{ a[0] }}">Edytuj</a>
         {% endif %}
 
@@ -97,14 +111,13 @@
 
 {% endif %}
 
-<!-- ================= KALENDARZ (SLOTY PRZYWRÓCONE) ================= -->
+<!-- ================= KALENDARZ ================= -->
 
 <h2>Kalendarz</h2>
 
 <table class="calendar">
 <tr>
     <th>Godzina</th>
-
     {% for d in dni %}
         <th>{{ d.strftime('%d.%m') }}</th>
     {% endfor %}
@@ -118,14 +131,30 @@
         {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
         {% set data = zajete.get(slot) %}
 
-        {% if data %}
+        {% if data and data.main %}
+
             <td>
-                <div class="slot zajete">
-                    Zajęte
+                <div class="slot {{ data.status }}">
+                    {{ data.firma }}
+
+                    <div class="small">{{ data.typ_ladunku }}</div>
+                    <div class="small">{{ data.waga }}</div>
+                    <div class="small">{{ data.komentarz }}</div>
                 </div>
             </td>
+
+        {% elif data and data.future_block %}
+
+            <td>
+                <div class="slot zaakceptowana">
+                    {{ data.firma }}
+                </div>
+            </td>
+
         {% else %}
+
             <td class="empty">—</td>
+
         {% endif %}
     {% endfor %}
 </tr>
