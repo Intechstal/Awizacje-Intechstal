@@ -5,12 +5,12 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
 
-# ================= TIME FIX =================
+# ================= TIME =================
 
 def now_pl():
     return datetime.utcnow() + timedelta(hours=2)
 
-# ================= DB INIT (NIE USUWA NIC) =================
+# ================= DB =================
 
 def init_db():
     conn = sqlite3.connect("awizacje.db")
@@ -42,7 +42,6 @@ def init_db():
         data TEXT
     )''')
 
-    # ✔ permissions (NIE USUWAMY)
     c.execute('''CREATE TABLE IF NOT EXISTS permissions (
         login TEXT PRIMARY KEY,
         can_edit INTEGER DEFAULT 1,
@@ -54,7 +53,6 @@ def init_db():
         show_slots INTEGER DEFAULT 1
     )''')
 
-    # ✔ slots (NIE USUWAMY)
     c.execute('''CREATE TABLE IF NOT EXISTS slot_settings (
         typ TEXT PRIMARY KEY,
         zakres INTEGER DEFAULT 3
@@ -64,25 +62,6 @@ def init_db():
     conn.close()
 
 init_db()
-
-# ================= LOGS (STABILNE) =================
-
-def log_action(user, akcja):
-    try:
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
-
-        c.execute(
-            "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
-            (user if user else "UNKNOWN",
-             akcja,
-             now_pl().strftime("%Y-%m-%d %H:%M:%S"))
-        )
-
-        conn.commit()
-        conn.close()
-    except:
-        pass
 
 # ================= USERS =================
 
@@ -109,44 +88,68 @@ def create_users():
 
 create_users()
 
-# ================= FORM (FIX 500) =================
+# ================= LOGS =================
+
+def log_action(user, akcja):
+    try:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+
+        c.execute(
+            "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
+            (user if user else "UNKNOWN",
+             akcja,
+             now_pl().strftime("%Y-%m-%d %H:%M:%S"))
+        )
+
+        conn.commit()
+        conn.close()
+    except:
+        pass
+
+# ================= FORM FIX (500) =================
 
 @app.route("/")
 def index():
-    return render_template("form.html")
+    # FIX: brak "dane" w template = 500
+    dane = {
+        "firma": "",
+        "rejestracja": "",
+        "kierowca": "",
+        "email": "",
+        "telefon": ""
+    }
+
+    return render_template("form.html", dane=dane)
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
     f = request.form
 
-    try:
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
 
-        c.execute("""INSERT INTO awizacje
-        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
-        VALUES (?,?,?,?,?,?,?,?,?)""",
-        (
-            f.get("firma",""),
-            f.get("rejestracja",""),
-            f.get("kierowca",""),
-            f.get("email",""),
-            f.get("telefon",""),
-            f.get("data_godzina",""),
-            f.get("typ_ladunku",""),
-            f.get("waga_ladunku",""),
-            f.get("komentarz","")
-        ))
+    c.execute("""INSERT INTO awizacje
+    (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
+    VALUES (?,?,?,?,?,?,?,?,?)""",
+    (
+        f.get("firma",""),
+        f.get("rejestracja",""),
+        f.get("kierowca",""),
+        f.get("email",""),
+        f.get("telefon",""),
+        f.get("data_godzina",""),
+        f.get("typ_ladunku",""),
+        f.get("waga_ladunku",""),
+        f.get("komentarz","")
+    ))
 
-        conn.commit()
-        conn.close()
+    conn.commit()
+    conn.close()
 
-        log_action(session.get("user","FORM"), "NOWA AWIZACJA")
+    log_action(session.get("user","FORM"), "NOWA AWIZACJA")
 
-        return redirect("/admin")
-
-    except Exception as e:
-        return f"FORM ERROR: {e}", 500
+    return redirect("/admin")
 
 # ================= LOGIN =================
 
@@ -263,7 +266,7 @@ def historia():
     conn.close()
     return render_template("historia.html", awizacje=data)
 
-# ================= PERMISSIONS (FIX 404) =================
+# ================= PERMISSIONS =================
 
 @app.route("/admin/permissions", methods=["GET","POST"])
 def permissions():
@@ -286,6 +289,7 @@ def permissions():
             "show_slots" in request.form,
             login
         ))
+
         conn.commit()
 
     c.execute("SELECT * FROM permissions")
@@ -294,7 +298,7 @@ def permissions():
 
     return render_template("permissions.html", users=users)
 
-# ================= SLOTS (FIX 404) =================
+# ================= SLOTS (FIX WYBORÓW) =================
 
 @app.route("/admin/slots", methods=["GET","POST"])
 def slots():
@@ -308,6 +312,15 @@ def slots():
 
     c.execute("SELECT * FROM slot_settings")
     data = c.fetchall()
+
+    # FIX: jeśli puste → zawsze pokazuj opcje
+    if not data:
+        data = [
+            ("złom", 3),
+            ("dostawa", 2),
+            ("materiał", 4)
+        ]
+
     conn.close()
 
     return render_template("slots.html", settings=data)
