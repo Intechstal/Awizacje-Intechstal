@@ -124,10 +124,12 @@
             </td>
 
         {% elif data.future_block %}
-            {# Slot blokujący — tylko firma, ten sam kolor co status #}
+            {# Slot blokujący — te same info co slot główny #}
             <td>
                 <div class="slot {{ data.status }}">
                     {{ data.firma }}
+                    <div class="small">{{ data.typ_ladunku }}</div>
+                    <div class="small">{{ data.komentarz }}</div>
                 </div>
             </td>
 
