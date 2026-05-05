@@ -107,11 +107,14 @@
         {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
         {% set data = zajete.get(slot) %}
 
-        {% if data and data.is_past %}
-            {# Przeszły slot — niewidoczny w kalendarzu admina #}
+        {% if not data %}
             <td class="empty">—</td>
 
-        {% elif data and data.main %}
+        {% elif data.is_past %}
+            {# Przeszły slot — niewidoczny w kalendarzu admina, zawsze puste #}
+            <td class="empty">—</td>
+
+        {% elif data.main %}
             {# Slot główny — pełna informacja, kolor = status awizacji #}
             <td>
                 <div class="slot {{ data.status }}">
@@ -121,7 +124,7 @@
                 </div>
             </td>
 
-        {% elif data and data.future_block %}
+        {% elif data.future_block %}
             {# Slot blokujący — tylko firma, ten sam kolor co status #}
             <td>
                 <div class="slot {{ data.status }}">
