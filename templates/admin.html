@@ -110,8 +110,7 @@
         {% if not data %}
             <td class="empty">—</td>
 
-        {% elif data.is_past %}
-            {# Przeszły slot — niewidoczny w kalendarzu admina, zawsze puste #}
+        {% elif data.is_past or data.is_before %}
             <td class="empty">—</td>
 
         {% elif data.main %}
