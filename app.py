@@ -166,7 +166,165 @@ def get_days_and_slots():
     conn.close()
     return dni, godziny, zajete
 
-# ================= SLOT PANEL =================
+# ================= FORM =================
+
+@app.route("/")
+def index():
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template("form.html",
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        dane={},
+        error=None
+    )
+
+@app.route("/zapisz", methods=["POST"])
+def zapisz():
+    dane = request.form.to_dict()
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    c.execute("""INSERT INTO awizacje
+        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
+        VALUES (?,?,?,?,?,?,?,?,?)""",
+        (dane["firma"],dane["rejestracja"],dane["kierowca"],
+         dane["email"],dane["telefon"],dane["data_godzina"],
+         dane["typ_ladunku"],dane["waga_ladunku"],dane.get("komentarz",""))
+    )
+
+    conn.commit()
+    conn.close()
+
+    return render_template("success.html")
+
+# ================= LOGIN =================
+
+@app.route("/login", methods=["GET","POST"])
+def login():
+    if request.method == "POST":
+        login = request.form["login"]
+        haslo = request.form["haslo"]
+
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login, haslo))
+        user = c.fetchone()
+        conn.close()
+
+        if user:
+            session["logged_in"] = True
+            session["user"] = login
+            return redirect("/admin")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+# ================= ADMIN =================
+
+@app.route("/admin")
+def admin():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    perms = get_perms(session["user"])
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY id DESC")
+    awizacje = c.fetchall()
+    conn.close()
+
+    dni, godziny, zajete = get_days_and_slots()
+
+    return render_template("admin.html",
+        awizacje=awizacje,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        perms=perms
+    )
+
+# ================= STATUS =================
+
+@app.route("/admin/update_status/<int:id>", methods=["POST"])
+def update_status(id):
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("UPDATE awizacje SET status=? WHERE id=?", (request.form["status"], id))
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin")
+
+# ================= EDIT =================
+
+@app.route("/admin/edit/<int:id>", methods=["GET","POST"])
+def edit(id):
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    if request.method == "POST":
+        f = request.form
+        c.execute("""UPDATE awizacje SET
+            firma=?, rejestracja=?, kierowca=?, email=?, telefon=?,
+            data_godzina=?, typ_ladunku=?, waga_ladunku=?, komentarz=?
+            WHERE id=?""",
+            (f["firma"],f["rejestracja"],f["kierowca"],
+             f["email"],f["telefon"],f["data_godzina"],
+             f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id))
+        conn.commit()
+        conn.close()
+        return redirect("/admin")
+
+    c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
+    awizacja = c.fetchone()
+    conn.close()
+
+    return render_template("edit.html", awizacja=awizacja)
+
+# ================= LOGI =================
+
+@app.route("/admin/logi")
+def logi():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM logi ORDER BY id DESC")
+    logi = c.fetchall()
+    conn.close()
+
+    return render_template("logi.html", logi=logi)
+
+# ================= HISTORIA =================
+
+@app.route("/admin/historia")
+def historia():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
+    dane = c.fetchall()
+    conn.close()
+
+    return render_template("historia.html", awizacje=dane)
+
+# ================= SLOTS =================
 
 @app.route("/admin/slots", methods=["GET","POST"])
 def slots():
@@ -227,60 +385,6 @@ def permissions():
     conn.close()
 
     return render_template("permissions.html", users=users)
-
-# ================= RESZTA BEZ ZMIAN =================
-
-@app.route("/login", methods=["GET","POST"])
-def login():
-    if request.method == "POST":
-        login = request.form["login"]
-        haslo = request.form["haslo"]
-
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login, haslo))
-        user = c.fetchone()
-        conn.close()
-
-        if user:
-            session["logged_in"] = True
-            session["user"] = login
-            return redirect("/admin")
-
-    return render_template("login.html")
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
-
-@app.route("/")
-def index():
-    dni, godziny, zajete = get_days_and_slots()
-    return render_template("form.html", dni=dni, godziny=godziny, zajete=zajete)
-
-@app.route("/admin")
-def admin():
-    if not session.get("logged_in"):
-        return redirect("/login")
-
-    perms = get_perms(session["user"])
-
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute("SELECT * FROM awizacje ORDER BY id DESC")
-    awizacje = c.fetchall()
-    conn.close()
-
-    dni, godziny, zajete = get_days_and_slots()
-
-    return render_template("admin.html",
-        awizacje=awizacje,
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete,
-        perms=perms
-    )
 
 # ================= RUN =================
 
