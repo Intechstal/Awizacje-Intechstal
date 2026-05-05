@@ -10,12 +10,13 @@ app.secret_key = "sekretnyklucz"
 def now_pl():
     return datetime.utcnow() + timedelta(hours=2)
 
-# ================= DB =================
+# ================= DB INIT =================
 
 def init_db():
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
 
+    # AWIZACJE
     c.execute('''CREATE TABLE IF NOT EXISTS awizacje (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         firma TEXT,
@@ -30,15 +31,56 @@ def init_db():
         status TEXT DEFAULT 'oczekująca'
     )''')
 
+    # USERS (PRZYWRÓCONE)
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         login TEXT,
         haslo TEXT
+    )''')
+
+    # LOGI
+    c.execute('''CREATE TABLE IF NOT EXISTS logi (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT,
+        akcja TEXT,
+        data TEXT
+    )''')
+
+    # PERMISSIONS (PRZYWRÓCONE)
+    c.execute('''CREATE TABLE IF NOT EXISTS permissions (
+        login TEXT PRIMARY KEY,
+        can_edit INTEGER DEFAULT 1,
+        can_status INTEGER DEFAULT 1,
+        calendar_only INTEGER DEFAULT 0,
+        show_logi INTEGER DEFAULT 1,
+        show_historia INTEGER DEFAULT 1,
+        show_permissions INTEGER DEFAULT 1
     )''')
 
     conn.commit()
     conn.close()
 
 init_db()
+
+# ================= DEFAULT USERS =================
+
+def create_users():
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    users = [
+        ("admin", "admin"),
+        ("magazyn", "1234"),
+        ("user1", "1234")
+    ]
+
+    for u, p in users:
+        c.execute("INSERT OR IGNORE INTO users VALUES (?,?)", (u, p))
+        c.execute("INSERT OR IGNORE INTO permissions (login) VALUES (?)", (u,))
+
+    conn.commit()
+    conn.close()
+
+create_users()
 
 # ================= SLOTY =================
 
@@ -81,7 +123,7 @@ def get_days_and_slots():
 
     return dni, godziny, zajete
 
-# ================= HOME =================
+# ================= FORM =================
 
 @app.route("/")
 def index():
@@ -97,27 +139,17 @@ def index():
 
     dni, godziny, zajete = get_days_and_slots()
 
-    return render_template(
-        "form.html",
-        dane=dane,
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete
-    )
-
-# ================= SUCCESS =================
-
-@app.route("/success")
-def success():
-    return render_template("success.html")
+    return render_template("form.html",
+                           dane=dane,
+                           dni=dni,
+                           godziny=godziny,
+                           zajete=zajete)
 
 # ================= ZAPIS =================
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
     f = request.form
-
-    # ZACHOWAJ DANE JEŚLI BŁĄD
     session["form_data"] = dict(f)
 
     try:
@@ -143,11 +175,16 @@ def zapisz():
         conn.close()
 
         session.pop("form_data", None)
-
         return redirect("/success")
 
     except:
         return redirect("/")
+
+# ================= SUCCESS =================
+
+@app.route("/success")
+def success():
+    return render_template("success.html")
 
 # ================= LOGIN =================
 
@@ -159,7 +196,7 @@ def login():
 
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login,haslo))
+        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login, haslo))
         u = c.fetchone()
         conn.close()
 
@@ -190,23 +227,42 @@ def admin():
 
     dni, godziny, zajete = get_days_and_slots()
 
-    return render_template(
-        "admin.html",
-        awizacje=awizacje,
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete
-    )
+    return render_template("admin.html",
+                           awizacje=awizacje,
+                           dni=dni,
+                           godziny=godziny,
+                           zajete=zajete)
 
-# ================= LOGI / HISTORIA =================
+# ================= LOGI =================
 
 @app.route("/admin/logi")
 def logi():
+    if not session.get("logged_in"):
+        return redirect("/login")
     return render_template("logi.html")
+
+# ================= HISTORIA =================
 
 @app.route("/admin/historia")
 def historia():
+    if not session.get("logged_in"):
+        return redirect("/login")
     return render_template("historia.html")
+
+# ================= PERMISSIONS =================
+
+@app.route("/admin/permissions")
+def permissions():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM permissions")
+    users = c.fetchall()
+    conn.close()
+
+    return render_template("permissions.html", users=users)
 
 # ================= RUN =================
 
