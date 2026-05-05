@@ -5,7 +5,19 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
 
-# ================= DB =================
+# ================= LOGS =================
+
+def log_action(user, akcja):
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
+        (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    )
+    conn.commit()
+    conn.close()
+
+# ================= INIT DB =================
 
 def init_db():
     conn = sqlite3.connect("awizacje.db")
@@ -38,6 +50,22 @@ def init_db():
         data TEXT
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS permissions (
+        login TEXT PRIMARY KEY,
+        can_edit INTEGER DEFAULT 1,
+        can_status INTEGER DEFAULT 1,
+        calendar_only INTEGER DEFAULT 0,
+        show_logi INTEGER DEFAULT 1,
+        show_historia INTEGER DEFAULT 1,
+        show_permissions INTEGER DEFAULT 1,
+        show_slots INTEGER DEFAULT 1
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS slot_settings (
+        typ TEXT PRIMARY KEY,
+        zakres INTEGER
+    )''')
+
     conn.commit()
     conn.close()
 
@@ -62,25 +90,35 @@ def create_users():
     for u, p in users:
         try:
             c.execute("INSERT INTO users (login, haslo) VALUES (?,?)", (u, p))
+            c.execute("""
+                INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?)
+            """, (u,1,1,0,1,1,1,1))
         except:
             pass
+
+    settings = [
+        ("Odbiór złomu", 3),
+        ("Odbiór zamówienia", 1),
+        ("Dostawa materiału", 2),
+    ]
+
+    for typ, zakres in settings:
+        c.execute("INSERT OR IGNORE INTO slot_settings VALUES (?,?)", (typ, zakres))
 
     conn.commit()
     conn.close()
 
 create_users()
 
-# ================= LOGI =================
+# ================= SLOT SETTINGS =================
 
-def log_action(user, akcja):
+def get_slot_settings():
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute(
-        "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
-        (user, akcja, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    )
-    conn.commit()
+    c.execute("SELECT typ, zakres FROM slot_settings")
+    data = dict(c.fetchall())
     conn.close()
+    return data
 
 # ================= SLOTY =================
 
@@ -109,13 +147,17 @@ def get_days_and_slots():
 
     c.execute("SELECT id,firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz FROM awizacje")
 
+    settings = get_slot_settings()
+
     for id_, f, s, dt, typ, waga, kom in c.fetchall():
         try:
             base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
         except:
             continue
 
-        for i in range(-3, 4):
+        zakres = settings.get(typ, 3)
+
+        for i in range(-zakres, zakres+1):
             key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
 
             zajete[key] = {
@@ -132,7 +174,7 @@ def get_days_and_slots():
     conn.close()
     return dni, godziny, zajete
 
-# ================= FORM (NAPRAWIONE 404) =================
+# ================= FORM =================
 
 @app.route("/")
 def index():
@@ -198,6 +240,9 @@ def logout():
 
 # ================= ADMIN =================
 
+def get_perms():
+    return (1,1,0,1,1,1,1)
+
 @app.route("/admin")
 def admin():
     if not session.get("logged_in"):
@@ -216,7 +261,7 @@ def admin():
         dni=dni,
         godziny=godziny,
         zajete=zajete,
-        perms=(1,1,0,1,1,1,1)
+        perms=get_perms()
     )
 
 # ================= STATUS =================
@@ -272,7 +317,7 @@ def edit(id):
 
     return render_template("edit.html", awizacja=awizacja)
 
-# ================= LOGI (404 FIX) =================
+# ================= LOGI =================
 
 @app.route("/admin/logi")
 def logi():
@@ -287,7 +332,7 @@ def logi():
 
     return render_template("logi.html", logi=logi)
 
-# ================= HISTORIA (404 FIX) =================
+# ================= HISTORIA =================
 
 @app.route("/admin/historia")
 def historia():
@@ -302,35 +347,68 @@ def historia():
 
     return render_template("historia.html", awizacje=dane)
 
-# ================= SLOTS (404 FIX) =================
+# ================= SLOTS =================
 
-@app.route("/admin/slots")
+@app.route("/admin/slots", methods=["GET","POST"])
 def slots():
     if not session.get("logged_in"):
         return redirect("/login")
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT * FROM awizacje")
-    data = c.fetchall()
+
+    if request.method == "POST":
+        c.execute("UPDATE slot_settings SET zakres=? WHERE typ=?",
+                  (request.form["zakres"], request.form["typ"]))
+        conn.commit()
+
+    c.execute("SELECT * FROM slot_settings")
+    settings = c.fetchall()
+
     conn.close()
 
-    return render_template("slots.html", data=data)
+    return render_template("slots.html", settings=settings)
 
-# ================= SLOTS (404 FIX) =================
+# ================= PERMISSIONS =================
 
-@app.route("/admin/permissions")
-def slots():
+@app.route("/admin/permissions", methods=["GET","POST"])
+def permissions():
     if not session.get("logged_in"):
         return redirect("/login")
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT * FROM awizacje")
-    data = c.fetchall()
+
+    if request.method == "POST":
+        login = request.form["login"]
+
+        c.execute("""
+            UPDATE permissions SET
+            can_edit=?,
+            can_status=?,
+            calendar_only=?,
+            show_logi=?,
+            show_historia=?,
+            show_permissions=?,
+            show_slots=?
+            WHERE login=?
+        """, (
+            int("can_edit" in request.form),
+            int("can_status" in request.form),
+            int("calendar_only" in request.form),
+            int("show_logi" in request.form),
+            int("show_historia" in request.form),
+            int("show_permissions" in request.form),
+            int("show_slots" in request.form),
+            login
+        ))
+        conn.commit()
+
+    c.execute("SELECT * FROM permissions")
+    users = c.fetchall()
     conn.close()
 
-    return render_template("permissions.html", data=data)
+    return render_template("permissions.html", users=users)
 
 # ================= RUN =================
 
