@@ -120,7 +120,6 @@ def get_perms(login):
 # ================= SLOTY =================
 
 def get_days_and_slots():
-def get_days_and_slots():
     now = datetime.now()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
