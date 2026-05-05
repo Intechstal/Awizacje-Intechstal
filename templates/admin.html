@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <title>Panel logistyczny</title>
 <link rel="stylesheet" href="/static/style.css">
+{% if perms and perms[6] %}
+<meta http-equiv="refresh" content="60">
+{% endif %}
 </head>
 <body>
 <!-- ================= SAFE PERMS FIX ================= -->
