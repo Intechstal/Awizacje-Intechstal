@@ -53,8 +53,15 @@ def init_db():
         calendar_only INTEGER DEFAULT 0,
         show_logi INTEGER DEFAULT 1,
         show_historia INTEGER DEFAULT 1,
-        show_permissions INTEGER DEFAULT 1
+        show_permissions INTEGER DEFAULT 1,
+        auto_refresh INTEGER DEFAULT 0
     )''')
+
+    # Migracja dla istniejących baz danych
+    try:
+        c.execute("ALTER TABLE permissions ADD COLUMN auto_refresh INTEGER DEFAULT 0")
+    except:
+        pass
 
     conn.commit()
     conn.close()
@@ -82,8 +89,8 @@ def create_users():
 
         c.execute("""
             INSERT OR IGNORE INTO permissions
-            VALUES (?,?,?,?,?,?,?)
-        """, (u,1,1,0,1,1,1))
+            VALUES (?,?,?,?,?,?,?,?)
+        """, (u,1,1,0,1,1,1,0))
 
     conn.commit()
     conn.close()
@@ -108,14 +115,14 @@ def get_perms(login):
 
     c.execute("""
         SELECT can_edit, can_status, calendar_only,
-               show_logi, show_historia, show_permissions
+               show_logi, show_historia, show_permissions, auto_refresh
         FROM permissions WHERE login=?
     """, (login,))
 
     row = c.fetchone()
     conn.close()
 
-    return row if row else (1,1,0,1,1,1)
+    return row if row else (1,1,0,1,1,1,0)
 
 # ================= SLOTY =================
 
@@ -387,7 +394,7 @@ def permissions():
 
         c.execute("""UPDATE permissions SET
             can_edit=?,can_status=?,calendar_only=?,
-            show_logi=?,show_historia=?,show_permissions=?
+            show_logi=?,show_historia=?,show_permissions=?,auto_refresh=?
             WHERE login=?""",
         (
             int("can_edit" in request.form),
@@ -396,6 +403,7 @@ def permissions():
             int("show_logi" in request.form),
             int("show_historia" in request.form),
             int("show_permissions" in request.form),
+            int("auto_refresh" in request.form),
             login
         ))
 
