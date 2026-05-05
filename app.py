@@ -154,18 +154,18 @@ def zapisz():
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "POST":
-        login = request.form["login"]
+        user_login = request.form["login"]
         haslo = request.form["haslo"]
 
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login,haslo))
+        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (user_login, haslo))
         u = c.fetchone()
         conn.close()
 
         if u:
             session["logged_in"] = True
-            session["user"] = login
+            session["user"] = user_login
             return redirect("/admin")
 
     return render_template("login.html")
