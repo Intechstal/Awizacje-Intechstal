@@ -5,30 +5,12 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
 
-# ================= TIME =================
+# ================= TIME FIX =================
 
 def now_pl():
     return datetime.utcnow() + timedelta(hours=2)
 
-# ================= LOGS (NAPRAWIONE 100%) =================
-
-def log_action(user, akcja):
-    try:
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
-
-        c.execute(
-            "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
-            (user if user else "UNKNOWN", akcja,
-             now_pl().strftime("%Y-%m-%d %H:%M:%S"))
-        )
-
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print("LOG ERROR:", e)
-
-# ================= DB =================
+# ================= DB INIT (NIE USUWA NIC) =================
 
 def init_db():
     conn = sqlite3.connect("awizacje.db")
@@ -60,6 +42,7 @@ def init_db():
         data TEXT
     )''')
 
+    # ✔ permissions (NIE USUWAMY)
     c.execute('''CREATE TABLE IF NOT EXISTS permissions (
         login TEXT PRIMARY KEY,
         can_edit INTEGER DEFAULT 1,
@@ -71,6 +54,7 @@ def init_db():
         show_slots INTEGER DEFAULT 1
     )''')
 
+    # ✔ slots (NIE USUWAMY)
     c.execute('''CREATE TABLE IF NOT EXISTS slot_settings (
         typ TEXT PRIMARY KEY,
         zakres INTEGER DEFAULT 3
@@ -80,6 +64,25 @@ def init_db():
     conn.close()
 
 init_db()
+
+# ================= LOGS (STABILNE) =================
+
+def log_action(user, akcja):
+    try:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+
+        c.execute(
+            "INSERT INTO logi (user, akcja, data) VALUES (?,?,?)",
+            (user if user else "UNKNOWN",
+             akcja,
+             now_pl().strftime("%Y-%m-%d %H:%M:%S"))
+        )
+
+        conn.commit()
+        conn.close()
+    except:
+        pass
 
 # ================= USERS =================
 
@@ -106,7 +109,7 @@ def create_users():
 
 create_users()
 
-# ================= FORM =================
+# ================= FORM (FIX 500) =================
 
 @app.route("/")
 def index():
@@ -115,32 +118,35 @@ def index():
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
     f = request.form
-    user = session.get("user", "FORM")
 
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
+    try:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
 
-    c.execute("""INSERT INTO awizacje
-    (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
-    VALUES (?,?,?,?,?,?,?,?,?)""",
-    (
-        f.get("firma",""),
-        f.get("rejestracja",""),
-        f.get("kierowca",""),
-        f.get("email",""),
-        f.get("telefon",""),
-        f.get("data_godzina",""),
-        f.get("typ_ladunku",""),
-        f.get("waga_ladunku",""),
-        f.get("komentarz","")
-    ))
+        c.execute("""INSERT INTO awizacje
+        (firma,rejestracja,kierowca,email,telefon,data_godzina,typ_ladunku,waga_ladunku,komentarz)
+        VALUES (?,?,?,?,?,?,?,?,?)""",
+        (
+            f.get("firma",""),
+            f.get("rejestracja",""),
+            f.get("kierowca",""),
+            f.get("email",""),
+            f.get("telefon",""),
+            f.get("data_godzina",""),
+            f.get("typ_ladunku",""),
+            f.get("waga_ladunku",""),
+            f.get("komentarz","")
+        ))
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
 
-    log_action(user, "NOWA AWIZACJA")
+        log_action(session.get("user","FORM"), "NOWA AWIZACJA")
 
-    return redirect("/admin")
+        return redirect("/admin")
+
+    except Exception as e:
+        return f"FORM ERROR: {e}", 500
 
 # ================= LOGIN =================
 
@@ -152,7 +158,7 @@ def login():
 
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login, haslo))
+        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login,haslo))
         u = c.fetchone()
         conn.close()
 
@@ -166,8 +172,7 @@ def login():
 
 @app.route("/logout")
 def logout():
-    user = session.get("user")
-    log_action(user, "LOGOUT")
+    log_action(session.get("user"), "LOGOUT")
     session.clear()
     return redirect("/login")
 
@@ -195,8 +200,10 @@ def admin():
 def update_status(id):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
+
     c.execute("UPDATE awizacje SET status=? WHERE id=?",
               (request.form["status"], id))
+
     conn.commit()
     conn.close()
 
@@ -217,13 +224,15 @@ def edit(id):
         c.execute("""UPDATE awizacje SET
         firma=?,rejestracja=?,kierowca=?,email=?,telefon=?,data_godzina=?,typ_ladunku=?,waga_ladunku=?,komentarz=?
         WHERE id=?""",
-        (f["firma"],f["rejestracja"],f["kierowca"],f["email"],f["telefon"],
-         f["data_godzina"],f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id))
+        (
+            f["firma"],f["rejestracja"],f["kierowca"],f["email"],f["telefon"],
+            f["data_godzina"],f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id
+        ))
 
         conn.commit()
         conn.close()
 
-        log_action(session.get("user"), f"EDYCJA ID {id}")
+        log_action(session.get("user"), f"EDIT ID {id}")
         return redirect("/admin")
 
     c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
@@ -253,6 +262,55 @@ def historia():
     data = c.fetchall()
     conn.close()
     return render_template("historia.html", awizacje=data)
+
+# ================= PERMISSIONS (FIX 404) =================
+
+@app.route("/admin/permissions", methods=["GET","POST"])
+def permissions():
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    if request.method == "POST":
+        login = request.form["login"]
+
+        c.execute("""UPDATE permissions SET
+        can_edit=?,can_status=?,calendar_only=?,show_logi=?,show_historia=?,show_permissions=?,show_slots=?
+        WHERE login=?""",
+        (
+            "can_edit" in request.form,
+            "can_status" in request.form,
+            "calendar_only" in request.form,
+            "show_logi" in request.form,
+            "show_historia" in request.form,
+            "show_permissions" in request.form,
+            "show_slots" in request.form,
+            login
+        ))
+        conn.commit()
+
+    c.execute("SELECT * FROM permissions")
+    users = c.fetchall()
+    conn.close()
+
+    return render_template("permissions.html", users=users)
+
+# ================= SLOTS (FIX 404) =================
+
+@app.route("/admin/slots", methods=["GET","POST"])
+def slots():
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    if request.method == "POST":
+        c.execute("INSERT OR REPLACE INTO slot_settings VALUES (?,?)",
+                  (request.form["typ"], request.form["zakres"]))
+        conn.commit()
+
+    c.execute("SELECT * FROM slot_settings")
+    data = c.fetchall()
+    conn.close()
+
+    return render_template("slots.html", settings=data)
 
 # ================= RUN =================
 
