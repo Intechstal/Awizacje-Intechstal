@@ -1,12 +1,9 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
 from datetime import datetime, timedelta
-import logging
 
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
-
-logging.basicConfig(level=logging.DEBUG)
 
 # ================= DB =================
 
@@ -78,7 +75,7 @@ def create_users():
     ]
 
     for u,p in users:
-        c.execute("INSERT OR IGNORE INTO users VALUES (NULL,?,?)", (u,p))
+        c.execute("INSERT OR IGNORE INTO users (login, haslo) VALUES (?,?)", (u,p))
 
         c.execute("""
             INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?)
@@ -148,7 +145,7 @@ def get_perms(login):
 # ================= SLOTY =================
 
 def get_days_and_slots():
-    today = datetime.now().replace(hour=0,minute=0,second=0,microsecond=0)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     dni = []
     d = today
@@ -167,7 +164,10 @@ def get_days_and_slots():
 
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT data_godzina, typ_ladunku FROM awizacje")
+    c.execute("""
+        SELECT firma, data_godzina, typ_ladunku, waga_ladunku, komentarz, status
+        FROM awizacje
+    """)
     rows = c.fetchall()
     conn.close()
 
@@ -176,13 +176,24 @@ def get_days_and_slots():
 
     for r in rows:
         try:
-            base = datetime.strptime(r[0], "%Y-%m-%dT%H:%M")
-            typ = r[1]
+            firma, data, typ, waga, komentarz, status = r
+
+            base = datetime.strptime(data, "%Y-%m-%dT%H:%M")
             blokada = settings.get(typ, 1)
 
             for i in range(-blokada, blokada+1):
                 key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
-                zajete[key] = True
+
+                zajete[key] = {
+                    "main": i == 0,
+                    "future_block": i != 0,
+                    "firma": firma,
+                    "typ_ladunku": typ,
+                    "waga": waga,
+                    "komentarz": komentarz,
+                    "status": status
+                }
+
         except:
             continue
 
@@ -193,7 +204,6 @@ def get_days_and_slots():
 @app.route("/")
 def index():
     dni, godziny, zajete = get_days_and_slots()
-
     return render_template("form.html",
         dni=dni,
         godziny=godziny,
@@ -258,10 +268,10 @@ def admin():
         perms=perms
     )
 
-# ================= SLOT PANEL =================
+# ================= EDIT (FIX 404) =================
 
-@app.route("/admin/slots", methods=["GET","POST"])
-def slots():
+@app.route("/admin/edit/<int:aid>", methods=["GET","POST"])
+def edit(aid):
     if not session.get("logged_in"):
         return redirect("/login")
 
@@ -269,15 +279,111 @@ def slots():
     c = conn.cursor()
 
     if request.method == "POST":
-        for k,v in request.form.items():
-            c.execute("UPDATE slot_settings SET blokada=? WHERE typ=?", (v,k))
-        conn.commit()
+        f = request.form
 
-    c.execute("SELECT * FROM slot_settings")
-    data = c.fetchall()
+        c.execute("""
+            UPDATE awizacje SET
+                firma=?,
+                rejestracja=?,
+                kierowca=?,
+                email=?,
+                telefon=?,
+                data_godzina=?,
+                typ_ladunku=?,
+                waga_ladunku=?,
+                komentarz=?
+            WHERE id=?
+        """, (
+            f.get("firma"),
+            f.get("rejestracja"),
+            f.get("kierowca"),
+            f.get("email"),
+            f.get("telefon"),
+            f.get("data_godzina"),
+            f.get("typ_ladunku"),
+            f.get("waga_ladunku"),
+            f.get("komentarz"),
+            aid
+        ))
+
+        conn.commit()
+        conn.close()
+        return redirect("/admin")
+
+    c.execute("SELECT * FROM awizacje WHERE id=?", (aid,))
+    awizacja = c.fetchone()
     conn.close()
 
-    return render_template("slots.html", data=data)
+    return render_template("edit.html", awizacja=awizacja)
+
+# ================= LOGI =================
+
+@app.route("/admin/logi")
+def logi():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM logi ORDER BY id DESC")
+    logi = c.fetchall()
+    conn.close()
+
+    return render_template("logi.html", logi=logi)
+
+# ================= HISTORIA =================
+
+@app.route("/admin/historia")
+def historia():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
+    dane = c.fetchall()
+    conn.close()
+
+    return render_template("historia.html", awizacje=dane)
+
+# ================= PERMISSIONS =================
+
+@app.route("/admin/permissions", methods=["GET","POST"])
+def permissions():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    if request.method == "POST":
+        login = request.form["login"]
+
+        c.execute("""
+            UPDATE permissions SET
+            can_edit=?,
+            can_status=?,
+            calendar_only=?,
+            show_logi=?,
+            show_historia=?,
+            show_permissions=?
+            WHERE login=?
+        """, (
+            int("can_edit" in request.form),
+            int("can_status" in request.form),
+            int("calendar_only" in request.form),
+            int("show_logi" in request.form),
+            int("show_historia" in request.form),
+            int("show_permissions" in request.form),
+            login
+        ))
+        conn.commit()
+
+    c.execute("SELECT * FROM permissions")
+    users = c.fetchall()
+    conn.close()
+
+    return render_template("permissions.html", users=users)
 
 # ================= LOGIN =================
 
