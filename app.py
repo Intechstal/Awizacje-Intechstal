@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
@@ -17,41 +17,106 @@ def log_action(user, akcja):
     conn.commit()
     conn.close()
 
-# ================= LOGIN =================
+# ================= DB INIT SAFE =================
 
-@app.route("/login", methods=["GET","POST"])
-def login():
-    if request.method == "POST":
-        login = request.form["login"]
-        haslo = request.form["haslo"]
+def init_db():
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
 
-        conn = sqlite3.connect("awizacje.db")
-        c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login, haslo))
-        user = c.fetchone()
-        conn.close()
+    c.execute('''CREATE TABLE IF NOT EXISTS awizacje (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        firma TEXT,
+        rejestracja TEXT,
+        kierowca TEXT,
+        email TEXT,
+        telefon TEXT,
+        data_godzina TEXT,
+        typ_ladunku TEXT,
+        waga_ladunku TEXT,
+        komentarz TEXT,
+        status TEXT DEFAULT 'oczekująca'
+    )''')
 
-        if user:
-            session["logged_in"] = True
-            session["user"] = login
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        login TEXT UNIQUE,
+        haslo TEXT
+    )''')
 
-            log_action(login, "LOGIN")
+    c.execute('''CREATE TABLE IF NOT EXISTS logi (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT,
+        akcja TEXT,
+        data TEXT
+    )''')
 
-            return redirect("/admin")
+    conn.commit()
+    conn.close()
 
-    return render_template("login.html")
+init_db()
 
-# ================= LOGOUT =================
+# ================= SLOTY =================
 
-@app.route("/logout")
-def logout():
-    if session.get("user"):
-        log_action(session["user"], "LOGOUT")
+def get_days_and_slots():
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
-    session.clear()
-    return redirect("/login")
+    dni = []
+    d = today
+    while len(dni) < 5:
+        if d.weekday() < 5:
+            dni.append(d)
+        d += timedelta(days=1)
 
-# ================= FORM =================
+    godziny = []
+    for start, end in [("07:30","09:30"),("11:00","13:15"),("14:15","20:00")]:
+        s = datetime.strptime(start, "%H:%M")
+        e = datetime.strptime(end, "%H:%M")
+        while s < e:
+            godziny.append(s.strftime("%H:%M"))
+            s += timedelta(minutes=15)
+
+    zajete = {}
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    c.execute("SELECT id,firma,status,data_godzina,typ_ladunku,waga_ladunku,komentarz FROM awizacje")
+
+    for id_, f, s, dt, typ, waga, kom in c.fetchall():
+        try:
+            base = datetime.strptime(dt, "%Y-%m-%dT%H:%M")
+        except:
+            continue
+
+        for i in range(-3, 4):
+            key = (base + timedelta(minutes=15*i)).strftime("%Y-%m-%dT%H:%M")
+
+            zajete[key] = {
+                "id": id_,
+                "firma": f,
+                "status": s,
+                "typ_ladunku": typ,
+                "waga": waga,
+                "komentarz": kom,
+                "main": (i == 0),
+                "future_block": (i > 0)
+            }
+
+    conn.close()
+    return dni, godziny, zajete
+
+# ================= FORM (FIX 404) =================
+
+@app.route("/")
+def index():
+    dni, godziny, zajete = get_days_and_slots()
+    return render_template("form.html",
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        dane={},
+        error=None
+    )
 
 @app.route("/zapisz", methods=["POST"])
 def zapisz():
@@ -75,7 +140,65 @@ def zapisz():
 
     return render_template("success.html")
 
-# ================= ADMIN STATUS =================
+# ================= LOGIN =================
+
+@app.route("/login", methods=["GET","POST"])
+def login():
+    if request.method == "POST":
+        login = request.form["login"]
+        haslo = request.form["haslo"]
+
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login, haslo))
+        user = c.fetchone()
+        conn.close()
+
+        if user:
+            session["logged_in"] = True
+            session["user"] = login
+            log_action(login, "LOGIN")
+            return redirect("/admin")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    if session.get("user"):
+        log_action(session["user"], "LOGOUT")
+    session.clear()
+    return redirect("/login")
+
+# ================= ADMIN (FIX 500) =================
+
+def get_perms():
+    # fallback jeśli nie masz permissions table
+    return (1,1,0,1,1,1,1)
+
+@app.route("/admin")
+def admin():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    perms = get_perms()
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM awizacje ORDER BY id DESC")
+    awizacje = c.fetchall()
+    conn.close()
+
+    dni, godziny, zajete = get_days_and_slots()
+
+    return render_template("admin.html",
+        awizacje=awizacje,
+        dni=dni,
+        godziny=godziny,
+        zajete=zajete,
+        perms=perms
+    )
+
+# ================= STATUS =================
 
 @app.route("/admin/update_status/<int:id>", methods=["POST"])
 def update_status(id):
@@ -120,7 +243,6 @@ def edit(id):
         conn.close()
 
         log_action(session["user"], f"EDYCJA ID {id}")
-
         return redirect("/admin")
 
     c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
@@ -129,7 +251,7 @@ def edit(id):
 
     return render_template("edit.html", awizacja=awizacja)
 
-# ================= LOGS VIEW =================
+# ================= LOGI =================
 
 @app.route("/admin/logi")
 def logi():
@@ -144,22 +266,7 @@ def logi():
 
     return render_template("logi.html", logi=logi)
 
-# ================= MAIN ADMIN =================
-
-@app.route("/admin")
-def admin():
-    if not session.get("logged_in"):
-        return redirect("/login")
-
-    conn = sqlite3.connect("awizacje.db")
-    c = conn.cursor()
-    c.execute("SELECT * FROM awizacje ORDER BY id DESC")
-    awizacje = c.fetchall()
-    conn.close()
-
-    return render_template("admin.html", awizacje=awizacje)
-
-# ================= INIT =================
+# ================= RUN =================
 
 if __name__ == "__main__":
     app.run(debug=True)
