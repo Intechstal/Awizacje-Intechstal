@@ -131,13 +131,13 @@
                 </div>
             </td>
 
-        {% elif data and data.future_block %}
+       {% elif data and data.future_block %}
 
-            <td>
-                <div class="slot zaakceptowana">
-                    {{ data.firma }}
-                </div>
-            </td>
+    <td>
+        <div class="slot {{ data.status }}">
+            {{ data.firma }}
+        </div>
+    </td>
 
         {% else %}
 
