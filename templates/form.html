@@ -26,26 +26,22 @@
 
 <h1>Awizacja transportu</h1>
 
-{% if error %}
-<div class="error">{{ error }}</div>
-{% endif %}
-
 <form action="/zapisz" method="post">
 
 <label>Firma</label>
-<input name="firma" value="{{ dane.firma or '' }}" required>
+<input name="firma" required>
 
 <label>Rejestracja</label>
-<input name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
+<input name="rejestracja" required>
 
 <label>Kierowca</label>
-<input name="kierowca" value="{{ dane.kierowca or '' }}" required>
+<input name="kierowca" required>
 
 <label>Email</label>
-<input name="email" value="{{ dane.email or '' }}" required>
+<input name="email" required>
 
 <label>Telefon</label>
-<input name="telefon" value="{{ dane.telefon or '' }}" required>
+<input name="telefon" required>
 
 <label>Typ ładunku</label>
 <select name="typ_ladunku" required>
@@ -55,36 +51,38 @@
 </select>
 
 <label>Waga</label>
-<input name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
+<input name="waga_ladunku">
 
 <label>Komentarz</label>
-<textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
+<textarea name="komentarz"></textarea>
 
 <label>Termin</label>
 <select name="data_godzina" required>
+
     {% for d in dni %}
         <optgroup label="{{ d.strftime('%d.%m') }}">
+
         {% for h in godziny %}
             {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+
             {% if slot not in zajete %}
                 <option value="{{ slot }}">
                     {{ d.strftime('%d.%m') }} {{ h }}
                 </option>
             {% endif %}
+
         {% endfor %}
+
         </optgroup>
     {% endfor %}
+
 </select>
 
-<!-- ================= RODO CENTER ================= -->
-<!-- ================= RODO CENTER ================= -->
-<div style="text-align:center; margin:15px 0; font-size:14px;">
-
+<div style="text-align:center; margin:15px 0;">
     <label>
-        <input type="checkbox" name="rodo" required>
+        <input type="checkbox" required>
         Akceptuję <a href="https://intechstal.pl/rodo/" target="_blank">RODO</a>
     </label>
-
 </div>
 
 <button type="submit">Wyślij awizację</button>
