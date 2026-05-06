@@ -7,6 +7,8 @@
 </head>
 <body>
 <div class="form-box">
+
+<h2>Uprawnienia użytkowników</h2>
 <table class="table">
 <tr>
     <th>User</th>
@@ -38,6 +40,24 @@
 </tr>
 {% endfor %}
 </table>
+
+<h2>Blokady slotów</h2>
+<form action="/admin/slot_blocks" method="post">
+<table class="table">
+<tr>
+    <th>Typ ładunku</th>
+    <th>Blokada (ilość slotów x15 min)</th>
+</tr>
+{% for typ, blokada in slot_blocks.items() %}
+<tr>
+    <td>{{ typ }}</td>
+    <td><input type="number" name="blokada_{{ typ }}" value="{{ blokada }}" min="0" max="10" style="width:60px"></td>
+</tr>
+{% endfor %}
+</table>
+<button type="submit">Zapisz blokady</button>
+</form>
+
 </div>
 </body>
 </html>
