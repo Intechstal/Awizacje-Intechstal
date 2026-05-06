@@ -120,12 +120,14 @@
 {% for u in users %}
 <tr>
     <td>{{ u[0] }}</td>
-    <td colspan="2">
-        <form action="/admin/edit_user" method="post">
+    <td>
+        <form action="/admin/edit_user" method="post" id="form_{{ u[0] }}">
             <input type="hidden" name="login" value="{{ u[0] }}">
             <input type="password" name="haslo" placeholder="Nowe hasło">
-            <button type="submit">Zmień</button>
         </form>
+    </td>
+    <td>
+        <button type="submit" form="form_{{ u[0] }}">Zmień</button>
     </td>
     <td>
         <form action="/admin/delete_user" method="post" onsubmit="return confirm('Usunąć użytkownika {{ u[0] }}?')">
