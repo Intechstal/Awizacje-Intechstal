@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Szablony maili</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+    .mail-box {
+        max-width: 800px;
+        margin: 30px auto;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    .mail-box h2 {
+        margin-top: 30px;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 8px;
+    }
+    .mail-box h2:first-of-type {
+        margin-top: 0;
+    }
+    .mail-box label {
+        font-weight: 600;
+        display: block;
+        margin: 12px 0 4px;
+    }
+    .mail-box input[type="text"] {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    .mail-box textarea {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        font-size: 13px;
+        font-family: monospace;
+        min-height: 160px;
+        box-sizing: border-box;
+        resize: vertical;
+    }
+    .mail-box button[type="submit"] {
+        margin-top: 20px;
+        padding: 10px 24px;
+        background: #0f172a;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 15px;
+    }
+    .hint {
+        background: #f1f5f9;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        margin-bottom: 20px;
+        color: #475569;
+    }
+    .hint code {
+        background: #e2e8f0;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-family: monospace;
+    }
+    .back-btn {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #0f172a;
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+    .saved-msg {
+        background: #dcfce7;
+        color: #166534;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-weight: 600;
+    }
+</style>
+</head>
+<body>
+<div class="mail-box">
+
+<a href="/admin" class="back-btn">← Powrót do admina</a>
+
+<div class="hint">
+    Dostępne zmienne które zostaną zastąpione danymi awizacji:<br><br>
+    <code>{firma}</code> – nazwa firmy &nbsp;
+    <code>{termin}</code> – data i godzina &nbsp;
+    <code>{typ_ladunku}</code> – typ ładunku
+</div>
+
+<form method="post">
+
+{% for typ, label in [("zaakceptowana", "✅ Awizacja zaakceptowana"), ("odrzucona", "❌ Awizacja odrzucona"), ("edycja", "✏️ Edycja awizacji przez admina")] %}
+<h2>{{ label }}</h2>
+<label>Temat maila</label>
+<input type="text" name="subject_{{ typ }}" value="{{ templates[typ].subject if typ in templates else '' }}">
+<label>Treść maila (HTML)</label>
+<textarea name="body_{{ typ }}">{{ templates[typ].body if typ in templates else '' }}</textarea>
+{% endfor %}
+
+<button type="submit">Zapisz szablony</button>
+</form>
+
+</div>
+</body>
+</html>
