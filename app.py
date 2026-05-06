@@ -807,5 +807,8 @@ def restore():
 
 # ================= RUN =================
 
+# 👇 DLA CYBER_FOLKS / PASSENGER
+aplication = app
+
 if __name__ == "__main__":
     app.run(debug=True)
