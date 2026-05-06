@@ -459,6 +459,65 @@ def update_slot_blocks():
     log_action(session.get("user"), "ZMIANA SLOT BLOCKS")
     return redirect("/admin/permissions")
 
+
+# ================= USER MANAGEMENT =================
+
+@app.route("/admin/add_user", methods=["POST"])
+def add_user():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    login = request.form.get("login", "").strip()
+    haslo = request.form.get("haslo", "").strip()
+
+    if login and haslo:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO users VALUES (NULL,?,?)", (login, haslo))
+        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?)",
+                  (login, 1, 1, 0, 1, 1, 1, 0))
+        conn.commit()
+        conn.close()
+        log_action(session.get("user"), f"DODANIE UŻYTKOWNIKA: {login}")
+
+    return redirect("/admin/permissions")
+
+@app.route("/admin/edit_user", methods=["POST"])
+def edit_user():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    login = request.form.get("login", "").strip()
+    haslo = request.form.get("haslo", "").strip()
+
+    if login and haslo:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("UPDATE users SET haslo=? WHERE login=?", (haslo, login))
+        conn.commit()
+        conn.close()
+        log_action(session.get("user"), f"ZMIANA HASŁA: {login}")
+
+    return redirect("/admin/permissions")
+
+@app.route("/admin/delete_user", methods=["POST"])
+def delete_user():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    login = request.form.get("login", "").strip()
+
+    if login:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("DELETE FROM users WHERE login=?", (login,))
+        c.execute("DELETE FROM permissions WHERE login=?", (login,))
+        conn.commit()
+        conn.close()
+        log_action(session.get("user"), f"USUNIĘCIE UŻYTKOWNIKA: {login}")
+
+    return redirect("/admin/permissions")
+
 # ================= RUN =================
 
 if __name__ == "__main__":
