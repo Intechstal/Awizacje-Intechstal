@@ -103,6 +103,7 @@ def create_users():
         ("TR","1234"),
         ("MAGAZYN","1234"),
         ("EK","1234"),
+        ("TECHNOLODZY","1234"),
     ]
 
     for u,p in users:
