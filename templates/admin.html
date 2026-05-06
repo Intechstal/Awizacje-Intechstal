@@ -77,12 +77,13 @@
     <td class="{{ a[10] }}">{{ a[10] }}</td>
     <td>
         {% if can_status %}
-        <form action="/admin/update_status/{{ a[0] }}" method="post">
+        <form action="/admin/update_status/{{ a[0] }}" method="post" onsubmit="return checkPowod(this)">
             <select name="status">
                 <option value="oczekująca">oczekująca</option>
                 <option value="zaakceptowana">zaakceptowana</option>
                 <option value="odrzucona">odrzucona</option>
             </select>
+            <input type="hidden" name="powod_odrzucenia" class="powod-field" value="">
             <button class="btn">OK</button>
         </form>
         {% endif %}
@@ -147,5 +148,17 @@
 </table>
 
 </div>
+
+<script>
+function checkPowod(form) {
+    var status = form.querySelector('select[name="status"]').value;
+    if (status === 'odrzucona') {
+        var powod = prompt('Podaj powód odrzucenia awizacji:');
+        if (powod === null) return false;
+        form.querySelector('.powod-field').value = powod;
+    }
+    return true;
+}
+</script>
 </body>
 </html>
