@@ -11,6 +11,17 @@
         }
         input[type="submit"] { padding:8px 12px; }
         .note { font-size: 13px; color:#555; margin-bottom:10px; }
+        .opis-box {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 16px;
+            margin-bottom: 10px;
+            border-left: 4px solid #0f172a;
+        }
+        .opis-box label { margin-top: 0; }
+        .opis-box textarea { width: 420px; }
+        .opis-hint { font-size: 12px; color: #64748b; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -18,19 +29,14 @@
     <form method="POST">
         <label for="firma">Firma</label>
         <input id="firma" name="firma" type="text" value="{{ awizacja[1] }}" required>
-
         <label for="rejestracja">Rejestracja</label>
         <input id="rejestracja" name="rejestracja" type="text" value="{{ awizacja[2] }}" required>
-
         <label for="kierowca">Kierowca</label>
         <input id="kierowca" name="kierowca" type="text" value="{{ awizacja[3] }}" required>
-
         <label for="email">Email</label>
         <input id="email" name="email" type="email" value="{{ awizacja[4] }}" required>
-
         <label for="telefon">Telefon</label>
         <input id="telefon" name="telefon" type="text" value="{{ awizacja[5] }}" required>
-
         <label for="typ_ladunku">Typ ładunku</label>
         <select id="typ_ladunku" name="typ_ladunku" required>
             {% set opcje = [
@@ -44,13 +50,10 @@
                 </option>
             {% endfor %}
         </select>
-
         <label for="waga_ladunku">Waga ładunku</label>
         <input id="waga_ladunku" name="waga_ladunku" type="text" value="{{ awizacja[8] }}">
-
         <label for="komentarz">Komentarz</label>
         <textarea id="komentarz" name="komentarz">{{ awizacja[9] }}</textarea>
-
         <p class="note">Wybierz datę/godzinę. Zajęte sloty są oznaczone, ale admin może wybrać dowolny termin.</p>
         <label for="data_godzina">Data i godzina</label>
         <select id="data_godzina" name="data_godzina" required>
@@ -66,10 +69,15 @@
             {% endfor %}
         </select>
 
+        <div class="opis-box">
+            <label for="opis_zmian">Opis wprowadzonych zmian (trafi do maila)</label>
+            <textarea id="opis_zmian" name="opis_zmian" rows="3" placeholder="np. zmiana godziny z 10:00 na 12:00, korekta numeru rejestracyjnego"></textarea>
+            <div class="opis-hint">To pole jest opcjonalne. Treść zostanie wstawiona do maila wysyłanego do klienta.</div>
+        </div>
+
         <br>
         <input type="submit" value="Zapisz zmiany">
     </form>
-
     <p><a href="/admin">← Wróć do panelu</a></p>
 </body>
 </html>
