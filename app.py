@@ -18,6 +18,8 @@ MAIL_USER = "info@awizacje-intechstal.pl"
 MAIL_PASS = "--0bO8YLba^A0JQq"
 
 def _send_mail_worker(to, subject, body):
+    import sys
+    print(f"[MAIL] Próba wysyłki do: {to}", flush=True)
     try:
         msg = MIMEMultipart()
         msg["From"] = MAIL_USER
@@ -25,18 +27,23 @@ def _send_mail_worker(to, subject, body):
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "html", "utf-8"))
 
+        print(f"[MAIL] Łączenie z {MAIL_HOST}:{MAIL_PORT}", flush=True)
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context) as server:
+            print(f"[MAIL] Logowanie...", flush=True)
             server.login(MAIL_USER, MAIL_PASS)
+            print(f"[MAIL] Wysyłanie...", flush=True)
             server.sendmail(MAIL_USER, to, msg.as_string())
-            print(f"Mail wysłany do: {to}")
+            print(f"[MAIL] Wysłano do: {to}", flush=True)
     except Exception as e:
-        print(f"Błąd wysyłania maila: {e}")
+        print(f"[MAIL ERROR] {type(e).__name__}: {e}", flush=True)
 
 def send_mail(to, subject, body):
+    print(f"[MAIL] Tworzenie wątku dla: {to}", flush=True)
     t = threading.Thread(target=_send_mail_worker, args=(to, subject, body))
     t.daemon = True
     t.start()
+    print(f"[MAIL] Wątek uruchomiony", flush=True)
 
 
 
