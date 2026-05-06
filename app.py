@@ -1,9 +1,13 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, send_file
 import sqlite3
 from datetime import datetime, timedelta
 import smtplib
 import ssl
 import threading
+import zipfile
+import io
+import os
+import shutil
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -122,7 +126,8 @@ def init_db():
         show_permissions INTEGER DEFAULT 1,
         auto_refresh INTEGER DEFAULT 0,
         auto_refresh_interval INTEGER DEFAULT 60,
-        show_maile INTEGER DEFAULT 1
+        show_maile INTEGER DEFAULT 1,
+        show_backup INTEGER DEFAULT 1
     )''')
 
     # Migracja dla istniejących baz danych
@@ -136,6 +141,10 @@ def init_db():
         pass
     try:
         c.execute("ALTER TABLE permissions ADD COLUMN show_maile INTEGER DEFAULT 1")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE permissions ADD COLUMN show_backup INTEGER DEFAULT 1")
     except:
         pass
 
@@ -168,9 +177,10 @@ def init_db():
 <p><strong>Szczegóły awizacji:</strong><br>
 Kontrahent: {firma}<br>
 Data dostawy/załadunku: {termin}<br>
+Okno czasowe: {godz_od} – {godz_do}<br>
 Rodzaj operacji: {typ_ladunku}<br>
 Numer rejestracyjny pojazdu: {rejestracja}</p>
-<p>Prosimy o przybycie w wyznaczonym terminie. W przypadku opóźnienia awizacja może zostać przesunięta lub wymagać ponownego umówienia.</p>
+<p>Prosimy o przybycie w wyznaczonym oknie czasowym. W przypadku opóźnienia awizacja może zostać przesunięta lub wymagać ponownego umówienia.</p>
 <p>W razie potrzeby zmiany terminu prosimy o kontakt poprzez system awizacji.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
@@ -184,6 +194,7 @@ Numer rejestracyjny pojazdu: {rejestracja}</p>
 <p><strong>Szczegóły awizacji:</strong><br>
 Kontrahent: {firma}<br>
 Planowana data: {termin}<br>
+Okno czasowe: {godz_od} – {godz_do}</p>
 <p>Prosimy o ponowne przesłanie awizacji z poprawnymi danymi lub wybór innego dostępnego terminu.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
@@ -196,6 +207,7 @@ Planowana data: {termin}<br>
 <p><strong>Zaktualizowane dane awizacji:</strong><br>
 Kontrahent: {firma}<br>
 Data operacji: {termin}<br>
+Okno czasowe: {godz_od} – {godz_do}<br>
 Rodzaj operacji: {typ_ladunku}<br>
 Numer rejestracyjny pojazdu: {rejestracja}</p>
 <p><strong>Zmiany wprowadzone w awizacji:</strong><br>{opis_zmian}</p>
@@ -233,8 +245,8 @@ def create_users():
 
         c.execute("""
             INSERT OR IGNORE INTO permissions
-            VALUES (?,?,?,?,?,?,?,?,?,?)
-        """, (u,1,1,0,1,1,1,0,60,1))
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        """, (u,1,1,0,1,1,1,0,60,1,1))
 
     conn.commit()
     conn.close()
@@ -259,14 +271,14 @@ def get_perms(login):
 
     c.execute("""
         SELECT can_edit, can_status, calendar_only,
-               show_logi, show_historia, show_permissions, auto_refresh, auto_refresh_interval, show_maile
+               show_logi, show_historia, show_permissions, auto_refresh, auto_refresh_interval, show_maile, show_backup
         FROM permissions WHERE login=?
     """, (login,))
 
     row = c.fetchone()
     conn.close()
 
-    return row if row else (1,1,0,1,1,1,0,60,1)
+    return row if row else (1,1,0,1,1,1,0,60,1,1)
 
 # ================= SLOTY =================
 
@@ -576,7 +588,7 @@ def permissions():
 
         c.execute("""UPDATE permissions SET
             can_edit=?,can_status=?,calendar_only=?,
-            show_logi=?,show_historia=?,show_permissions=?,auto_refresh=?,auto_refresh_interval=?,show_maile=?
+            show_logi=?,show_historia=?,show_permissions=?,auto_refresh=?,auto_refresh_interval=?,show_maile=?,show_backup=?
             WHERE login=?""",
         (
             int("can_edit" in request.form),
@@ -588,6 +600,7 @@ def permissions():
             int("auto_refresh" in request.form),
             int(request.form.get("auto_refresh_interval", 60)),
             int("show_maile" in request.form),
+            int("show_backup" in request.form),
             login
         ))
 
@@ -642,8 +655,8 @@ def add_user():
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
         c.execute("INSERT OR IGNORE INTO users VALUES (NULL,?,?)", (login, haslo))
-        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?,?,?)",
-                  (login, 1, 1, 0, 1, 1, 1, 0, 60, 1))
+        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                  (login, 1, 1, 0, 1, 1, 1, 0, 60, 1, 1))
         conn.commit()
         conn.close()
         log_action(session.get("user"), f"DODANIE UŻYTKOWNIKA: {login}")
@@ -710,6 +723,87 @@ def maile():
     conn.close()
 
     return render_template("maile.html", templates=templates)
+
+
+# ================= BACKUP / RESTORE =================
+
+@app.route("/admin/backup")
+def backup():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        # Baza danych
+        if os.path.exists("awizacje.db"):
+            zf.write("awizacje.db")
+
+        # Pliki aplikacji
+        for fname in os.listdir("."):
+            if fname.endswith(".py"):
+                zf.write(fname)
+
+        # Folder templates
+        if os.path.exists("templates"):
+            for fname in os.listdir("templates"):
+                zf.write(os.path.join("templates", fname))
+
+        # Folder static
+        if os.path.exists("static"):
+            for fname in os.listdir("static"):
+                zf.write(os.path.join("static", fname))
+
+    buf.seek(0)
+    now = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_action(session.get("user"), "BACKUP")
+    return send_file(buf, as_attachment=True,
+                     download_name=f"backup_awizacje_{now}.zip",
+                     mimetype="application/zip")
+
+@app.route("/admin/restore", methods=["POST"])
+def restore():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    f = request.files.get("backup_file")
+    if not f or not f.filename.endswith(".zip"):
+        return "Nieprawidłowy plik. Wymagany plik .zip", 400
+
+    try:
+        buf = io.BytesIO(f.read())
+        with zipfile.ZipFile(buf, "r") as zf:
+            names = zf.namelist()
+
+            # Przywróć bazę danych
+            if "awizacje.db" in names:
+                with open("awizacje.db", "wb") as db:
+                    db.write(zf.read("awizacje.db"))
+
+            # Przywróć pliki .py
+            for name in names:
+                if name.endswith(".py"):
+                    with open(name, "wb") as pyf:
+                        pyf.write(zf.read(name))
+
+            # Przywróć templates
+            for name in names:
+                if name.startswith("templates/"):
+                    os.makedirs("templates", exist_ok=True)
+                    with open(name, "wb") as tf:
+                        tf.write(zf.read(name))
+
+            # Przywróć static
+            for name in names:
+                if name.startswith("static/"):
+                    os.makedirs("static", exist_ok=True)
+                    with open(name, "wb") as sf:
+                        sf.write(zf.read(name))
+
+        log_action(session.get("user"), "RESTORE BACKUPU")
+        return redirect("/admin")
+
+    except Exception as e:
+        return f"Błąd przywracania: {e}", 500
 
 # ================= RUN =================
 
