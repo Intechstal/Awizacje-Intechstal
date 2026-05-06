@@ -21,6 +21,17 @@ def get_mail_template(typ):
     conn.close()
     return row if row else ("Awizacja", "")
 
+
+def get_time_window(data_godzina, typ_ladunku):
+    """Zwraca okno czasowe: od godziny awizacji do końca blokady"""
+    try:
+        base = datetime.strptime(data_godzina, "%Y-%m-%dT%H:%M")
+        blokada = get_slot_blocks().get(typ_ladunku, 1)
+        end = base + timedelta(minutes=15 * blokada)
+        return base.strftime("%H:%M"), end.strftime("%H:%M"), base.strftime("%d.%m.%Y")
+    except:
+        return "–", "–", "–"
+
 # ================= MAIL CONFIG =================
 
 MAIL_HOST = "s47.cyber-folks.pl"
@@ -110,7 +121,8 @@ def init_db():
         show_historia INTEGER DEFAULT 1,
         show_permissions INTEGER DEFAULT 1,
         auto_refresh INTEGER DEFAULT 0,
-        auto_refresh_interval INTEGER DEFAULT 60
+        auto_refresh_interval INTEGER DEFAULT 60,
+        show_maile INTEGER DEFAULT 1
     )''')
 
     # Migracja dla istniejących baz danych
@@ -120,6 +132,10 @@ def init_db():
         pass
     try:
         c.execute("ALTER TABLE permissions ADD COLUMN auto_refresh_interval INTEGER DEFAULT 60")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE permissions ADD COLUMN show_maile INTEGER DEFAULT 1")
     except:
         pass
 
@@ -146,33 +162,49 @@ def init_db():
     defaults = [
         (
             "zaakceptowana",
-            "Awizacja zaakceptowana – Intechstal",
-            """<p>Dzień dobry,</p>
-<p>Informujemy, że Twoja awizacja została <strong>zaakceptowana</strong>.</p>
-<p><strong>Firma:</strong> {firma}<br>
-<strong>Termin:</strong> {termin}<br>
-<strong>Typ ładunku:</strong> {typ_ladunku}</p>
-<p>Pozdrawiamy,<br>Intechstal</p>"""
+            "Potwierdzenie awizacji – INTECHSTAL",
+            """<p>Szanowni Państwo,</p>
+<p>potwierdzamy przyjęcie awizacji.</p>
+<p><strong>Szczegóły awizacji:</strong><br>
+Kontrahent: {firma}<br>
+Data dostawy/załadunku: {termin}<br>
+Okno czasowe: {godz_od} – {godz_do}<br>
+Rodzaj operacji: {typ_ladunku}<br>
+Numer rejestracyjny pojazdu: {rejestracja}</p>
+<p>Prosimy o przybycie w wyznaczonym oknie czasowym. W przypadku opóźnienia awizacja może zostać przesunięta lub wymagać ponownego umówienia.</p>
+<p>W razie potrzeby zmiany terminu prosimy o kontakt poprzez system awizacji.</p>
+<p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
+<p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
         (
             "odrzucona",
-            "Awizacja odrzucona – Intechstal",
-            """<p>Dzień dobry,</p>
-<p>Informujemy, że Twoja awizacja została <strong>odrzucona</strong>.</p>
-<p><strong>Firma:</strong> {firma}<br>
-<strong>Termin:</strong> {termin}<br>
-<strong>Typ ładunku:</strong> {typ_ladunku}</p>
-<p>W razie pytań prosimy o kontakt.<br>Pozdrawiamy,<br>Intechstal</p>"""
+            "Odrzucenie awizacji – INTECHSTAL",
+            """<p>Szanowni Państwo,</p>
+<p>informujemy, że awizacja została odrzucona.</p>
+<p><strong>Powód odrzucenia:</strong><br>{powod}</p>
+<p><strong>Szczegóły awizacji:</strong><br>
+Kontrahent: {firma}<br>
+Planowana data: {termin}<br>
+Okno czasowe: {godz_od} – {godz_do}</p>
+<p>Prosimy o ponowne przesłanie awizacji z poprawnymi danymi lub wybór innego dostępnego terminu.</p>
+<p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
+<p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
         (
             "edycja",
-            "Zmiana awizacji – Intechstal",
-            """<p>Dzień dobry,</p>
-<p>Informujemy, że Twoja awizacja została <strong>zedytowana</strong> przez administratora.</p>
-<p><strong>Firma:</strong> {firma}<br>
-<strong>Termin:</strong> {termin}<br>
-<strong>Typ ładunku:</strong> {typ_ladunku}</p>
-<p>Pozdrawiamy,<br>Intechstal</p>"""
+            "Aktualizacja awizacji – INTECHSTAL",
+            """<p>Szanowni Państwo,</p>
+<p>informujemy, że awizacja została zaktualizowana przez administratora systemu.</p>
+<p><strong>Zaktualizowane dane awizacji:</strong><br>
+Kontrahent: {firma}<br>
+Data operacji: {termin}<br>
+Okno czasowe: {godz_od} – {godz_do}<br>
+Rodzaj operacji: {typ_ladunku}<br>
+Numer rejestracyjny pojazdu: {rejestracja}</p>
+<p><strong>Zmiany wprowadzone w awizacji:</strong><br>{opis_zmian}</p>
+<p>Prosimy o uwzględnienie zaktualizowanych informacji podczas realizacji dostawy/załadunku.</p>
+<p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
+<p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
     ]
     for typ, subject, body in defaults:
@@ -204,8 +236,8 @@ def create_users():
 
         c.execute("""
             INSERT OR IGNORE INTO permissions
-            VALUES (?,?,?,?,?,?,?,?,?)
-        """, (u,1,1,0,1,1,1,0,60))
+            VALUES (?,?,?,?,?,?,?,?,?,?)
+        """, (u,1,1,0,1,1,1,0,60,1))
 
     conn.commit()
     conn.close()
@@ -230,14 +262,14 @@ def get_perms(login):
 
     c.execute("""
         SELECT can_edit, can_status, calendar_only,
-               show_logi, show_historia, show_permissions, auto_refresh, auto_refresh_interval
+               show_logi, show_historia, show_permissions, auto_refresh, auto_refresh_interval, show_maile
         FROM permissions WHERE login=?
     """, (login,))
 
     row = c.fetchone()
     conn.close()
 
-    return row if row else (1,1,0,1,1,1,0,60)
+    return row if row else (1,1,0,1,1,1,0,60,1)
 
 # ================= SLOTY =================
 
@@ -421,15 +453,25 @@ def update_status(id):
     # Pobierz email klienta
     conn2 = sqlite3.connect("awizacje.db")
     c2 = conn2.cursor()
-    c2.execute("SELECT email, firma, data_godzina, typ_ladunku FROM awizacje WHERE id=?", (id,))
+    c2.execute("SELECT email, firma, data_godzina, typ_ladunku, rejestracja FROM awizacje WHERE id=?", (id,))
     row2 = c2.fetchone()
     conn2.close()
 
     if row2:
-        email_klienta, firma2, data2, typ2 = row2
+        email_klienta, firma2, data2, typ2, rejestracja2 = row2
         if status in ("zaakceptowana", "odrzucona"):
+            godz_od, godz_do, data_fmt = get_time_window(data2, typ2)
             subject, body = get_mail_template(status)
-            body = body.format(firma=firma2, termin=data2, typ_ladunku=typ2)
+            powod = request.form.get("powod_odrzucenia", "")
+            body = body.format(
+                firma=firma2,
+                termin=data_fmt,
+                typ_ladunku=typ2,
+                godz_od=godz_od,
+                godz_do=godz_do,
+                rejestracja=rejestracja2,
+                powod=powod
+            )
             send_mail(email_klienta, subject, body)
 
     return redirect("/admin")
@@ -462,8 +504,18 @@ def edit(id):
 
         log_action(session.get("user"), f"EDYCJA AWIZACJI: ID:{id} firma:{f['firma']}")
 
+        godz_od, godz_do, data_fmt = get_time_window(f["data_godzina"], f["typ_ladunku"])
+        opis_zmian = request.form.get("opis_zmian", "")
         subject, body = get_mail_template("edycja")
-        body = body.format(firma=f["firma"], termin=f["data_godzina"], typ_ladunku=f["typ_ladunku"])
+        body = body.format(
+            firma=f["firma"],
+            termin=data_fmt,
+            typ_ladunku=f["typ_ladunku"],
+            godz_od=godz_od,
+            godz_do=godz_do,
+            rejestracja=f["rejestracja"],
+            opis_zmian=opis_zmian
+        )
         send_mail(f["email"], subject, body)
 
         return redirect("/admin")
@@ -527,7 +579,7 @@ def permissions():
 
         c.execute("""UPDATE permissions SET
             can_edit=?,can_status=?,calendar_only=?,
-            show_logi=?,show_historia=?,show_permissions=?,auto_refresh=?,auto_refresh_interval=?
+            show_logi=?,show_historia=?,show_permissions=?,auto_refresh=?,auto_refresh_interval=?,show_maile=?
             WHERE login=?""",
         (
             int("can_edit" in request.form),
@@ -538,6 +590,7 @@ def permissions():
             int("show_permissions" in request.form),
             int("auto_refresh" in request.form),
             int(request.form.get("auto_refresh_interval", 60)),
+            int("show_maile" in request.form),
             login
         ))
 
@@ -592,8 +645,8 @@ def add_user():
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
         c.execute("INSERT OR IGNORE INTO users VALUES (NULL,?,?)", (login, haslo))
-        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?,?)",
-                  (login, 1, 1, 0, 1, 1, 1, 0, 60))
+        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?,?,?)",
+                  (login, 1, 1, 0, 1, 1, 1, 0, 60, 1))
         conn.commit()
         conn.close()
         log_action(session.get("user"), f"DODANIE UŻYTKOWNIKA: {login}")
