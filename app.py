@@ -7,11 +7,13 @@ app.secret_key = "sekretnyklucz"
 
 # ================= SLOT CONFIG =================
 
-SLOT_BLOCKS = {
-    "Odbiór złomu": 2,
-    "Odbiór zamówienia": 1,
-    "Dostawa materiału": 3
-}
+def get_slot_blocks():
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT typ, blokada FROM slot_blocks")
+    rows = c.fetchall()
+    conn.close()
+    return {r[0]: r[1] for r in rows}
 
 # ================= DB =================
 
@@ -62,6 +64,20 @@ def init_db():
         c.execute("ALTER TABLE permissions ADD COLUMN auto_refresh INTEGER DEFAULT 0")
     except:
         pass
+
+    c.execute('''CREATE TABLE IF NOT EXISTS slot_blocks (
+        typ TEXT PRIMARY KEY,
+        blokada INTEGER DEFAULT 1
+    )''')
+
+    # Domyślne wartości jeśli tabela pusta
+    defaults = [
+        ("Odbiór złomu", 2),
+        ("Odbiór zamówienia", 1),
+        ("Dostawa materiału", 3),
+    ]
+    for typ, blokada in defaults:
+        c.execute("INSERT OR IGNORE INTO slot_blocks VALUES (?,?)", (typ, blokada))
 
     conn.commit()
     conn.close()
@@ -157,7 +173,7 @@ def get_days_and_slots():
         try:
             aid, firma, data, typ, waga, komentarz, status = r
             base = datetime.strptime(data, "%Y-%m-%dT%H:%M")
-            blokada = SLOT_BLOCKS.get(typ, 1)
+            blokada = get_slot_blocks().get(typ, 1)
 
             for i in range(-blokada, blokada + 1):
                 slot_time = base + timedelta(minutes=15 * i)
@@ -415,7 +431,33 @@ def permissions():
     users = c.fetchall()
     conn.close()
 
-    return render_template("permissions.html", users=users)
+    slot_blocks = get_slot_blocks()
+    return render_template("permissions.html", users=users, slot_blocks=slot_blocks)
+
+# ================= SLOT BLOCKS EDIT =================
+
+@app.route("/admin/slot_blocks", methods=["POST"])
+def update_slot_blocks():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    for key, val in request.form.items():
+        if key.startswith("blokada_"):
+            typ = key[len("blokada_"):]
+            try:
+                blokada = int(val)
+                c.execute("UPDATE slot_blocks SET blokada=? WHERE typ=?", (blokada, typ))
+            except:
+                pass
+
+    conn.commit()
+    conn.close()
+
+    log_action(session.get("user"), "ZMIANA SLOT BLOCKS")
+    return redirect("/admin/permissions")
 
 # ================= RUN =================
 
