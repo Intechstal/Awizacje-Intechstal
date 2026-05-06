@@ -1,9 +1,37 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
 from datetime import datetime, timedelta
+import smtplib
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
+
+# ================= MAIL CONFIG =================
+
+MAIL_HOST = "s47.cyber-folks.pl"
+MAIL_PORT = 465
+MAIL_USER = "info@awizacje-intechstal.pl"
+MAIL_PASS = "--0bO8YLba^A0JQq"
+
+def send_mail(to, subject, body):
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = MAIL_USER
+        msg["To"] = to
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "html", "utf-8"))
+
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context) as server:
+            server.login(MAIL_USER, MAIL_PASS)
+            server.sendmail(MAIL_USER, to, msg.as_string())
+    except Exception as e:
+        print(f"Błąd wysyłania maila: {e}")
+
+
 
 # ================= SLOT CONFIG =================
 
@@ -103,7 +131,6 @@ def create_users():
         ("TR","1234"),
         ("MAGAZYN","1234"),
         ("EK","1234"),
-        ("TECHNOLODZY","1234"),
     ]
 
     for u,p in users:
@@ -325,6 +352,41 @@ def update_status(id):
 
     log_action(session.get("user"), f"ZMIANA STATUSU: {firma} → {status}")
 
+    # Pobierz email klienta
+    conn2 = sqlite3.connect("awizacje.db")
+    c2 = conn2.cursor()
+    c2.execute("SELECT email, firma, data_godzina, typ_ladunku FROM awizacje WHERE id=?", (id,))
+    row2 = c2.fetchone()
+    conn2.close()
+
+    if row2:
+        email_klienta, firma2, data2, typ2 = row2
+        if status == "zaakceptowana":
+            subject = "Awizacja zaakceptowana – Intechstal"
+            body = f"""
+            <p>Dzień dobry,</p>
+            <p>Informujemy, że Twoja awizacja została <strong>zaakceptowana</strong>.</p>
+            <p><strong>Firma:</strong> {firma2}<br>
+            <strong>Termin:</strong> {data2}<br>
+            <strong>Typ ładunku:</strong> {typ2}</p>
+            <p>Pozdrawiamy,<br>Intechstal</p>
+            """
+        elif status == "odrzucona":
+            subject = "Awizacja odrzucona – Intechstal"
+            body = f"""
+            <p>Dzień dobry,</p>
+            <p>Informujemy, że Twoja awizacja została <strong>odrzucona</strong>.</p>
+            <p><strong>Firma:</strong> {firma2}<br>
+            <strong>Termin:</strong> {data2}<br>
+            <strong>Typ ładunku:</strong> {typ2}</p>
+            <p>W razie pytań prosimy o kontakt.<br>Pozdrawiamy,<br>Intechstal</p>
+            """
+        else:
+            subject = None
+
+        if subject:
+            send_mail(email_klienta, subject, body)
+
     return redirect("/admin")
 
 # ================= EDIT =================
@@ -354,6 +416,15 @@ def edit(id):
         conn.close()
 
         log_action(session.get("user"), f"EDYCJA AWIZACJI: ID:{id} firma:{f['firma']}")
+
+        send_mail(f["email"], "Zmiana awizacji – Intechstal", f"""
+        <p>Dzień dobry,</p>
+        <p>Informujemy, że Twoja awizacja została <strong>zedytowana</strong> przez administratora.</p>
+        <p><strong>Firma:</strong> {f['firma']}<br>
+        <strong>Termin:</strong> {f['data_godzina']}<br>
+        <strong>Typ ładunku:</strong> {f['typ_ladunku']}</p>
+        <p>Pozdrawiamy,<br>Intechstal</p>
+        """)
 
         return redirect("/admin")
 
