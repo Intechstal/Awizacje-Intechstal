@@ -10,6 +10,17 @@ from email.mime.multipart import MIMEMultipart
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
 
+
+# ================= MAIL TEMPLATES =================
+
+def get_mail_template(typ):
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT subject, body FROM mail_templates WHERE typ=?", (typ,))
+    row = c.fetchone()
+    conn.close()
+    return row if row else ("Awizacja", "")
+
 # ================= MAIL CONFIG =================
 
 MAIL_HOST = "s47.cyber-folks.pl"
@@ -125,6 +136,47 @@ def init_db():
     ]
     for typ, blokada in defaults:
         c.execute("INSERT OR IGNORE INTO slot_blocks VALUES (?,?)", (typ, blokada))
+
+    c.execute('''CREATE TABLE IF NOT EXISTS mail_templates (
+        typ TEXT PRIMARY KEY,
+        subject TEXT,
+        body TEXT
+    )''')
+
+    defaults = [
+        (
+            "zaakceptowana",
+            "Awizacja zaakceptowana – Intechstal",
+            """<p>Dzień dobry,</p>
+<p>Informujemy, że Twoja awizacja została <strong>zaakceptowana</strong>.</p>
+<p><strong>Firma:</strong> {firma}<br>
+<strong>Termin:</strong> {termin}<br>
+<strong>Typ ładunku:</strong> {typ_ladunku}</p>
+<p>Pozdrawiamy,<br>Intechstal</p>"""
+        ),
+        (
+            "odrzucona",
+            "Awizacja odrzucona – Intechstal",
+            """<p>Dzień dobry,</p>
+<p>Informujemy, że Twoja awizacja została <strong>odrzucona</strong>.</p>
+<p><strong>Firma:</strong> {firma}<br>
+<strong>Termin:</strong> {termin}<br>
+<strong>Typ ładunku:</strong> {typ_ladunku}</p>
+<p>W razie pytań prosimy o kontakt.<br>Pozdrawiamy,<br>Intechstal</p>"""
+        ),
+        (
+            "edycja",
+            "Zmiana awizacji – Intechstal",
+            """<p>Dzień dobry,</p>
+<p>Informujemy, że Twoja awizacja została <strong>zedytowana</strong> przez administratora.</p>
+<p><strong>Firma:</strong> {firma}<br>
+<strong>Termin:</strong> {termin}<br>
+<strong>Typ ładunku:</strong> {typ_ladunku}</p>
+<p>Pozdrawiamy,<br>Intechstal</p>"""
+        ),
+    ]
+    for typ, subject, body in defaults:
+        c.execute("INSERT OR IGNORE INTO mail_templates VALUES (?,?,?)", (typ, subject, body))
 
     conn.commit()
     conn.close()
@@ -375,30 +427,9 @@ def update_status(id):
 
     if row2:
         email_klienta, firma2, data2, typ2 = row2
-        if status == "zaakceptowana":
-            subject = "Awizacja zaakceptowana – Intechstal"
-            body = f"""
-            <p>Dzień dobry,</p>
-            <p>Informujemy, że Twoja awizacja została <strong>zaakceptowana</strong>.</p>
-            <p><strong>Firma:</strong> {firma2}<br>
-            <strong>Termin:</strong> {data2}<br>
-            <strong>Typ ładunku:</strong> {typ2}</p>
-            <p>Pozdrawiamy,<br>Intechstal</p>
-            """
-        elif status == "odrzucona":
-            subject = "Awizacja odrzucona – Intechstal"
-            body = f"""
-            <p>Dzień dobry,</p>
-            <p>Informujemy, że Twoja awizacja została <strong>odrzucona</strong>.</p>
-            <p><strong>Firma:</strong> {firma2}<br>
-            <strong>Termin:</strong> {data2}<br>
-            <strong>Typ ładunku:</strong> {typ2}</p>
-            <p>W razie pytań prosimy o kontakt.<br>Pozdrawiamy,<br>Intechstal</p>
-            """
-        else:
-            subject = None
-
-        if subject:
+        if status in ("zaakceptowana", "odrzucona"):
+            subject, body = get_mail_template(status)
+            body = body.format(firma=firma2, termin=data2, typ_ladunku=typ2)
             send_mail(email_klienta, subject, body)
 
     return redirect("/admin")
@@ -431,14 +462,9 @@ def edit(id):
 
         log_action(session.get("user"), f"EDYCJA AWIZACJI: ID:{id} firma:{f['firma']}")
 
-        send_mail(f["email"], "Zmiana awizacji – Intechstal", f"""
-        <p>Dzień dobry,</p>
-        <p>Informujemy, że Twoja awizacja została <strong>zedytowana</strong> przez administratora.</p>
-        <p><strong>Firma:</strong> {f['firma']}<br>
-        <strong>Termin:</strong> {f['data_godzina']}<br>
-        <strong>Typ ładunku:</strong> {f['typ_ladunku']}</p>
-        <p>Pozdrawiamy,<br>Intechstal</p>
-        """)
+        subject, body = get_mail_template("edycja")
+        body = body.format(firma=f["firma"], termin=f["data_godzina"], typ_ladunku=f["typ_ladunku"])
+        send_mail(f["email"], subject, body)
 
         return redirect("/admin")
 
@@ -609,6 +635,31 @@ def delete_user():
         log_action(session.get("user"), f"USUNIĘCIE UŻYTKOWNIKA: {login}")
 
     return redirect("/admin/permissions")
+
+
+# ================= MAIL TEMPLATES EDIT =================
+
+@app.route("/admin/maile", methods=["GET","POST"])
+def maile():
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+
+    if request.method == "POST":
+        for typ in ["zaakceptowana", "odrzucona", "edycja"]:
+            subject = request.form.get(f"subject_{typ}", "")
+            body = request.form.get(f"body_{typ}", "")
+            c.execute("UPDATE mail_templates SET subject=?, body=? WHERE typ=?", (subject, body, typ))
+        conn.commit()
+        log_action(session.get("user"), "EDYCJA SZABLONÓW MAILI")
+
+    c.execute("SELECT typ, subject, body FROM mail_templates")
+    templates = {r[0]: {"subject": r[1], "body": r[2]} for r in c.fetchall()}
+    conn.close()
+
+    return render_template("maile.html", templates=templates)
 
 # ================= RUN =================
 
