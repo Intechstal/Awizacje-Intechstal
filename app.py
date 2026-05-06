@@ -3,6 +3,7 @@ import sqlite3
 from datetime import datetime, timedelta
 import smtplib
 import ssl
+import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -16,7 +17,7 @@ MAIL_PORT = 465
 MAIL_USER = "info@awizacje-intechstal.pl"
 MAIL_PASS = "--0bO8YLba^A0JQq"
 
-def send_mail(to, subject, body):
+def _send_mail_worker(to, subject, body):
     try:
         msg = MIMEMultipart()
         msg["From"] = MAIL_USER
@@ -28,8 +29,14 @@ def send_mail(to, subject, body):
         with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context) as server:
             server.login(MAIL_USER, MAIL_PASS)
             server.sendmail(MAIL_USER, to, msg.as_string())
+            print(f"Mail wysłany do: {to}")
     except Exception as e:
         print(f"Błąd wysyłania maila: {e}")
+
+def send_mail(to, subject, body):
+    t = threading.Thread(target=_send_mail_worker, args=(to, subject, body))
+    t.daemon = True
+    t.start()
 
 
 
