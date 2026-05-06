@@ -16,6 +16,7 @@
 {% set show_logi = True %}
 {% set show_historia = True %}
 {% set show_permissions = True %}
+{% set show_maile = True %}
 {% if perms %}
     {% set can_edit = perms[0] %}
     {% set can_status = perms[1] %}
@@ -33,7 +34,9 @@
         Awizacja transportu
     </div>
     <div class="topbar-right">
-        <a href="/admin/maile">Maile</a>
+        {% if show_maile %}
+            <a href="/admin/maile">Maile</a>
+        {% endif %}
         {% if show_logi %}
             <a href="/admin/logi">Logi</a>
         {% endif %}
