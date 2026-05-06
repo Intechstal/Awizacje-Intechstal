@@ -29,10 +29,7 @@ def _send_mail_worker(to, subject, body):
 
         print(f"[MAIL] Łączenie z {MAIL_HOST}:{MAIL_PORT}", flush=True)
         context = ssl.create_default_context()
-        with smtplib.SMTP(MAIL_HOST, MAIL_PORT) as server:
-            server.ehlo()
-            server.starttls(context=context)
-            server.ehlo()
+        with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context) as server:
             print(f"[MAIL] Logowanie...", flush=True)
             server.login(MAIL_USER, MAIL_PASS)
             print(f"[MAIL] Wysyłanie...", flush=True)
