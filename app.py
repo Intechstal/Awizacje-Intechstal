@@ -168,10 +168,9 @@ def init_db():
 <p><strong>Szczegóły awizacji:</strong><br>
 Kontrahent: {firma}<br>
 Data dostawy/załadunku: {termin}<br>
-Okno czasowe: {godz_od} – {godz_do}<br>
 Rodzaj operacji: {typ_ladunku}<br>
 Numer rejestracyjny pojazdu: {rejestracja}</p>
-<p>Prosimy o przybycie w wyznaczonym oknie czasowym. W przypadku opóźnienia awizacja może zostać przesunięta lub wymagać ponownego umówienia.</p>
+<p>Prosimy o przybycie w wyznaczonym terminie. W przypadku opóźnienia awizacja może zostać przesunięta lub wymagać ponownego umówienia.</p>
 <p>W razie potrzeby zmiany terminu prosimy o kontakt poprzez system awizacji.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
@@ -185,7 +184,6 @@ Numer rejestracyjny pojazdu: {rejestracja}</p>
 <p><strong>Szczegóły awizacji:</strong><br>
 Kontrahent: {firma}<br>
 Planowana data: {termin}<br>
-Okno czasowe: {godz_od} – {godz_do}</p>
 <p>Prosimy o ponowne przesłanie awizacji z poprawnymi danymi lub wybór innego dostępnego terminu.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
@@ -198,7 +196,6 @@ Okno czasowe: {godz_od} – {godz_do}</p>
 <p><strong>Zaktualizowane dane awizacji:</strong><br>
 Kontrahent: {firma}<br>
 Data operacji: {termin}<br>
-Okno czasowe: {godz_od} – {godz_do}<br>
 Rodzaj operacji: {typ_ladunku}<br>
 Numer rejestracyjny pojazdu: {rejestracja}</p>
 <p><strong>Zmiany wprowadzone w awizacji:</strong><br>{opis_zmian}</p>
