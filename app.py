@@ -13,7 +13,7 @@ app.secret_key = "sekretnyklucz"
 # ================= MAIL CONFIG =================
 
 MAIL_HOST = "s47.cyber-folks.pl"
-MAIL_PORT = 587
+MAIL_PORT = 465
 MAIL_USER = "info@awizacje-intechstal.pl"
 MAIL_PASS = "--0bO8YLba^A0JQq"
 
