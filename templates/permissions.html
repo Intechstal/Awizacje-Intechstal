@@ -83,6 +83,7 @@
     <th>Permissions</th>
     <th>Auto-refresh</th>
     <th>Interwał (s)</th>
+    <th>Maile</th>
     <th></th>
 </tr>
 {% for u in users %}
@@ -97,6 +98,7 @@
         <td><input type="checkbox" name="show_permissions" {% if u[6] %}checked{% endif %}></td>
         <td><input type="checkbox" name="auto_refresh" {% if u[7] %}checked{% endif %}></td>
         <td><input type="number" name="auto_refresh_interval" value="{{ u[8] }}" min="10" max="3600" style="width:70px"></td>
+        <td><input type="checkbox" name="show_maile" {% if u[9] %}checked{% endif %}></td>
         <td>
             <input type="hidden" name="login" value="{{ u[0] }}">
             <button type="submit">Zapisz</button>
