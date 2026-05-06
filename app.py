@@ -56,12 +56,17 @@ def init_db():
         show_logi INTEGER DEFAULT 1,
         show_historia INTEGER DEFAULT 1,
         show_permissions INTEGER DEFAULT 1,
-        auto_refresh INTEGER DEFAULT 0
+        auto_refresh INTEGER DEFAULT 0,
+        auto_refresh_interval INTEGER DEFAULT 60
     )''')
 
     # Migracja dla istniejących baz danych
     try:
         c.execute("ALTER TABLE permissions ADD COLUMN auto_refresh INTEGER DEFAULT 0")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE permissions ADD COLUMN auto_refresh_interval INTEGER DEFAULT 60")
     except:
         pass
 
@@ -105,8 +110,8 @@ def create_users():
 
         c.execute("""
             INSERT OR IGNORE INTO permissions
-            VALUES (?,?,?,?,?,?,?,?)
-        """, (u,1,1,0,1,1,1,0))
+            VALUES (?,?,?,?,?,?,?,?,?)
+        """, (u,1,1,0,1,1,1,0,60))
 
     conn.commit()
     conn.close()
@@ -131,14 +136,14 @@ def get_perms(login):
 
     c.execute("""
         SELECT can_edit, can_status, calendar_only,
-               show_logi, show_historia, show_permissions, auto_refresh
+               show_logi, show_historia, show_permissions, auto_refresh, auto_refresh_interval
         FROM permissions WHERE login=?
     """, (login,))
 
     row = c.fetchone()
     conn.close()
 
-    return row if row else (1,1,0,1,1,1,0)
+    return row if row else (1,1,0,1,1,1,0,60)
 
 # ================= SLOTY =================
 
@@ -410,7 +415,7 @@ def permissions():
 
         c.execute("""UPDATE permissions SET
             can_edit=?,can_status=?,calendar_only=?,
-            show_logi=?,show_historia=?,show_permissions=?,auto_refresh=?
+            show_logi=?,show_historia=?,show_permissions=?,auto_refresh=?,auto_refresh_interval=?
             WHERE login=?""",
         (
             int("can_edit" in request.form),
@@ -420,6 +425,7 @@ def permissions():
             int("show_historia" in request.form),
             int("show_permissions" in request.form),
             int("auto_refresh" in request.form),
+            int(request.form.get("auto_refresh_interval", 60)),
             login
         ))
 
@@ -474,8 +480,8 @@ def add_user():
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
         c.execute("INSERT OR IGNORE INTO users VALUES (NULL,?,?)", (login, haslo))
-        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?)",
-                  (login, 1, 1, 0, 1, 1, 1, 0))
+        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?,?)",
+                  (login, 1, 1, 0, 1, 1, 1, 0, 60))
         conn.commit()
         conn.close()
         log_action(session.get("user"), f"DODANIE UŻYTKOWNIKA: {login}")
