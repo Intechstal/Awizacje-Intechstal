@@ -4,11 +4,70 @@
 <meta charset="UTF-8">
 <title>Permissions</title>
 <link rel="stylesheet" href="/static/style.css">
+<style>
+    .perm-box {
+        max-width: 95%;
+        width: 95%;
+        margin: 30px auto;
+        background: white;
+        padding: 25px;
+        border-radius: 14px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    .perm-box input[type="password"],
+    .perm-box input[type="text"] {
+        width: 130px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        margin: 0;
+    }
+    .perm-box input[type="number"] {
+        width: 60px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        margin: 0;
+    }
+    .perm-box button {
+        padding: 6px 14px;
+        background: #0f172a;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        width: auto;
+    }
+    .perm-box button.danger {
+        background: #dc2626;
+    }
+    .perm-box form {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+    }
+    .perm-box h2 {
+        margin-top: 30px;
+    }
+    .back-btn {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #0f172a;
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+</style>
 </head>
 <body>
-<div class="form-box" style="max-width:95%; width:95%; margin:30px auto;">
+<div class="perm-box">
 
-<a href="/admin" class="btn" style="display:inline-block; margin-bottom:20px;">← Powrót do admina</a>
+<a href="/admin" class="back-btn">← Powrót do admina</a>
 
 <!-- ================= UPRAWNIENIA ================= -->
 <h2>Uprawnienia użytkowników</h2>
@@ -23,6 +82,7 @@
     <th>Historia</th>
     <th>Permissions</th>
     <th>Auto-refresh</th>
+    <th>Interwał (s)</th>
     <th></th>
 </tr>
 {% for u in users %}
@@ -36,6 +96,7 @@
         <td><input type="checkbox" name="show_historia" {% if u[5] %}checked{% endif %}></td>
         <td><input type="checkbox" name="show_permissions" {% if u[6] %}checked{% endif %}></td>
         <td><input type="checkbox" name="auto_refresh" {% if u[7] %}checked{% endif %}></td>
+        <td><input type="number" name="auto_refresh_interval" value="{{ u[8] }}" min="10" max="3600" style="width:70px"></td>
         <td>
             <input type="hidden" name="login" value="{{ u[0] }}">
             <button type="submit">Zapisz</button>
@@ -46,31 +107,30 @@
 </table>
 </div>
 
-<!-- ================= UŻYTKOWNICY ================= -->
+<!-- ================= ZARZĄDZANIE UŻYTKOWNIKAMI ================= -->
 <h2>Zarządzanie użytkownikami</h2>
 <div style="overflow-x:auto;">
 <table class="table">
 <tr>
     <th>Nazwa</th>
-    <th>Hasło</th>
+    <th>Nowe hasło</th>
     <th>Zmień hasło</th>
     <th>Usuń użytkownika</th>
 </tr>
 {% for u in users %}
 <tr>
     <td>{{ u[0] }}</td>
-    <td>
-        <form action="/admin/edit_user" method="post" style="display:flex; gap:6px; align-items:center;">
+    <td colspan="2">
+        <form action="/admin/edit_user" method="post">
             <input type="hidden" name="login" value="{{ u[0] }}">
-            <input type="password" name="haslo" placeholder="Nowe hasło" style="width:130px">
+            <input type="password" name="haslo" placeholder="Nowe hasło">
             <button type="submit">Zmień</button>
         </form>
     </td>
-    <td></td>
     <td>
         <form action="/admin/delete_user" method="post" onsubmit="return confirm('Usunąć użytkownika {{ u[0] }}?')">
             <input type="hidden" name="login" value="{{ u[0] }}">
-            <button type="submit" style="color:red;">Usuń</button>
+            <button type="submit" class="danger">Usuń</button>
         </form>
     </td>
 </tr>
@@ -80,10 +140,10 @@
 
 <!-- ================= DODAJ UŻYTKOWNIKA ================= -->
 <h2>Dodaj użytkownika</h2>
-<form action="/admin/add_user" method="post" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-    <input type="text" name="login" placeholder="Login" required style="width:130px">
-    <input type="password" name="haslo" placeholder="Hasło" required style="width:130px">
-    <button type="submit">Dodaj</button>
+<form action="/admin/add_user" method="post" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-start;">
+    <input type="text" name="login" placeholder="Login" required style="width:130px; padding:6px 10px; border-radius:8px; border:1px solid #e2e8f0;">
+    <input type="password" name="haslo" placeholder="Hasło" required style="width:130px; padding:6px 10px; border-radius:8px; border:1px solid #e2e8f0;">
+    <button type="submit" style="padding:6px 14px; background:#0f172a; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Dodaj</button>
 </form>
 
 <!-- ================= BLOKADY SLOTÓW ================= -->
@@ -98,12 +158,17 @@
 {% for typ, blokada in slot_blocks.items() %}
 <tr>
     <td>{{ typ }}</td>
-    <td><input type="number" name="blokada_{{ typ }}" value="{{ blokada }}" min="0" max="10" style="width:60px"></td>
+    <td>
+        <form action="/admin/slot_blocks" method="post" style="display:flex; align-items:center; gap:6px;">
+            <input type="hidden" name="typ" value="{{ typ }}">
+            <input type="number" name="blokada_{{ typ }}" value="{{ blokada }}" min="0" max="10">
+        </form>
+    </td>
 </tr>
 {% endfor %}
 </table>
 </div>
-<button type="submit">Zapisz blokady</button>
+<button type="submit" style="margin-top:10px; padding:6px 14px; background:#0f172a; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Zapisz blokady</button>
 </form>
 
 </div>
