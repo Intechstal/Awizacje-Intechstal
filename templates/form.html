@@ -57,7 +57,7 @@
         <li>Gatunek blachy</li>
         <li>Grubość blachy</li>
         <li>Wymiary arkusza/profila</li>
-        <li>Ilość wykazana w jednolitej jednostce miary (np. sztuki, arkusze lub kilogramy)</li>
+        <li>Ilość w jednolitej jednostce miary (np. sztuki lub kilogramy)</li>
         <li>Podpis wydającego</li>
     </ul>
     <p style="margin-top: 18px; font-weight: 600; color: #0f172a;">Brak wymaganych danych może uniemożliwić przyjęcie dostawy.</p>
@@ -69,7 +69,7 @@
 {% if error %}
 <div class="error">{{ error }}</div>
 {% endif %}
-<form action="/zapisz" method="post">
+<form action="/zapisz" method="post" enctype="multipart/form-data">
 <label>Firma <span style="color:red">*</span></label>
 <input name="firma" value="{{ dane.firma or '' }}" required>
 <label>Rejestracja <span style="color:red">*</span></label>
@@ -106,6 +106,8 @@
         </optgroup>
     {% endfor %}
 </select>
+<label>Załącznik <span style="font-size:12px; color:#64748b;">(opcjonalnie – PNG, JPG, PDF)</span></label>
+<input type="file" name="zalacznik" accept=".png,.jpg,.jpeg,.pdf" style="padding:6px 0;">
 <div style="text-align:center; margin:15px 0; font-size:14px;">
     <label>
         <input type="checkbox" name="rodo" required>
