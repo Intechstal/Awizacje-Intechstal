@@ -391,6 +391,12 @@ def zapisz():
     # Obsługa załącznika
     zalacznik_nazwa = None
     plik = request.files.get("zalacznik")
+    if plik and plik.filename and not allowed_file(plik.filename):
+        dni, godziny, zajete = get_days_and_slots()
+        return render_template("form.html",
+            dni=dni, godziny=godziny, zajete=zajete,
+            dane=f, error="Niedozwolony format pliku. Dozwolone formaty: png, jpg, jpeg, pdf."
+        )
     if plik and plik.filename and allowed_file(plik.filename):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         upload_dir = os.path.join(base_dir, UPLOAD_FOLDER)
