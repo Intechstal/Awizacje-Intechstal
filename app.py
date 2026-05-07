@@ -253,7 +253,7 @@ def create_users():
         c.execute("""
             INSERT OR IGNORE INTO permissions
             VALUES (?,?,?,?,?,?,?,?,?,?,?)
-        """, (u, 1, 1, 0, 1, 1, 1, 0, 60, 1, 1))
+        """, (u, 1, 1, 0, 1, 1, 1, 0, 900, 1, 1))
 
     conn.commit()
     conn.close()
@@ -285,7 +285,7 @@ def get_perms(login):
     row = c.fetchone()
     conn.close()
 
-    return row if row else (1,1,0,1,1,1,0,60,1,1)
+    return row if row else (1,1,0,1,1,1,0,900,1,1)
 
 # ================= SLOTY =================
 
@@ -317,7 +317,7 @@ def get_days_and_slots():
     zajete = {}
 
     # Oznacz sloty bliższe niż 1.5h jako zajęte (blokada czasowa dla klientów)
-    min_advance = now + timedelta(minutes=90)
+    min_advance = now + timedelta(minutes=60)
 
     for g in godziny:
         for d in dni:
@@ -394,11 +394,11 @@ def zapisz():
                 dane=f, error="Nie można awizować się na termin w przeszłości."
             )
 
-        if (wybrana - now).total_seconds() < 90 * 60:
+        if (wybrana - now).total_seconds() < 60 * 60:
             dni, godziny, zajete = get_days_and_slots()
             return render_template("form.html",
                 dni=dni, godziny=godziny, zajete=zajete,
-                dane=f, error="Awizacja wymaga co najmniej 1,5 godziny wyprzedzenia. Wybierz późniejszy termin."
+                dane=f, error="Awizacja wymaga co najmniej jednej godziny wyprzedzenia. Wybierz późniejszy termin."
             )
     except:
         pass
