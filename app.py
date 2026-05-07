@@ -315,7 +315,7 @@ def get_days_and_slots():
 
     zajete = {}
 
-    min_advance = now + timedelta(minutes=90)
+    min_advance = now + timedelta(minutes=60)
 
     for g in godziny:
         for d in dni:
@@ -380,11 +380,11 @@ def zapisz():
             return render_template("form.html",
                 dni=dni, godziny=godziny, zajete=zajete,
                 dane=f, error="Nie można awizować się na termin w przeszłości.")
-        if (wybrana - now).total_seconds() < 90 * 60:
+        if (wybrana - now).total_seconds() < 60 * 60:
             dni, godziny, zajete = get_days_and_slots()
             return render_template("form.html",
                 dni=dni, godziny=godziny, zajete=zajete,
-                dane=f, error="Awizacja wymaga co najmniej 1,5 godziny wyprzedzenia. Wybierz późniejszy termin.")
+                dane=f, error="Awizacja wymaga co najmniej 1 godziny wyprzedzenia. Wybierz późniejszy termin.")
     except:
         pass
 
