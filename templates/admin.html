@@ -18,6 +18,7 @@
 {% set show_permissions = True %}
 {% set show_maile = True %}
 {% set show_backup = True %}
+{% set show_zalaczniki = True %}
 {% if perms %}
     {% set can_edit = perms[0] %}
     {% set can_status = perms[1] %}
@@ -25,8 +26,6 @@
     {% set show_logi = perms[3] %}
     {% set show_historia = perms[4] %}
     {% set show_permissions = perms[5] %}
-    {% set show_maile = perms[8] %}
-    {% set show_backup = perms[9] %}
 {% endif %}
 <!-- =============================================== -->
 <div class="topbar">
@@ -68,6 +67,7 @@
     <th>Waga</th>
     <th>Komentarz</th>
     <th>Status</th>
+    <th>Załącznik</th>
     <th>Akcje</th>
 </tr>
 {% for a in awizacje %}
@@ -81,6 +81,13 @@
     <td>{{ a[8] }}</td>
     <td>{{ a[9] }}</td>
     <td class="{{ a[10] }}">{{ a[10] }}</td>
+    <td>
+        {% if show_zalaczniki and a[11] %}
+            <a href="/admin/zalacznik/{{ a[0] }}" target="_blank">📎 Pobierz</a>
+        {% elif show_zalaczniki %}
+            —
+        {% endif %}
+    </td>
     <td>
         {% if can_status %}
         <form action="/admin/update_status/{{ a[0] }}" method="post" onsubmit="return checkPowod(this)">
