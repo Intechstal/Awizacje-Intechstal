@@ -874,5 +874,4 @@ if __name__ == "__main__":
     app.run(debug=True)
 
 # DLA CYBER_FOLKS / PASSENGER
-application = app
 aplication = app
