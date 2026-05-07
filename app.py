@@ -11,9 +11,17 @@ import os
 import shutil
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "sekretnyklucz"
+
+UPLOAD_FOLDER = "uploads"
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf"}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ================= TIMEZONE =================
 
@@ -37,7 +45,6 @@ def get_mail_template(typ):
 
 
 def get_time_window(data_godzina, typ_ladunku):
-    """Zwraca okno czasowe: od godziny awizacji do końca blokady"""
     try:
         base = parse_local_datetime(data_godzina)
         blokada = get_slot_blocks().get(typ_ladunku, 1)
@@ -61,7 +68,6 @@ def _send_mail_worker(to, subject, body):
         msg["To"] = to
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "html", "utf-8"))
-
         print(f"[MAIL] Łączenie z {MAIL_HOST}:{MAIL_PORT}", flush=True)
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context) as server:
@@ -107,8 +113,15 @@ def init_db():
         typ_ladunku TEXT,
         waga_ladunku TEXT,
         komentarz TEXT,
-        status TEXT DEFAULT 'oczekująca'
+        status TEXT DEFAULT 'oczekująca',
+        zalacznik TEXT
     )''')
+
+    # Migracja – dodaj kolumnę jeśli nie istnieje
+    try:
+        c.execute("ALTER TABLE awizacje ADD COLUMN zalacznik TEXT")
+    except:
+        pass
 
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,39 +147,28 @@ def init_db():
         auto_refresh INTEGER DEFAULT 0,
         auto_refresh_interval INTEGER DEFAULT 60,
         show_maile INTEGER DEFAULT 1,
-        show_backup INTEGER DEFAULT 1
+        show_backup INTEGER DEFAULT 1,
+        show_zalaczniki INTEGER DEFAULT 1
     )''')
 
-    # Migracja dla istniejących baz danych
-    try:
-        c.execute("ALTER TABLE permissions ADD COLUMN auto_refresh INTEGER DEFAULT 0")
-    except:
-        pass
-    try:
-        c.execute("ALTER TABLE permissions ADD COLUMN auto_refresh_interval INTEGER DEFAULT 60")
-    except:
-        pass
-    try:
-        c.execute("ALTER TABLE permissions ADD COLUMN show_maile INTEGER DEFAULT 1")
-    except:
-        pass
-    try:
-        c.execute("ALTER TABLE permissions ADD COLUMN show_backup INTEGER DEFAULT 1")
-    except:
-        pass
+    for col, default in [
+        ("auto_refresh", "0"),
+        ("auto_refresh_interval", "60"),
+        ("show_maile", "1"),
+        ("show_backup", "1"),
+        ("show_zalaczniki", "1"),
+    ]:
+        try:
+            c.execute(f"ALTER TABLE permissions ADD COLUMN {col} INTEGER DEFAULT {default}")
+        except:
+            pass
 
     c.execute('''CREATE TABLE IF NOT EXISTS slot_blocks (
         typ TEXT PRIMARY KEY,
         blokada INTEGER DEFAULT 1
     )''')
 
-    # Domyślne wartości jeśli tabela pusta
-    defaults = [
-        ("Odbiór złomu", 2),
-        ("Odbiór zamówienia", 1),
-        ("Dostawa materiału", 3),
-    ]
-    for typ, blokada in defaults:
+    for typ, blokada in [("Odbiór złomu", 2), ("Odbiór zamówienia", 1), ("Dostawa materiału", 3)]:
         c.execute("INSERT OR IGNORE INTO slot_blocks VALUES (?,?)", (typ, blokada))
 
     c.execute('''CREATE TABLE IF NOT EXISTS mail_templates (
@@ -175,7 +177,7 @@ def init_db():
         body TEXT
     )''')
 
-    defaults = [
+    mail_defaults = [
         (
             "zaakceptowana",
             "Potwierdzenie awizacji – INTECHSTAL",
@@ -223,7 +225,7 @@ Numer rejestracyjny pojazdu: {rejestracja}</p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
     ]
-    for typ, subject, body in defaults:
+    for typ, subject, body in mail_defaults:
         c.execute("INSERT OR IGNORE INTO mail_templates VALUES (?,?,?)", (typ, subject, body))
 
     conn.commit()
@@ -249,11 +251,10 @@ def create_users():
 
     for u, p in users:
         c.execute("INSERT OR IGNORE INTO users VALUES (NULL,?,?)", (u, p))
-
         c.execute("""
             INSERT OR IGNORE INTO permissions
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
-        """, (u, 1, 1, 0, 1, 1, 1, 0, 900, 1, 1))
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (u, 1, 1, 0, 1, 1, 1, 0, 900, 1, 1, 1))
 
     conn.commit()
     conn.close()
@@ -275,17 +276,15 @@ def log_action(user, akcja):
 def get_perms(login):
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
     c.execute("""
         SELECT can_edit, can_status, calendar_only,
-               show_logi, show_historia, show_permissions, auto_refresh, auto_refresh_interval, show_maile, show_backup
+               show_logi, show_historia, show_permissions,
+               auto_refresh, auto_refresh_interval, show_maile, show_backup, show_zalaczniki
         FROM permissions WHERE login=?
     """, (login,))
-
     row = c.fetchone()
     conn.close()
-
-    return row if row else (1,1,0,1,1,1,0,900,1,1)
+    return row if row else (1, 1, 0, 1, 1, 1, 0, 900, 1, 1, 1)
 
 # ================= SLOTY =================
 
@@ -316,14 +315,12 @@ def get_days_and_slots():
 
     zajete = {}
 
-    # Oznacz sloty bliższe niż 1.5h jako zajęte (blokada czasowa dla klientów)
-    min_advance = now + timedelta(minutes=60)
+    min_advance = now + timedelta(minutes=90)
 
     for g in godziny:
         for d in dni:
             slot_str = d.strftime("%Y-%m-%d") + "T" + g
             slot_time = parse_local_datetime(slot_str)
-
             if slot_time <= min_advance and slot_str not in zajete:
                 zajete[slot_str] = {
                     "main": False,
@@ -356,7 +353,6 @@ def get_days_and_slots():
                     "status": status,
                     "is_past": slot_time < now
                 }
-
         except:
             continue
 
@@ -367,14 +363,8 @@ def get_days_and_slots():
 @app.route("/")
 def index():
     dni, godziny, zajete = get_days_and_slots()
-
     return render_template("form.html",
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete,
-        dane={},
-        error=None
-    )
+        dni=dni, godziny=godziny, zajete=zajete, dane={}, error=None)
 
 # ================= ZAPIS =================
 
@@ -382,38 +372,45 @@ def index():
 def zapisz():
     f = request.form
 
-    # Blokada przeszłych slotów
     try:
         wybrana = parse_local_datetime(f["data_godzina"])
         now = now_pl()
-
         if wybrana < now:
             dni, godziny, zajete = get_days_and_slots()
             return render_template("form.html",
                 dni=dni, godziny=godziny, zajete=zajete,
-                dane=f, error="Nie można awizować się na termin w przeszłości."
-            )
-
-        if (wybrana - now).total_seconds() < 60 * 60:
+                dane=f, error="Nie można awizować się na termin w przeszłości.")
+        if (wybrana - now).total_seconds() < 90 * 60:
             dni, godziny, zajete = get_days_and_slots()
             return render_template("form.html",
                 dni=dni, godziny=godziny, zajete=zajete,
-                dane=f, error="Awizacja wymaga co najmniej jednej godziny wyprzedzenia. Wybierz późniejszy termin."
-            )
+                dane=f, error="Awizacja wymaga co najmniej 1,5 godziny wyprzedzenia. Wybierz późniejszy termin.")
     except:
         pass
 
+    # Obsługa załącznika
+    zalacznik_nazwa = None
+    plik = request.files.get("zalacznik")
+    if plik and plik.filename and allowed_file(plik.filename):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        upload_dir = os.path.join(base_dir, UPLOAD_FOLDER)
+        os.makedirs(upload_dir, exist_ok=True)
+        filename = secure_filename(plik.filename)
+        # Unikalność pliku
+        import time
+        unique_name = f"{int(time.time())}_{filename}"
+        plik.save(os.path.join(upload_dir, unique_name))
+        zalacznik_nazwa = unique_name
+
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
-    c.execute("""INSERT INTO awizacje VALUES (NULL,?,?,?,?,?,?,?,?,?,?)""",
+    c.execute("""INSERT INTO awizacje VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?)""",
     (
         f["firma"], f["rejestracja"], f["kierowca"],
         f["email"], f["telefon"], f["data_godzina"],
         f["typ_ladunku"], f["waga_ladunku"], f["komentarz"],
-        "oczekująca"
+        "oczekująca", zalacznik_nazwa
     ))
-
     conn.commit()
     conn.close()
 
@@ -426,19 +423,16 @@ def login():
     if request.method == "POST":
         login = request.form["login"]
         haslo = request.form["haslo"]
-
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
         c.execute("SELECT * FROM users WHERE login=? AND haslo=?", (login, haslo))
         user = c.fetchone()
         conn.close()
-
         if user:
             session["logged_in"] = True
             session["user"] = login
             log_action(login, "LOGIN")
             return redirect("/admin")
-
     return render_template("login.html")
 
 @app.route("/logout")
@@ -453,23 +447,34 @@ def logout():
 def admin():
     if not session.get("logged_in"):
         return redirect("/login")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
     c.execute("SELECT * FROM awizacje WHERE status != 'odrzucona' ORDER BY id DESC")
     awizacje = c.fetchall()
     conn.close()
-
     dni, godziny, zajete = get_days_and_slots()
     perms = get_perms(session.get("user"))
-
     return render_template("admin.html",
-        awizacje=awizacje,
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete,
-        perms=perms
-    )
+        awizacje=awizacje, dni=dni, godziny=godziny, zajete=zajete, perms=perms)
+
+# ================= ZALACZNIK =================
+
+@app.route("/admin/zalacznik/<int:id>")
+def pobierz_zalacznik(id):
+    if not session.get("logged_in"):
+        return redirect("/login")
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("SELECT zalacznik FROM awizacje WHERE id=?", (id,))
+    row = c.fetchone()
+    conn.close()
+    if not row or not row[0]:
+        return "Brak załącznika", 404
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    filepath = os.path.join(base_dir, UPLOAD_FOLDER, row[0])
+    if not os.path.exists(filepath):
+        return "Plik nie istnieje", 404
+    return send_file(filepath, as_attachment=True, download_name=row[0])
 
 # ================= STATUS =================
 
@@ -477,31 +482,21 @@ def admin():
 def update_status(id):
     if not session.get("logged_in"):
         return redirect("/login")
-
     status = request.form.get("status")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
-    # Pobierz firmę do loga
     c.execute("SELECT firma FROM awizacje WHERE id=?", (id,))
     row = c.fetchone()
     firma = row[0] if row else f"ID:{id}"
-
     c.execute("UPDATE awizacje SET status=? WHERE id=?", (status, id))
-
     conn.commit()
     conn.close()
-
     log_action(session.get("user"), f"ZMIANA STATUSU: {firma} → {status}")
-
-    # Pobierz email klienta
     conn2 = sqlite3.connect("awizacje.db")
     c2 = conn2.cursor()
     c2.execute("SELECT email, firma, data_godzina, typ_ladunku, rejestracja FROM awizacje WHERE id=?", (id,))
     row2 = c2.fetchone()
     conn2.close()
-
     if row2:
         email_klienta, firma2, data2, typ2, rejestracja2 = row2
         if status in ("zaakceptowana", "odrzucona"):
@@ -509,16 +504,11 @@ def update_status(id):
             subject, body = get_mail_template(status)
             powod = request.form.get("powod_odrzucenia", "")
             body = body.format(
-                firma=firma2,
-                termin=data_fmt,
-                typ_ladunku=typ2,
-                godz_od=godz_od,
-                godz_do=godz_do,
-                rejestracja=rejestracja2,
-                powod=powod
+                firma=firma2, termin=data_fmt, typ_ladunku=typ2,
+                godz_od=godz_od, godz_do=godz_do,
+                rejestracja=rejestracja2, powod=powod
             )
             send_mail(email_klienta, subject, body)
-
     return redirect("/admin")
 
 # ================= EDIT =================
@@ -527,57 +517,35 @@ def update_status(id):
 def edit(id):
     if not session.get("logged_in"):
         return redirect("/login")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
     if request.method == "POST":
         f = request.form
-
         c.execute("""UPDATE awizacje SET
             firma=?,rejestracja=?,kierowca=?,email=?,telefon=?,
             data_godzina=?,typ_ladunku=?,waga_ladunku=?,komentarz=?
             WHERE id=?""",
-        (
-            f["firma"],f["rejestracja"],f["kierowca"],
-            f["email"],f["telefon"],f["data_godzina"],
-            f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id
-        ))
-
+        (f["firma"],f["rejestracja"],f["kierowca"],
+         f["email"],f["telefon"],f["data_godzina"],
+         f["typ_ladunku"],f["waga_ladunku"],f["komentarz"],id))
         conn.commit()
         conn.close()
-
         log_action(session.get("user"), f"EDYCJA AWIZACJI: ID:{id} firma:{f['firma']}")
-
         godz_od, godz_do, data_fmt = get_time_window(f["data_godzina"], f["typ_ladunku"])
         opis_zmian = request.form.get("opis_zmian", "")
         subject, body = get_mail_template("edycja")
         body = body.format(
-            firma=f["firma"],
-            termin=data_fmt,
-            typ_ladunku=f["typ_ladunku"],
-            godz_od=godz_od,
-            godz_do=godz_do,
-            rejestracja=f["rejestracja"],
-            opis_zmian=opis_zmian
+            firma=f["firma"], termin=data_fmt, typ_ladunku=f["typ_ladunku"],
+            godz_od=godz_od, godz_do=godz_do,
+            rejestracja=f["rejestracja"], opis_zmian=opis_zmian
         )
         send_mail(f["email"], subject, body)
-
         return redirect("/admin")
-
     c.execute("SELECT * FROM awizacje WHERE id=?", (id,))
     awizacja = c.fetchone()
     conn.close()
-
     dni, godziny, zajete = get_days_and_slots()
-
-    return render_template(
-        "edit.html",
-        awizacja=awizacja,
-        dni=dni,
-        godziny=godziny,
-        zajete=zajete
-    )
+    return render_template("edit.html", awizacja=awizacja, dni=dni, godziny=godziny, zajete=zajete)
 
 # ================= LOGI =================
 
@@ -585,13 +553,11 @@ def edit(id):
 def logi():
     if not session.get("logged_in"):
         return redirect("/login")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
     c.execute("SELECT * FROM logi ORDER BY id DESC")
     logi = c.fetchall()
     conn.close()
-
     return render_template("logi.html", logi=logi)
 
 # ================= HISTORIA =================
@@ -600,13 +566,11 @@ def logi():
 def historia():
     if not session.get("logged_in"):
         return redirect("/login")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
     c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
     dane = c.fetchall()
     conn.close()
-
     return render_template("historia.html", awizacje=dane)
 
 # ================= PERMISSIONS =================
@@ -615,16 +579,14 @@ def historia():
 def permissions():
     if not session.get("logged_in"):
         return redirect("/login")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
     if request.method == "POST":
         login = request.form["login"]
-
         c.execute("""UPDATE permissions SET
             can_edit=?,can_status=?,calendar_only=?,
-            show_logi=?,show_historia=?,show_permissions=?,auto_refresh=?,auto_refresh_interval=?,show_maile=?,show_backup=?
+            show_logi=?,show_historia=?,show_permissions=?,
+            auto_refresh=?,auto_refresh_interval=?,show_maile=?,show_backup=?,show_zalaczniki=?
             WHERE login=?""",
         (
             int("can_edit" in request.form),
@@ -637,17 +599,14 @@ def permissions():
             int(request.form.get("auto_refresh_interval", 60)),
             int("show_maile" in request.form),
             int("show_backup" in request.form),
+            int("show_zalaczniki" in request.form),
             login
         ))
-
         conn.commit()
-
         log_action(session.get("user"), f"ZMIANA UPRAWNIEŃ: {login}")
-
     c.execute("SELECT * FROM permissions")
     users = c.fetchall()
     conn.close()
-
     slot_blocks = get_slot_blocks()
     return render_template("permissions.html", users=users, slot_blocks=slot_blocks)
 
@@ -657,10 +616,8 @@ def permissions():
 def update_slot_blocks():
     if not session.get("logged_in"):
         return redirect("/login")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
     for key, val in request.form.items():
         if key.startswith("blokada_"):
             typ = key[len("blokada_"):]
@@ -669,10 +626,8 @@ def update_slot_blocks():
                 c.execute("UPDATE slot_blocks SET blokada=? WHERE typ=?", (blokada, typ))
             except:
                 pass
-
     conn.commit()
     conn.close()
-
     log_action(session.get("user"), "ZMIANA SLOT BLOCKS")
     return redirect("/admin/permissions")
 
@@ -682,30 +637,25 @@ def update_slot_blocks():
 def add_user():
     if not session.get("logged_in"):
         return redirect("/login")
-
     login = request.form.get("login", "").strip()
     haslo = request.form.get("haslo", "").strip()
-
     if login and haslo:
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
         c.execute("INSERT OR IGNORE INTO users VALUES (NULL,?,?)", (login, haslo))
-        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                  (login, 1, 1, 0, 1, 1, 1, 0, 60, 1, 1))
+        c.execute("INSERT OR IGNORE INTO permissions VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                  (login, 1, 1, 0, 1, 1, 1, 0, 60, 1, 1, 1))
         conn.commit()
         conn.close()
         log_action(session.get("user"), f"DODANIE UŻYTKOWNIKA: {login}")
-
     return redirect("/admin/permissions")
 
 @app.route("/admin/edit_user", methods=["POST"])
 def edit_user():
     if not session.get("logged_in"):
         return redirect("/login")
-
     login = request.form.get("login", "").strip()
     haslo = request.form.get("haslo", "").strip()
-
     if login and haslo:
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
@@ -713,16 +663,13 @@ def edit_user():
         conn.commit()
         conn.close()
         log_action(session.get("user"), f"ZMIANA HASŁA: {login}")
-
     return redirect("/admin/permissions")
 
 @app.route("/admin/delete_user", methods=["POST"])
 def delete_user():
     if not session.get("logged_in"):
         return redirect("/login")
-
     login = request.form.get("login", "").strip()
-
     if login:
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
@@ -731,7 +678,6 @@ def delete_user():
         conn.commit()
         conn.close()
         log_action(session.get("user"), f"USUNIĘCIE UŻYTKOWNIKA: {login}")
-
     return redirect("/admin/permissions")
 
 # ================= MAIL TEMPLATES EDIT =================
@@ -740,10 +686,8 @@ def delete_user():
 def maile():
     if not session.get("logged_in"):
         return redirect("/login")
-
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-
     if request.method == "POST":
         for typ in ["zaakceptowana", "odrzucona", "edycja"]:
             subject = request.form.get(f"subject_{typ}", "")
@@ -751,11 +695,9 @@ def maile():
             c.execute("UPDATE mail_templates SET subject=?, body=? WHERE typ=?", (subject, body, typ))
         conn.commit()
         log_action(session.get("user"), "EDYCJA SZABLONÓW MAILI")
-
     c.execute("SELECT typ, subject, body FROM mail_templates")
     templates = {r[0]: {"subject": r[1], "body": r[2]} for r in c.fetchall()}
     conn.close()
-
     return render_template("maile.html", templates=templates)
 
 # ================= DEBUG PATH =================
@@ -764,7 +706,6 @@ def maile():
 def debug_path():
     if not session.get("logged_in"):
         return redirect("/login")
-    import traceback
     base = os.path.dirname(os.path.abspath(__file__))
     try:
         listdir_base = os.listdir(base)
@@ -788,34 +729,27 @@ listdir(base): {listdir_base}
 def backup():
     if not session.get("logged_in"):
         return redirect("/login")
-
-    # Ścieżka bazowa relative do app.py (działa na CyberFolks/Passenger)
     base = os.path.dirname(os.path.abspath(__file__))
-
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        # Baza danych
         db_path = os.path.join(base, "awizacje.db")
         if os.path.exists(db_path):
             zf.write(db_path, "awizacje.db")
-
-        # Pliki .py
         for fname in os.listdir(base):
             if fname.endswith(".py"):
                 zf.write(os.path.join(base, fname), fname)
-
-        # Folder templates
         templates_dir = os.path.join(base, "templates")
         if os.path.exists(templates_dir):
             for fname in os.listdir(templates_dir):
                 zf.write(os.path.join(templates_dir, fname), os.path.join("templates", fname))
-
-        # Folder static
         static_dir = os.path.join(base, "static")
         if os.path.exists(static_dir):
             for fname in os.listdir(static_dir):
                 zf.write(os.path.join(static_dir, fname), os.path.join("static", fname))
-
+        upload_dir = os.path.join(base, UPLOAD_FOLDER)
+        if os.path.exists(upload_dir):
+            for fname in os.listdir(upload_dir):
+                zf.write(os.path.join(upload_dir, fname), os.path.join(UPLOAD_FOLDER, fname))
     buf.seek(0)
     now = now_pl().strftime("%Y%m%d_%H%M%S")
     log_action(session.get("user"), "BACKUP")
@@ -827,44 +761,41 @@ def backup():
 def restore():
     if not session.get("logged_in"):
         return redirect("/login")
-
     f = request.files.get("backup_file")
     if not f or not f.filename.endswith(".zip"):
         return "Nieprawidłowy plik. Wymagany plik .zip", 400
-
     base = os.path.dirname(os.path.abspath(__file__))
-
     try:
         buf = io.BytesIO(f.read())
         with zipfile.ZipFile(buf, "r") as zf:
             names = zf.namelist()
-
             if "awizacje.db" in names:
                 with open(os.path.join(base, "awizacje.db"), "wb") as db:
                     db.write(zf.read("awizacje.db"))
-
             for name in names:
                 if name.endswith(".py") and "/" not in name:
                     with open(os.path.join(base, name), "wb") as pyf:
                         pyf.write(zf.read(name))
-
             for name in names:
                 if name.startswith("templates/"):
                     os.makedirs(os.path.join(base, "templates"), exist_ok=True)
                     fname = os.path.basename(name)
                     with open(os.path.join(base, "templates", fname), "wb") as tf:
                         tf.write(zf.read(name))
-
             for name in names:
                 if name.startswith("static/"):
                     os.makedirs(os.path.join(base, "static"), exist_ok=True)
                     fname = os.path.basename(name)
                     with open(os.path.join(base, "static", fname), "wb") as sf:
                         sf.write(zf.read(name))
-
+            for name in names:
+                if name.startswith(UPLOAD_FOLDER + "/"):
+                    os.makedirs(os.path.join(base, UPLOAD_FOLDER), exist_ok=True)
+                    fname = os.path.basename(name)
+                    with open(os.path.join(base, UPLOAD_FOLDER, fname), "wb") as uf:
+                        uf.write(zf.read(name))
         log_action(session.get("user"), "RESTORE BACKUPU")
         return redirect("/admin")
-
     except Exception as e:
         return f"Błąd przywracania: {e}", 500
 
@@ -873,5 +804,5 @@ def restore():
 if __name__ == "__main__":
     app.run(debug=True)
 
-# DLA CYBER_FOLKS / PASSENGER
+# 👇 DLA CYBER_FOLKS / PASSENGER
 aplication = app
