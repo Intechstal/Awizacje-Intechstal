@@ -4,70 +4,133 @@
 <meta charset="UTF-8">
 <title>Awizacja</title>
 <link rel="stylesheet" href="/static/style.css">
+<style>
+    .page-wrapper {
+        display: flex;
+        gap: 30px;
+        max-width: 1100px;
+        margin: 30px auto;
+        align-items: flex-start;
+        padding: 0 20px;
+    }
+    .info-box {
+        flex: 1;
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        padding: 25px;
+        font-size: 15px;
+        line-height: 1.7;
+    }
+    .info-box h2 {
+        font-size: 16px;
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: #0f172a;
+    }
+    .info-box ul {
+        padding-left: 20px;
+        margin: 10px 0 0;
+    }
+    .info-box ul li {
+        margin-bottom: 6px;
+    }
+    .form-box {
+        flex: 1;
+        max-width: 500px;
+    }
+    @media (max-width: 768px) {
+        .page-wrapper {
+            flex-direction: column;
+        }
+        .form-box {
+            max-width: 100%;
+        }
+    }
+</style>
 </head>
 <body>
 <div class="topbar">
     <div class="topbar-left">
         <img src="/static/logo.png" class="logo">
     </div>
-    <div class="topbar-center">
-
-    </div>
+    <div class="topbar-center">Awizacja transportu</div>
     <div class="topbar-right">
-        <a href="/login">Logowanie do panelu administratora</a>
+        <a href="/login">Admin</a>
     </div>
 </div>
-<div class="form-box">
-<h1>Awizacja transportu</h1>
-{% if error %}
-<div class="error">{{ error }}</div>
-{% endif %}
-<form action="/zapisz" method="post">
-<label>Firma <span style="color:red">*</span></label>
-<input name="firma" value="{{ dane.firma or '' }}" required>
-<label>Rejestracja <span style="color:red">*</span></label>
-<input name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
-<label>Kierowca <span style="color:red">*</span></label>
-<input name="kierowca" value="{{ dane.kierowca or '' }}" required>
-<label>Email <span style="color:red">*</span></label>
-<input name="email" value="{{ dane.email or '' }}" required>
-<label>Telefon <span style="color:red">*</span></label>
-<input name="telefon" value="{{ dane.telefon or '' }}" required>
-<label>Typ ładunku <span style="color:red">*</span></label>
-<select name="typ_ladunku" required>
-    <option>Odbiór złomu</option>
-    <option>Odbiór zamówienia</option>
-    <option>Dostawa materiału</option>
-</select>
-<label>Waga</label>
-<input name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
-<label>Komentarz</label>
-<textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
-<label>Termin <span style="color:red">*</span></label>
-<select name="data_godzina" required>
-    {% for d in dni %}
-        <optgroup label="{{ d.strftime('%d.%m') }}">
-        {% for h in godziny %}
-            {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
-            {% set info = zajete.get(slot) %}
-            {# Pokaż slot tylko jeśli nie ma go w zajete (wolny i nie jest przeszły) #}
-            {% if not info %}
-                <option value="{{ slot }}">
-                    {{ d.strftime('%d.%m') }} {{ h }}
-                </option>
-            {% endif %}
+
+<div class="page-wrapper">
+
+    <!-- ================= INFO ================= -->
+    <div class="info-box">
+        <h2>Szanowni Państwo,</h2>
+        <p>w przypadku dostawy surowca dostarczenie dokumentu WZ z potrzebnymi danymi jest wymagane. Dane które muszą znajdować się na WZ:</p>
+        <ul>
+            <li>Nazwa firmy</li>
+            <li>Numer dokumentu WZ</li>
+            <li>Data dokumentu</li>
+            <li>Gatunek blachy</li>
+            <li>Grubość blachy</li>
+            <li>Wymiary arkusza/profila</li>
+            <li>Ilość w jednolitej jednostce miary (np. sztuki lub kilogramy)</li>
+            <li>Podpis wydającego</li>
+        </ul>
+    </div>
+
+    <!-- ================= FORM ================= -->
+    <div class="form-box">
+    <h1>Awizacja transportu</h1>
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    <form action="/zapisz" method="post">
+    <label>Firma <span style="color:red">*</span></label>
+    <input name="firma" value="{{ dane.firma or '' }}" required>
+    <label>Rejestracja <span style="color:red">*</span></label>
+    <input name="rejestracja" value="{{ dane.rejestracja or '' }}" required>
+    <label>Kierowca <span style="color:red">*</span></label>
+    <input name="kierowca" value="{{ dane.kierowca or '' }}" required>
+    <label>Email <span style="color:red">*</span></label>
+    <input name="email" value="{{ dane.email or '' }}" required>
+    <label>Telefon <span style="color:red">*</span></label>
+    <input name="telefon" value="{{ dane.telefon or '' }}" required>
+    <label>Typ ładunku <span style="color:red">*</span></label>
+    <select name="typ_ladunku" required>
+        <option>Odbiór złomu</option>
+        <option>Odbiór zamówienia</option>
+        <option>Dostawa materiału</option>
+    </select>
+    <label>Waga</label>
+    <input name="waga_ladunku" value="{{ dane.waga_ladunku or '' }}">
+    <label>Komentarz</label>
+    <textarea name="komentarz">{{ dane.komentarz or '' }}</textarea>
+    <label>Termin <span style="color:red">*</span></label>
+    <select name="data_godzina" required>
+        {% for d in dni %}
+            <optgroup label="{{ d.strftime('%d.%m') }}">
+            {% for h in godziny %}
+                {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
+                {% set info = zajete.get(slot) %}
+                {% if not info %}
+                    <option value="{{ slot }}">
+                        {{ d.strftime('%d.%m') }} {{ h }}
+                    </option>
+                {% endif %}
+            {% endfor %}
+            </optgroup>
         {% endfor %}
-        </optgroup>
-    {% endfor %}
-</select>
-<div style="text-align:center; margin:15px 0; font-size:14px;">
-    <label>
-        <input type="checkbox" name="rodo" required>
-        Akceptuję <a href="https://intechstal.pl/rodo/" target="_blank">RODO</a>
-    </label>
-</div>
-<button type="submit">Wyślij awizację</button>
-</form>
+    </select>
+    <div style="text-align:center; margin:15px 0; font-size:14px;">
+        <label>
+            <input type="checkbox" name="rodo" required>
+            Akceptuję <a href="https://intechstal.pl/rodo/" target="_blank">RODO</a>
+        </label>
+    </div>
+    <button type="submit">Wyślij awizację</button>
+    </form>
+    </div>
+
 </div>
 </body>
 </html>
