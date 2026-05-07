@@ -309,6 +309,24 @@ def get_days_and_slots():
 
     zajete = {}
 
+    # Oznacz sloty bliższe niż 1.5h jako zajęte (blokada czasowa dla klientów)
+    min_advance = now + timedelta(minutes=90)
+    for g in godziny:
+        for d in dni:
+            slot_str = d.strftime("%Y-%m-%d") + "T" + g
+            slot_time = datetime.strptime(slot_str, "%Y-%m-%dT%H:%M")
+            if slot_time <= min_advance and slot_str not in zajete:
+                zajete[slot_str] = {
+                    "main": False,
+                    "future_block": False,
+                    "is_before": False,
+                    "is_past": True,
+                    "firma": "",
+                    "typ_ladunku": "",
+                    "komentarz": "",
+                    "status": ""
+                }
+
     for r in rows:
         try:
             aid, firma, data, typ, waga, komentarz, status = r
@@ -358,11 +376,18 @@ def zapisz():
     # Blokada przeszłych slotów
     try:
         wybrana = datetime.strptime(f["data_godzina"], "%Y-%m-%dT%H:%M")
-        if wybrana < datetime.now():
+        now = datetime.now()
+        if wybrana < now:
             dni, godziny, zajete = get_days_and_slots()
             return render_template("form.html",
                 dni=dni, godziny=godziny, zajete=zajete,
                 dane=f, error="Nie można awizować się na termin w przeszłości."
+            )
+        if (wybrana - now).total_seconds() < 90 * 60:
+            dni, godziny, zajete = get_days_and_slots()
+            return render_template("form.html",
+                dni=dni, godziny=godziny, zajete=zajete,
+                dane=f, error="Awizacja wymaga co najmniej 1,5 godziny wyprzedzenia. Wybierz późniejszy termin."
             )
     except:
         pass
@@ -725,6 +750,29 @@ def maile():
     return render_template("maile.html", templates=templates)
 
 
+
+@app.route("/admin/debug_path")
+def debug_path():
+    if not session.get("logged_in"):
+        return redirect("/login")
+    import traceback
+    base = os.path.dirname(os.path.abspath(__file__))
+    try:
+        listdir_base = os.listdir(base)
+    except Exception as e:
+        listdir_base = str(e)
+    try:
+        db_exists = os.path.exists(os.path.join(base, "awizacje.db"))
+    except Exception as e:
+        db_exists = str(e)
+    return f"""<pre>
+__file__:      {__file__}
+base:          {base}
+cwd:           {os.getcwd()}
+db exists:     {db_exists}
+listdir(base): {listdir_base}
+</pre>"""
+
 # ================= BACKUP / RESTORE =================
 
 @app.route("/admin/backup")
@@ -732,26 +780,32 @@ def backup():
     if not session.get("logged_in"):
         return redirect("/login")
 
+    # Ścieżka bazowa relative do app.py (działa na CyberFolks/Passenger)
+    base = os.path.dirname(os.path.abspath(__file__))
+
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         # Baza danych
-        if os.path.exists("awizacje.db"):
-            zf.write("awizacje.db")
+        db_path = os.path.join(base, "awizacje.db")
+        if os.path.exists(db_path):
+            zf.write(db_path, "awizacje.db")
 
-        # Pliki aplikacji
-        for fname in os.listdir("."):
+        # Pliki .py
+        for fname in os.listdir(base):
             if fname.endswith(".py"):
-                zf.write(fname)
+                zf.write(os.path.join(base, fname), fname)
 
         # Folder templates
-        if os.path.exists("templates"):
-            for fname in os.listdir("templates"):
-                zf.write(os.path.join("templates", fname))
+        templates_dir = os.path.join(base, "templates")
+        if os.path.exists(templates_dir):
+            for fname in os.listdir(templates_dir):
+                zf.write(os.path.join(templates_dir, fname), os.path.join("templates", fname))
 
         # Folder static
-        if os.path.exists("static"):
-            for fname in os.listdir("static"):
-                zf.write(os.path.join("static", fname))
+        static_dir = os.path.join(base, "static")
+        if os.path.exists(static_dir):
+            for fname in os.listdir(static_dir):
+                zf.write(os.path.join(static_dir, fname), os.path.join("static", fname))
 
     buf.seek(0)
     now = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -769,34 +823,34 @@ def restore():
     if not f or not f.filename.endswith(".zip"):
         return "Nieprawidłowy plik. Wymagany plik .zip", 400
 
+    base = os.path.dirname(os.path.abspath(__file__))
+
     try:
         buf = io.BytesIO(f.read())
         with zipfile.ZipFile(buf, "r") as zf:
             names = zf.namelist()
 
-            # Przywróć bazę danych
             if "awizacje.db" in names:
-                with open("awizacje.db", "wb") as db:
+                with open(os.path.join(base, "awizacje.db"), "wb") as db:
                     db.write(zf.read("awizacje.db"))
 
-            # Przywróć pliki .py
             for name in names:
-                if name.endswith(".py"):
-                    with open(name, "wb") as pyf:
+                if name.endswith(".py") and "/" not in name:
+                    with open(os.path.join(base, name), "wb") as pyf:
                         pyf.write(zf.read(name))
 
-            # Przywróć templates
             for name in names:
                 if name.startswith("templates/"):
-                    os.makedirs("templates", exist_ok=True)
-                    with open(name, "wb") as tf:
+                    os.makedirs(os.path.join(base, "templates"), exist_ok=True)
+                    fname = os.path.basename(name)
+                    with open(os.path.join(base, "templates", fname), "wb") as tf:
                         tf.write(zf.read(name))
 
-            # Przywróć static
             for name in names:
                 if name.startswith("static/"):
-                    os.makedirs("static", exist_ok=True)
-                    with open(name, "wb") as sf:
+                    os.makedirs(os.path.join(base, "static"), exist_ok=True)
+                    fname = os.path.basename(name)
+                    with open(os.path.join(base, "static", fname), "wb") as sf:
                         sf.write(zf.read(name))
 
         log_action(session.get("user"), "RESTORE BACKUPU")
@@ -807,8 +861,8 @@ def restore():
 
 # ================= RUN =================
 
-# 👇 DLA CYBER_FOLKS / PASSENGER
-aplication = app
-
 if __name__ == "__main__":
     app.run(debug=True)
+
+# 👇 DLA CYBER_FOLKS / PASSENGER
+aplication = app
