@@ -301,7 +301,7 @@ def get_days_and_slots():
         d += timedelta(days=1)
 
     godziny = []
-    for s, e in [("07:30", "09:30"), ("11:00", "13:15"), ("14:15", "20:00")]:
+    for s, e in [("07:30", "09:30"), ("11:00", "20:00")]:
         t = datetime.strptime(s, "%H:%M")
         e = datetime.strptime(e, "%H:%M")
         while t < e:
