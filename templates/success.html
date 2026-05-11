@@ -1,11 +1,40 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <title>Awizacja zapisana</title>
+<meta charset="UTF-8">
+<title>Awizacja zapisana</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Awizacja została zapisana, proszę oczekiwać na potwierdzenie mailowe.</h1>
-    <a href="/">Wróć do formularza</a>
+<div class="topbar">
+    <div class="topbar-left">
+        <img src="/static/logo.png" class="logo">
+    </div>
+    <div class="topbar-center"></div>
+    <div class="topbar-right">
+        <a href="/login">Logowanie do panelu administratora</a>
+    </div>
+</div>
+
+<div class="form-box" style="text-align: center; padding: 48px 40px;">
+    <div style="font-size: 52px; margin-bottom: 16px;">✅</div>
+    <h1 style="margin-bottom: 12px;">Awizacja zapisana</h1>
+    <p style="color: #64748b; font-size: 16px; margin-bottom: 32px;">
+        Dziękujemy. Twoja awizacja została zapisana.<br>
+        Prosimy oczekiwać na potwierdzenie mailowe.
+    </p>
+    <a href="/" style="
+        display: inline-block;
+        background: #0f172a;
+        color: white;
+        padding: 12px 28px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 500;
+        transition: background 0.2s;
+    ">← Wróć do formularza</a>
+</div>
+
 </body>
 </html>
