@@ -1,3 +1,8 @@
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
 from flask import Flask, render_template, request, redirect, session, send_file
 import sqlite3
 from datetime import datetime, timedelta
@@ -61,30 +66,24 @@ MAIL_USER = "info@awizacje-intechstal.pl"
 MAIL_PASS = "--0bO8YLba^A0JQq"
 
 def _send_mail_worker(to, subject, body):
-    print(f"[MAIL] Próba wysyłki do: {to}", flush=True)
     try:
+        from email.header import Header
         msg = MIMEMultipart()
         msg["From"] = MAIL_USER
         msg["To"] = to
-        msg["Subject"] = subject
+        msg["Subject"] = Header(subject, "utf-8")
         msg.attach(MIMEText(body, "html", "utf-8"))
-        print(f"[MAIL] Łączenie z {MAIL_HOST}:{MAIL_PORT}", flush=True)
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context) as server:
-            print(f"[MAIL] Logowanie...", flush=True)
             server.login(MAIL_USER, MAIL_PASS)
-            print(f"[MAIL] Wysyłanie...", flush=True)
-            server.sendmail(MAIL_USER, to, msg.as_string())
-            print(f"[MAIL] Wysłano do: {to}", flush=True)
+            server.sendmail(MAIL_USER, to, msg.as_bytes())
     except Exception as e:
-        print(f"[MAIL ERROR] {type(e).__name__}: {e}", flush=True)
+        pass
 
 def send_mail(to, subject, body):
-    print(f"[MAIL] Tworzenie wątku dla: {to}", flush=True)
     t = threading.Thread(target=_send_mail_worker, args=(to, subject, body))
     t.daemon = True
     t.start()
-    print(f"[MAIL] Wątek uruchomiony", flush=True)
 
 # ================= SLOT CONFIG =================
 
