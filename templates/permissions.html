@@ -179,6 +179,54 @@
 <button type="submit" style="margin-top:10px; padding:6px 14px; background:#0f172a; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Zapisz blokady</button>
 </form>
 
+
+<!-- ================= BLOKADY GODZIN ================= -->
+<h2 style="margin-top:36px;">Blokady godzin w kalendarzu</h2>
+<p style="color:#64748b; font-size:14px; margin-bottom:12px;">Zablokowane sloty wyświetlają się w kalendarzu w czerwonej ramce jako „BLOKADA" – klienci nie mogą ich rezerwować.</p>
+
+<form action="/admin/time_block/add" method="post" style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:20px;">
+    <div>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Data i godzina slotu</label>
+        <input type="datetime-local" name="data_godzina" required
+               style="padding:7px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px;">
+    </div>
+    <div>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:4px;">Komentarz (widoczny w kalendarzu)</label>
+        <input type="text" name="komentarz" placeholder="np. Serwis, Urlop, Zamknięte…" maxlength="80"
+               style="padding:7px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; width:280px;">
+    </div>
+    <button type="submit" style="padding:8px 18px; background:#0f172a; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer; height:36px;">+ Dodaj blokadę</button>
+</form>
+
+{% if time_blocks %}
+<div style="overflow-x:auto;">
+<table class="table">
+<tr>
+    <th>Data i godzina</th>
+    <th>Komentarz</th>
+    <th>Dodał</th>
+    <th>Kiedy</th>
+    <th>Akcja</th>
+</tr>
+{% for tb in time_blocks %}
+<tr>
+    <td style="font-weight:600; white-space:nowrap;">{{ tb[1]|replace("T"," ") }}</td>
+    <td>{{ tb[2] or "–" }}</td>
+    <td style="color:#64748b; font-size:13px;">{{ tb[3] or "–" }}</td>
+    <td style="color:#64748b; font-size:13px; white-space:nowrap;">{{ tb[4] or "–" }}</td>
+    <td>
+        <form action="/admin/time_block/delete/{{ tb[0] }}" method="post" onsubmit="return confirm('Usunąć blokadę?')">
+            <button type="submit" style="background:#ef4444; color:white; border:none; border-radius:6px; padding:4px 10px; font-size:13px; cursor:pointer;">Usuń</button>
+        </form>
+    </td>
+</tr>
+{% endfor %}
+</table>
+</div>
+{% else %}
+<p style="color:#94a3b8; font-size:14px;">Brak aktywnych blokad godzin.</p>
+{% endif %}
+
 </div>
 </body>
 </html>
