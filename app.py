@@ -170,6 +170,14 @@ def init_db():
     for typ, blokada in [("Odbiór złomu", 2), ("Odbiór zamówienia", 1), ("Dostawa materiału", 3)]:
         c.execute("INSERT OR IGNORE INTO slot_blocks VALUES (?,?)", (typ, blokada))
 
+    c.execute('''CREATE TABLE IF NOT EXISTS time_blocks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_godzina TEXT NOT NULL,
+        komentarz TEXT,
+        created_by TEXT,
+        created_at TEXT
+    )''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS mail_templates (
         typ TEXT PRIMARY KEY,
         subject TEXT,
@@ -310,6 +318,8 @@ def get_days_and_slots():
     c = conn.cursor()
     c.execute("SELECT id, firma, data_godzina, typ_ladunku, waga_ladunku, komentarz, status FROM awizacje WHERE status != 'odrzucona'")
     rows = c.fetchall()
+    c.execute("SELECT id, data_godzina, komentarz FROM time_blocks")
+    time_block_rows = c.fetchall()
     conn.close()
 
     zajete = {}
@@ -355,6 +365,25 @@ def get_days_and_slots():
         except:
             continue
 
+    for tb in time_block_rows:
+        try:
+            tb_id, tb_data, tb_komentarz = tb
+            slot_time = parse_local_datetime(tb_data)
+            key = slot_time.strftime("%Y-%m-%dT%H:%M")
+            zajete[key] = {
+                "main": True,
+                "future_block": False,
+                "is_before": False,
+                "firma": "BLOKADA",
+                "typ_ladunku": "blokada",
+                "komentarz": tb_komentarz or "",
+                "status": "blokada",
+                "is_past": slot_time < now,
+                "time_block_id": tb_id
+            }
+        except:
+            continue
+
     return dni, godziny, zajete
 
 # ================= FORM =================
@@ -384,6 +413,17 @@ def zapisz():
             return render_template("form.html",
                 dni=dni, godziny=godziny, zajete=zajete,
                 dane=f, error="Awizacja wymaga co najmniej 1 godziny wyprzedzenia. Wybierz późniejszy termin.")
+    except:
+        pass
+
+    # Sprawdź czy slot nie jest zablokowany przez admina
+    try:
+        dni, godziny, zajete = get_days_and_slots()
+        slot_str = parse_local_datetime(f["data_godzina"]).strftime("%Y-%m-%dT%H:%M")
+        if zajete.get(slot_str, {}).get("status") == "blokada":
+            return render_template("form.html",
+                dni=dni, godziny=godziny, zajete=zajete,
+                dane=f, error="Wybrany termin jest zablokowany przez administratora. Wybierz inny termin.")
     except:
         pass
 
@@ -613,7 +653,10 @@ def permissions():
     users = c.fetchall()
     conn.close()
     slot_blocks = get_slot_blocks()
-    return render_template("permissions.html", users=users, slot_blocks=slot_blocks)
+    c2 = conn.cursor() if False else sqlite3.connect("awizacje.db").cursor()
+    c2.execute("SELECT id, data_godzina, komentarz, created_by, created_at FROM time_blocks ORDER BY data_godzina")
+    time_blocks = c2.fetchall()
+    return render_template("permissions.html", users=users, slot_blocks=slot_blocks, time_blocks=time_blocks)
 
 # ================= SLOT BLOCKS EDIT =================
 
@@ -805,7 +848,7 @@ def restore():
         return f"Błąd przywracania: {e}", 500
 
 # ================= TIME BLOCKS =================
- 
+
 @app.route("/admin/time_block/add", methods=["POST"])
 def add_time_block():
     if not session.get("logged_in"):
@@ -821,7 +864,7 @@ def add_time_block():
         conn.close()
         log_action(session.get("user"), f"BLOKADA SLOTU: {data_godzina} – {komentarz}")
     return redirect("/admin/permissions")
- 
+
 @app.route("/admin/time_block/delete/<int:id>", methods=["POST"])
 def delete_time_block(id):
     if not session.get("logged_in"):
@@ -833,7 +876,6 @@ def delete_time_block(id):
     conn.close()
     log_action(session.get("user"), f"USUNIĘCIE BLOKADY SLOTU id={id}")
     return redirect("/admin/permissions")
- 
 
 # ================= RUN =================
 
