@@ -134,6 +134,17 @@
         {% elif data.is_past or data.is_before %}
             <td class="empty">—</td>
 
+        {% elif data.status == 'blokada' %}
+            {# Blokada administracyjna #}
+            <td>
+                <div class="slot blokada" style="border:2px solid #ef4444; background:#fef2f2; color:#991b1b;">
+                    🔒 BLOKADA
+                    {% if data.komentarz %}
+                    <div class="small" style="color:#b91c1c;">{{ data.komentarz }}</div>
+                    {% endif %}
+                </div>
+            </td>
+
         {% elif data.main %}
             {# Slot główny — pełna informacja, kolor = status awizacji #}
             <td>
