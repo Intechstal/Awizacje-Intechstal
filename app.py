@@ -804,6 +804,37 @@ def restore():
     except Exception as e:
         return f"Błąd przywracania: {e}", 500
 
+# ================= TIME BLOCKS =================
+ 
+@app.route("/admin/time_block/add", methods=["POST"])
+def add_time_block():
+    if not session.get("logged_in"):
+        return redirect("/login")
+    data_godzina = request.form.get("data_godzina", "").strip()
+    komentarz = request.form.get("komentarz", "").strip()
+    if data_godzina:
+        conn = sqlite3.connect("awizacje.db")
+        c = conn.cursor()
+        c.execute("INSERT INTO time_blocks (data_godzina, komentarz, created_by, created_at) VALUES (?,?,?,?)",
+                  (data_godzina, komentarz, session.get("user"), now_pl().strftime("%Y-%m-%d %H:%M")))
+        conn.commit()
+        conn.close()
+        log_action(session.get("user"), f"BLOKADA SLOTU: {data_godzina} – {komentarz}")
+    return redirect("/admin/permissions")
+ 
+@app.route("/admin/time_block/delete/<int:id>", methods=["POST"])
+def delete_time_block(id):
+    if not session.get("logged_in"):
+        return redirect("/login")
+    conn = sqlite3.connect("awizacje.db")
+    c = conn.cursor()
+    c.execute("DELETE FROM time_blocks WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
+    log_action(session.get("user"), f"USUNIĘCIE BLOKADY SLOTU id={id}")
+    return redirect("/admin/permissions")
+ 
+
 # ================= RUN =================
 
 if __name__ == "__main__":
