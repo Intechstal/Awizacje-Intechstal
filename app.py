@@ -78,12 +78,14 @@ def _send_mail_worker(to, subject, body):
             server.login(MAIL_USER, MAIL_PASS)
             server.sendmail(MAIL_USER, to, msg.as_bytes())
     except Exception as e:
-        pass
+pass
+
+def _send_mail_worker(to, subject, body):
+    print("mail")
+
 
 def send_mail(to, subject, body):
-    t = threading.Thread(target=_send_mail_worker, args=(to, subject, body))
-    t.daemon = True
-    t.start()
+    print("send")
 
 # ================= SLOT CONFIG =================
 
