@@ -855,16 +855,25 @@ def restore():
 def add_time_block():
     if not session.get("logged_in"):
         return redirect("/login")
-    data_godzina = request.form.get("data_godzina", "").strip()
+    data_od = request.form.get("data_od", "").strip()
+    data_do = request.form.get("data_do", "").strip()
     komentarz = request.form.get("komentarz", "").strip()
-    if data_godzina:
+    if data_od and data_do:
+        try:
+            od = parse_local_datetime(data_od)
+            do = parse_local_datetime(data_do)
+            if od > do:
+                od, do = do, od  # zamień jeśli odwrotnie
+        except:
+            return redirect("/admin/permissions")
         conn = sqlite3.connect("awizacje.db")
         c = conn.cursor()
-        c.execute("INSERT INTO time_blocks (data_godzina, komentarz, created_by, created_at) VALUES (?,?,?,?)",
-                  (data_godzina, komentarz, session.get("user"), now_pl().strftime("%Y-%m-%d %H:%M")))
+        c.execute("INSERT INTO time_blocks (data_od, data_do, komentarz, created_by, created_at) VALUES (?,?,?,?,?)",
+                  (od.strftime("%Y-%m-%dT%H:%M"), do.strftime("%Y-%m-%dT%H:%M"),
+                   komentarz, session.get("user"), now_pl().strftime("%Y-%m-%d %H:%M")))
         conn.commit()
         conn.close()
-        log_action(session.get("user"), f"BLOKADA SLOTU: {data_godzina} – {komentarz}")
+        log_action(session.get("user"), f"BLOKADA SLOTÓW: {data_od} – {data_do} | {komentarz}")
     return redirect("/admin/permissions")
 
 @app.route("/admin/time_block/delete/<int:id>", methods=["POST"])
