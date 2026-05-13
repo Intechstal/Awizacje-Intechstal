@@ -80,10 +80,12 @@ def _send_mail_worker(to, subject, body):
     except Exception as e:
         pass
 
+def _send_mail_worker(to, subject, body):
+    print("mail")
+
+
 def send_mail(to, subject, body):
-    t = threading.Thread(target=_send_mail_worker, args=(to, subject, body))
-    t.daemon = True
-    t.start()
+    print("send")
 
 # ================= SLOT CONFIG =================
 
