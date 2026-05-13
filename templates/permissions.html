@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Permissions</title>
 <link rel="stylesheet" href="/static/style.css">
+
 <style>
     .perm-box {
         max-width: 95%;
@@ -14,14 +15,17 @@
         border-radius: 14px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.08);
     }
+
     .perm-box input[type="password"],
-    .perm-box input[type="text"] {
+    .perm-box input[type="text"],
+    .perm-box input[type="datetime-local"] {
         width: 130px;
         padding: 6px 10px;
         border-radius: 8px;
         border: 1px solid #e2e8f0;
         margin: 0;
     }
+
     .perm-box input[type="number"] {
         width: 60px;
         padding: 6px 10px;
@@ -29,6 +33,7 @@
         border: 1px solid #e2e8f0;
         margin: 0;
     }
+
     .perm-box button {
         padding: 6px 14px;
         background: #0f172a;
@@ -40,18 +45,22 @@
         white-space: nowrap;
         width: auto;
     }
+
     .perm-box button.danger {
         background: #dc2626;
     }
+
     .perm-box form {
         display: flex;
         align-items: center;
         gap: 6px;
         justify-content: center;
     }
+
     .perm-box h2 {
         margin-top: 30px;
     }
+
     .back-btn {
         display: inline-block;
         padding: 8px 16px;
@@ -62,17 +71,43 @@
         font-weight: 600;
         margin-bottom: 20px;
     }
+
+    .time-block-form {
+        display:flex;
+        flex-wrap:wrap;
+        gap:14px;
+        align-items:flex-end;
+        justify-content:flex-start !important;
+        margin-bottom:20px;
+    }
+
+    .time-block-form div {
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+    }
+
+    .time-block-form label {
+        font-size:13px;
+        font-weight:600;
+    }
 </style>
+
 </head>
 <body>
+
 <div class="perm-box">
 
 <a href="/admin" class="back-btn">← Powrót do admina</a>
 
 <!-- ================= UPRAWNIENIA ================= -->
+
 <h2>Uprawnienia użytkowników</h2>
+
 <div style="overflow-x:auto;">
+
 <table class="table">
+
 <tr>
     <th>User</th>
     <th>Edit</th>
@@ -88,252 +123,305 @@
     <th>Załączniki</th>
     <th></th>
 </tr>
+
 {% for u in users %}
 <tr>
-    <form method="post">
-        <td>{{ u[0] }}</td>
-        <td><input type="checkbox" name="can_edit" {% if u[1] %}checked{% endif %}></td>
-        <td><input type="checkbox" name="can_status" {% if u[2] %}checked{% endif %}></td>
-        <td><input type="checkbox" name="calendar_only" {% if u[3] %}checked{% endif %}></td>
-        <td><input type="checkbox" name="show_logi" {% if u[4] %}checked{% endif %}></td>
-        <td><input type="checkbox" name="show_historia" {% if u[5] %}checked{% endif %}></td>
-        <td><input type="checkbox" name="show_permissions" {% if u[6] %}checked{% endif %}></td>
-        <td><input type="checkbox" name="auto_refresh" {% if u[7] %}checked{% endif %}></td>
-        <td><input type="number" name="auto_refresh_interval" value="{{ u[8] }}" min="10" max="3600" style="width:70px"></td>
-        <td><input type="checkbox" name="show_maile" {% if u[9] %}checked{% endif %}></td>
-        <td><input type="checkbox" name="show_backup" {% if u[10] %}checked{% endif %}></td>
-        <td><input type="checkbox" name="show_zalaczniki" {% if u[11] %}checked{% endif %}></td>
-        <td>
-            <input type="hidden" name="login" value="{{ u[0] }}">
-            <button type="submit">Zapisz</button>
-        </td>
-    </form>
+
+<form method="post">
+
+    <td>{{ u[0] }}</td>
+
+    <td><input type="checkbox" name="can_edit" {% if u[1] %}checked{% endif %}></td>
+
+    <td><input type="checkbox" name="can_status" {% if u[2] %}checked{% endif %}></td>
+
+    <td><input type="checkbox" name="calendar_only" {% if u[3] %}checked{% endif %}></td>
+
+    <td><input type="checkbox" name="show_logi" {% if u[4] %}checked{% endif %}></td>
+
+    <td><input type="checkbox" name="show_historia" {% if u[5] %}checked{% endif %}></td>
+
+    <td><input type="checkbox" name="show_permissions" {% if u[6] %}checked{% endif %}></td>
+
+    <td><input type="checkbox" name="auto_refresh" {% if u[7] %}checked{% endif %}></td>
+
+    <td>
+        <input type="number"
+               name="auto_refresh_interval"
+               value="{{ u[8] }}"
+               min="10"
+               max="3600"
+               style="width:70px">
+    </td>
+
+    <td><input type="checkbox" name="show_maile" {% if u[9] %}checked{% endif %}></td>
+
+    <td><input type="checkbox" name="show_backup" {% if u[10] %}checked{% endif %}></td>
+
+    <td><input type="checkbox" name="show_zalaczniki" {% if u[11] %}checked{% endif %}></td>
+
+    <td>
+        <input type="hidden" name="login" value="{{ u[0] }}">
+        <button type="submit">Zapisz</button>
+    </td>
+
+</form>
+
 </tr>
 {% endfor %}
+
 </table>
+
 </div>
 
 <!-- ================= ZARZĄDZANIE UŻYTKOWNIKAMI ================= -->
+
 <h2>Zarządzanie użytkownikami</h2>
+
 <div style="overflow-x:auto;">
+
 <table class="table">
+
 <tr>
     <th>Nazwa</th>
     <th>Nowe hasło</th>
     <th>Zmień hasło</th>
     <th>Usuń użytkownika</th>
 </tr>
+
 {% for u in users %}
 <tr>
+
     <td>{{ u[0] }}</td>
+
     <td>
         <form action="/admin/edit_user" method="post" id="form_{{ u[0] }}">
             <input type="hidden" name="login" value="{{ u[0] }}">
             <input type="password" name="haslo" placeholder="Nowe hasło">
         </form>
     </td>
+
     <td>
         <button type="submit" form="form_{{ u[0] }}">Zmień</button>
     </td>
+
     <td>
-        <form action="/admin/delete_user" method="post" onsubmit="return confirm('Usunąć użytkownika {{ u[0] }}?')">
+        <form action="/admin/delete_user"
+              method="post"
+              onsubmit="return confirm('Usunąć użytkownika {{ u[0] }}?')">
+
             <input type="hidden" name="login" value="{{ u[0] }}">
-            <button type="submit" class="danger">Usuń</button>
+
+            <button type="submit" class="danger">
+                Usuń
+            </button>
+
         </form>
     </td>
+
 </tr>
 {% endfor %}
+
 </table>
+
 </div>
 
 <!-- ================= DODAJ UŻYTKOWNIKA ================= -->
+
 <h2>Dodaj użytkownika</h2>
-<form action="/admin/add_user" method="post" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-start;">
-    <input type="text" name="login" placeholder="Login" required style="width:130px; padding:6px 10px; border-radius:8px; border:1px solid #e2e8f0;">
-    <input type="password" name="haslo" placeholder="Hasło" required style="width:130px; padding:6px 10px; border-radius:8px; border:1px solid #e2e8f0;">
-    <button type="submit" style="padding:6px 14px; background:#0f172a; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Dodaj</button>
+
+<form action="/admin/add_user"
+      method="post"
+      style="display:flex;
+             gap:10px;
+             align-items:center;
+             flex-wrap:wrap;
+             justify-content:flex-start;">
+
+    <input type="text"
+           name="login"
+           placeholder="Login"
+           required>
+
+    <input type="password"
+           name="haslo"
+           placeholder="Hasło"
+           required>
+
+    <button type="submit">
+        Dodaj
+    </button>
+
 </form>
 
 <!-- ================= BLOKADY SLOTÓW ================= -->
+
 <h2>Blokady slotów</h2>
+
 <form action="/admin/slot_blocks" method="post">
+
 <div style="overflow-x:auto;">
+
 <table class="table">
+
 <tr>
     <th>Typ ładunku</th>
     <th>Blokada (ilość slotów x15 min)</th>
 </tr>
+
 {% for typ, blokada in slot_blocks.items() %}
 <tr>
+
     <td>{{ typ }}</td>
+
     <td>
-        <form action="/admin/slot_blocks" method="post" style="display:flex; align-items:center; gap:6px;">
-            <input type="hidden" name="typ" value="{{ typ }}">
-            <input type="number" name="blokada_{{ typ }}" value="{{ blokada }}" min="0" max="10">
-        </form>
+        <input type="number"
+               name="blokada_{{ typ }}"
+               value="{{ blokada }}"
+               min="0"
+               max="10">
     </td>
+
 </tr>
 {% endfor %}
+
 </table>
+
 </div>
-<button type="submit" style="margin-top:10px; padding:6px 14px; background:#0f172a; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Zapisz blokady</button>
+
+<button type="submit" style="margin-top:10px;">
+    Zapisz blokady
+</button>
+
 </form>
 
-
 <!-- ================= BLOKADY GODZIN ================= -->
-<div style="margin-top:40px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:28px 28px 24px;">
-<h2 style="margin:0 0 6px;">Blokady godzin w kalendarzu</h2>
-<p style="color:#64748b; font-size:14px; margin:0 0 20px;">Zablokowane sloty wyświetlają się w kalendarzu jako <strong>🔒 BLOKADA</strong> – klienci nie mogą ich rezerwować.</p>
 
-<form action="/admin/time_block/add" method="post">
-<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr auto; gap:14px; align-items:end; margin-bottom:16px;">
+<h2 style="margin-top:36px;">Blokady godzin w kalendarzu</h2>
+
+<p style="color:#64748b; font-size:14px; margin-bottom:12px;">
+    Zablokowane zakresy godzin wyświetlają się w kalendarzu jako „BLOKADA”
+    i nie mogą być rezerwowane przez klientów.
+</p>
+
+<form action="/admin/time_block/add"
+      method="post"
+      class="time-block-form">
 
     <div>
-        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Data</label>
-        <input type="date" name="data_blokady" required
-               style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; width:100%; box-sizing:border-box;">
+        <label>Od</label>
+
+        <input type="datetime-local"
+               name="start_datetime"
+               required>
     </div>
 
     <div>
-        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Slot od</label>
-        <select name="slot_od" required style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; width:100%; box-sizing:border-box;">
-                <option value="07:30">07:30</option>
-                <option value="07:45">07:45</option>
-                <option value="08:00">08:00</option>
-                <option value="08:15">08:15</option>
-                <option value="08:30">08:30</option>
-                <option value="08:45">08:45</option>
-                <option value="09:00">09:00</option>
-                <option value="09:15">09:15</option>
-                <option value="11:00">11:00</option>
-                <option value="11:15">11:15</option>
-                <option value="11:30">11:30</option>
-                <option value="11:45">11:45</option>
-                <option value="12:00">12:00</option>
-                <option value="12:15">12:15</option>
-                <option value="12:30">12:30</option>
-                <option value="12:45">12:45</option>
-                <option value="13:00">13:00</option>
-                <option value="14:15">14:15</option>
-                <option value="14:30">14:30</option>
-                <option value="14:45">14:45</option>
-                <option value="15:00">15:00</option>
-                <option value="15:15">15:15</option>
-                <option value="15:30">15:30</option>
-                <option value="15:45">15:45</option>
-                <option value="16:00">16:00</option>
-                <option value="16:15">16:15</option>
-                <option value="16:30">16:30</option>
-                <option value="16:45">16:45</option>
-                <option value="17:00">17:00</option>
-                <option value="17:15">17:15</option>
-                <option value="17:30">17:30</option>
-                <option value="17:45">17:45</option>
-                <option value="18:00">18:00</option>
-                <option value="18:15">18:15</option>
-                <option value="18:30">18:30</option>
-                <option value="18:45">18:45</option>
-                <option value="19:00">19:00</option>
-                <option value="19:15">19:15</option>
-                <option value="19:30">19:30</option>
-                <option value="19:45">19:45</option>
-        </select>
+        <label>Do</label>
+
+        <input type="datetime-local"
+               name="end_datetime"
+               required>
     </div>
 
     <div>
-        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Slot do</label>
-        <select name="slot_do" required style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; width:100%; box-sizing:border-box;">
-                <option value="07:30">07:30</option>
-                <option value="07:45">07:45</option>
-                <option value="08:00">08:00</option>
-                <option value="08:15">08:15</option>
-                <option value="08:30">08:30</option>
-                <option value="08:45">08:45</option>
-                <option value="09:00">09:00</option>
-                <option value="09:15">09:15</option>
-                <option value="11:00">11:00</option>
-                <option value="11:15">11:15</option>
-                <option value="11:30">11:30</option>
-                <option value="11:45">11:45</option>
-                <option value="12:00">12:00</option>
-                <option value="12:15">12:15</option>
-                <option value="12:30">12:30</option>
-                <option value="12:45">12:45</option>
-                <option value="13:00">13:00</option>
-                <option value="14:15">14:15</option>
-                <option value="14:30">14:30</option>
-                <option value="14:45">14:45</option>
-                <option value="15:00">15:00</option>
-                <option value="15:15">15:15</option>
-                <option value="15:30">15:30</option>
-                <option value="15:45">15:45</option>
-                <option value="16:00">16:00</option>
-                <option value="16:15">16:15</option>
-                <option value="16:30">16:30</option>
-                <option value="16:45">16:45</option>
-                <option value="17:00">17:00</option>
-                <option value="17:15">17:15</option>
-                <option value="17:30">17:30</option>
-                <option value="17:45">17:45</option>
-                <option value="18:00">18:00</option>
-                <option value="18:15">18:15</option>
-                <option value="18:30">18:30</option>
-                <option value="18:45">18:45</option>
-                <option value="19:00">19:00</option>
-                <option value="19:15">19:15</option>
-                <option value="19:30">19:30</option>
-                <option value="19:45">19:45</option>
-        </select>
+        <label>Komentarz</label>
+
+        <input type="text"
+               name="komentarz"
+               placeholder="np. Serwis, Urlop, Inwentaryzacja..."
+               maxlength="80"
+               style="width:280px;">
     </div>
 
-    <div>
-        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Komentarz</label>
-        <input type="text" name="komentarz" placeholder="np. Serwis, Urlop…" maxlength="80"
-               style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; width:100%; box-sizing:border-box;">
-    </div>
+    <button type="submit"
+            style="height:38px;">
 
-    <div>
-        <button type="submit" style="padding:8px 18px; background:#0f172a; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer; white-space:nowrap; height:38px;">+ Dodaj</button>
-    </div>
+        + Dodaj blokadę
 
-</div>
+    </button>
+
 </form>
 
 {% if time_blocks %}
-<div style="overflow-x:auto; margin-top:8px;">
+
+<div style="overflow-x:auto;">
+
 <table class="table">
+
 <tr>
-    <th>Data</th>
     <th>Od</th>
     <th>Do</th>
     <th>Komentarz</th>
     <th>Dodał</th>
-    <th>Kiedy</th>
-    <th></th>
+    <th>Dodano</th>
+    <th>Akcja</th>
 </tr>
+
 {% for tb in time_blocks %}
+
 <tr>
-    <td style="font-weight:600; white-space:nowrap;">{{ tb[1][:10] }}</td>
-    <td style="white-space:nowrap;">{{ tb[1][11:] }}</td>
-    <td style="white-space:nowrap;">{{ tb[2][11:] }}</td>
-    <td>{{ tb[3] or "–" }}</td>
-    <td style="color:#64748b; font-size:13px;">{{ tb[4] or "–" }}</td>
-    <td style="color:#64748b; font-size:13px; white-space:nowrap;">{{ tb[5] or "–" }}</td>
-    <td>
-        <form action="/admin/time_block/delete/{{ tb[0] }}" method="post" onsubmit="return confirm('Usunąć blokadę?')">
-            <button type="submit" style="background:#ef4444; color:white; border:none; border-radius:6px; padding:4px 10px; font-size:13px; cursor:pointer;">Usuń</button>
-        </form>
+
+    <td style="font-weight:600; white-space:nowrap;">
+        {{ tb[1]|replace("T"," ") }}
     </td>
+
+    <td style="font-weight:600; white-space:nowrap;">
+        {{ tb[2]|replace("T"," ") }}
+    </td>
+
+    <td>
+        {{ tb[3] or "–" }}
+    </td>
+
+    <td style="color:#64748b; font-size:13px;">
+        {{ tb[4] or "–" }}
+    </td>
+
+    <td style="color:#64748b; font-size:13px; white-space:nowrap;">
+        {{ tb[5] or "–" }}
+    </td>
+
+    <td>
+
+        <form action="/admin/time_block/delete/{{ tb[0] }}"
+              method="post"
+              onsubmit="return confirm('Usunąć blokadę?')">
+
+            <button type="submit"
+                    style="background:#ef4444;
+                           color:white;
+                           border:none;
+                           border-radius:6px;
+                           padding:4px 10px;
+                           font-size:13px;
+                           cursor:pointer;">
+
+                Usuń
+
+            </button>
+
+        </form>
+
+    </td>
+
 </tr>
+
 {% endfor %}
+
 </table>
+
 </div>
+
 {% else %}
-<p style="color:#94a3b8; font-size:14px; margin:12px 0 0;">Brak aktywnych blokad.</p>
+
+<p style="color:#94a3b8; font-size:14px;">
+    Brak aktywnych blokad godzin.
+</p>
+
 {% endif %}
 
 </div>
 
-</div>
 </body>
 </html>
