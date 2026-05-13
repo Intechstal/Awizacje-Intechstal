@@ -78,14 +78,12 @@ def _send_mail_worker(to, subject, body):
             server.login(MAIL_USER, MAIL_PASS)
             server.sendmail(MAIL_USER, to, msg.as_bytes())
     except Exception as e:
-pass
-
-def _send_mail_worker(to, subject, body):
-    print("mail")
-
+        pass
 
 def send_mail(to, subject, body):
-    print("send")
+    t = threading.Thread(target=_send_mail_worker, args=(to, subject, body))
+    t.daemon = True
+    t.start()
 
 # ================= SLOT CONFIG =================
 
@@ -174,11 +172,21 @@ def init_db():
 
     c.execute('''CREATE TABLE IF NOT EXISTS time_blocks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        data_godzina TEXT NOT NULL,
+        data_od TEXT NOT NULL,
+        data_do TEXT NOT NULL,
         komentarz TEXT,
         created_by TEXT,
         created_at TEXT
     )''')
+    # Migracja starszej wersji tabeli
+    try:
+        c.execute("ALTER TABLE time_blocks ADD COLUMN data_do TEXT")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE time_blocks ADD COLUMN data_od TEXT")
+    except:
+        pass
 
     c.execute('''CREATE TABLE IF NOT EXISTS mail_templates (
         typ TEXT PRIMARY KEY,
@@ -320,7 +328,7 @@ def get_days_and_slots():
     c = conn.cursor()
     c.execute("SELECT id, firma, data_godzina, typ_ladunku, waga_ladunku, komentarz, status FROM awizacje WHERE status != 'odrzucona'")
     rows = c.fetchall()
-    c.execute("SELECT id, data_godzina, komentarz FROM time_blocks")
+    c.execute("SELECT id, data_od, data_do, komentarz FROM time_blocks")
     time_block_rows = c.fetchall()
     conn.close()
 
@@ -369,20 +377,24 @@ def get_days_and_slots():
 
     for tb in time_block_rows:
         try:
-            tb_id, tb_data, tb_komentarz = tb
-            slot_time = parse_local_datetime(tb_data)
-            key = slot_time.strftime("%Y-%m-%dT%H:%M")
-            zajete[key] = {
-                "main": True,
-                "future_block": False,
-                "is_before": False,
-                "firma": "BLOKADA",
-                "typ_ladunku": "blokada",
-                "komentarz": tb_komentarz or "",
-                "status": "blokada",
-                "is_past": slot_time < now,
-                "time_block_id": tb_id
-            }
+            tb_id, tb_od, tb_do, tb_komentarz = tb
+            slot_od = parse_local_datetime(tb_od)
+            slot_do = parse_local_datetime(tb_do)
+            current = slot_od
+            while current <= slot_do:
+                key = current.strftime("%Y-%m-%dT%H:%M")
+                zajete[key] = {
+                    "main": True,
+                    "future_block": False,
+                    "is_before": False,
+                    "firma": "BLOKADA",
+                    "typ_ladunku": "blokada",
+                    "komentarz": tb_komentarz or "",
+                    "status": "blokada",
+                    "is_past": current < now,
+                    "time_block_id": tb_id
+                }
+                current += timedelta(minutes=15)
         except:
             continue
 
@@ -425,7 +437,7 @@ def zapisz():
         if zajete.get(slot_str, {}).get("status") == "blokada":
             return render_template("form.html",
                 dni=dni, godziny=godziny, zajete=zajete,
-                dane=f, error="Wybrany termin jest zablokowany przez administratora. Wybierz inny termin.")
+                dane=f, error="Wybrany termin jest zablokowany przez administratora. Proszę wybrać inny termin.")
     except:
         pass
 
@@ -656,7 +668,7 @@ def permissions():
     conn.close()
     slot_blocks = get_slot_blocks()
     c2 = conn.cursor() if False else sqlite3.connect("awizacje.db").cursor()
-    c2.execute("SELECT id, data_godzina, komentarz, created_by, created_at FROM time_blocks ORDER BY data_godzina")
+    c2.execute("SELECT id, data_od, data_do, komentarz, created_by, created_at FROM time_blocks ORDER BY data_od")
     time_blocks = c2.fetchall()
     return render_template("permissions.html", users=users, slot_blocks=slot_blocks, time_blocks=time_blocks)
 
