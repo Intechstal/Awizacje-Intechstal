@@ -80,12 +80,10 @@ def _send_mail_worker(to, subject, body):
     except Exception as e:
         pass
 
-def _send_mail_worker(to, subject, body):
-    print("mail")
-
-
 def send_mail(to, subject, body):
-    print("send")
+    t = threading.Thread(target=_send_mail_worker, args=(to, subject, body))
+    t.daemon = True
+    t.start()
 
 # ================= SLOT CONFIG =================
 
@@ -869,15 +867,16 @@ def restore():
 def add_time_block():
     if not session.get("logged_in"):
         return redirect("/login")
-    data_od = request.form.get("data_od", "").strip()
-    data_do = request.form.get("data_do", "").strip()
-    komentarz = request.form.get("komentarz", "").strip()
-    if data_od and data_do:
+    data_blokady = request.form.get("data_blokady", "").strip()
+    slot_od      = request.form.get("slot_od", "").strip()
+    slot_do      = request.form.get("slot_do", "").strip()
+    komentarz    = request.form.get("komentarz", "").strip()
+    if data_blokady and slot_od and slot_do:
         try:
-            od = parse_local_datetime(data_od)
-            do = parse_local_datetime(data_do)
+            od = parse_local_datetime(f"{data_blokady}T{slot_od}")
+            do = parse_local_datetime(f"{data_blokady}T{slot_do}")
             if od > do:
-                od, do = do, od  # zamień jeśli odwrotnie
+                od, do = do, od
         except:
             return redirect("/admin/permissions")
         conn = sqlite3.connect("awizacje.db")
@@ -887,7 +886,7 @@ def add_time_block():
                    komentarz, session.get("user"), now_pl().strftime("%Y-%m-%d %H:%M")))
         conn.commit()
         conn.close()
-        log_action(session.get("user"), f"BLOKADA SLOTÓW: {data_od} – {data_do} | {komentarz}")
+        log_action(session.get("user"), f"BLOKADA SLOTÓW: {od.strftime('%Y-%m-%d %H:%M')} – {do.strftime('%H:%M')} | {komentarz}")
     return redirect("/admin/permissions")
 
 @app.route("/admin/time_block/delete/<int:id>", methods=["POST"])
