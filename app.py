@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import smtplib
 import ssl
-import threading
 import zipfile
 import io
 import os
@@ -68,29 +67,17 @@ MAIL_PASS = "--0bO8YLba^A0JQq"
 def _send_mail_worker(to, subject, body):
     try:
         from email.header import Header
-
         msg = MIMEMultipart()
         msg["From"] = MAIL_USER
         msg["To"] = to
-        msg["Subject"] = str(Header(subject, "utf-8"))
-
+        msg["Subject"] = Header(subject, "utf-8")
         msg.attach(MIMEText(body, "html", "utf-8"))
-
         context = ssl.create_default_context()
-
-        with smtplib.SMTP_SSL(
-            MAIL_HOST,
-            MAIL_PORT,
-            context=context,
-            timeout=10
-        ) as server:
-
+        with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context) as server:
             server.login(MAIL_USER, MAIL_PASS)
             server.sendmail(MAIL_USER, to, msg.as_bytes())
-
     except Exception as e:
-        print("MAIL ERROR:", str(e))
-
+        pass
 
 def send_mail(to, subject, body):
     _send_mail_worker(to, subject, body)
