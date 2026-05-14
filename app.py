@@ -144,15 +144,17 @@ def init_db():
         show_historia INTEGER DEFAULT 1,
         show_permissions INTEGER DEFAULT 1,
         auto_refresh INTEGER DEFAULT 0,
-        auto_refresh_interval INTEGER DEFAULT 900,
+        auto_refresh_interval INTEGER DEFAULT 60,
         show_maile INTEGER DEFAULT 1,
+        show_backup INTEGER DEFAULT 1,
         show_zalaczniki INTEGER DEFAULT 1
     )''')
 
     for col, default in [
         ("auto_refresh", "0"),
-        ("auto_refresh_interval", "900"),
+        ("auto_refresh_interval", "60"),
         ("show_maile", "1"),
+        ("show_backup", "1"),
         ("show_zalaczniki", "1"),
     ]:
         try:
@@ -294,7 +296,7 @@ def get_perms(login):
     c.execute("""
         SELECT can_edit, can_status, calendar_only,
                show_logi, show_historia, show_permissions,
-               auto_refresh, auto_refresh_interval, show_maile, show_zalaczniki
+               auto_refresh, auto_refresh_interval, show_maile, show_backup, show_zalaczniki
         FROM permissions WHERE login=?
     """, (login,))
     row = c.fetchone()
@@ -643,7 +645,7 @@ def permissions():
         c.execute("""UPDATE permissions SET
             can_edit=?,can_status=?,calendar_only=?,
             show_logi=?,show_historia=?,show_permissions=?,
-            auto_refresh=?,auto_refresh_interval=?,show_maile=?, show_zalaczniki=?
+            auto_refresh=?,auto_refresh_interval=?,show_maile=?,show_backup=?,show_zalaczniki=?
             WHERE login=?""",
         (
             int("can_edit" in request.form),
@@ -655,6 +657,7 @@ def permissions():
             int("auto_refresh" in request.form),
             int(request.form.get("auto_refresh_interval", 60)),
             int("show_maile" in request.form),
+            int("show_backup" in request.form),
             int("show_zalaczniki" in request.form),
             login
         ))
@@ -781,6 +784,82 @@ cwd:           {os.getcwd()}
 db exists:     {db_exists}
 listdir(base): {listdir_base}
 </pre>"""
+
+# ================= BACKUP / RESTORE =================
+
+@app.route("/admin/backup")
+def backup():
+    if not session.get("logged_in"):
+        return redirect("/login")
+    base = os.path.dirname(os.path.abspath(__file__))
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        db_path = os.path.join(base, "awizacje.db")
+        if os.path.exists(db_path):
+            zf.write(db_path, "awizacje.db")
+        for fname in os.listdir(base):
+            if fname.endswith(".py"):
+                zf.write(os.path.join(base, fname), fname)
+        templates_dir = os.path.join(base, "templates")
+        if os.path.exists(templates_dir):
+            for fname in os.listdir(templates_dir):
+                zf.write(os.path.join(templates_dir, fname), os.path.join("templates", fname))
+        static_dir = os.path.join(base, "static")
+        if os.path.exists(static_dir):
+            for fname in os.listdir(static_dir):
+                zf.write(os.path.join(static_dir, fname), os.path.join("static", fname))
+        upload_dir = os.path.join(base, UPLOAD_FOLDER)
+        if os.path.exists(upload_dir):
+            for fname in os.listdir(upload_dir):
+                zf.write(os.path.join(upload_dir, fname), os.path.join(UPLOAD_FOLDER, fname))
+    buf.seek(0)
+    now = now_pl().strftime("%Y%m%d_%H%M%S")
+    log_action(session.get("user"), "BACKUP")
+    return send_file(buf, as_attachment=True,
+                     download_name=f"backup_awizacje_{now}.zip",
+                     mimetype="application/zip")
+
+@app.route("/admin/restore", methods=["POST"])
+def restore():
+    if not session.get("logged_in"):
+        return redirect("/login")
+    f = request.files.get("backup_file")
+    if not f or not f.filename.endswith(".zip"):
+        return "Nieprawidłowy plik. Wymagany plik .zip", 400
+    base = os.path.dirname(os.path.abspath(__file__))
+    try:
+        buf = io.BytesIO(f.read())
+        with zipfile.ZipFile(buf, "r") as zf:
+            names = zf.namelist()
+            if "awizacje.db" in names:
+                with open(os.path.join(base, "awizacje.db"), "wb") as db:
+                    db.write(zf.read("awizacje.db"))
+            for name in names:
+                if name.endswith(".py") and "/" not in name:
+                    with open(os.path.join(base, name), "wb") as pyf:
+                        pyf.write(zf.read(name))
+            for name in names:
+                if name.startswith("templates/"):
+                    os.makedirs(os.path.join(base, "templates"), exist_ok=True)
+                    fname = os.path.basename(name)
+                    with open(os.path.join(base, "templates", fname), "wb") as tf:
+                        tf.write(zf.read(name))
+            for name in names:
+                if name.startswith("static/"):
+                    os.makedirs(os.path.join(base, "static"), exist_ok=True)
+                    fname = os.path.basename(name)
+                    with open(os.path.join(base, "static", fname), "wb") as sf:
+                        sf.write(zf.read(name))
+            for name in names:
+                if name.startswith(UPLOAD_FOLDER + "/"):
+                    os.makedirs(os.path.join(base, UPLOAD_FOLDER), exist_ok=True)
+                    fname = os.path.basename(name)
+                    with open(os.path.join(base, UPLOAD_FOLDER, fname), "wb") as uf:
+                        uf.write(zf.read(name))
+        log_action(session.get("user"), "RESTORE BACKUPU")
+        return redirect("/admin")
+    except Exception as e:
+        return f"Błąd przywracania: {e}", 500
 
 # ================= TIME BLOCKS =================
 
