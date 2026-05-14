@@ -17,7 +17,6 @@
 {% set show_historia = True %}
 {% set show_permissions = True %}
 {% set show_maile = True %}
-{% set show_backup = True %}
 {% set show_zalaczniki = True %}
 {% if perms %}
     {% set can_edit = perms[0] %}
@@ -27,8 +26,7 @@
     {% set show_historia = perms[4] %}
     {% set show_permissions = perms[5] %}
     {% set show_maile = perms[8] %}
-    {% set show_backup = perms[9] %}
-    {% set show_zalaczniki = perms[10] %}
+    {% set show_zalaczniki = perms[9] %}
 {% endif %}
 <!-- =============================================== -->
 <div class="topbar">
@@ -186,33 +184,6 @@ function checkPowod(form) {
     }
     return true;
 }
-</script>
-
-<script>
-function confirmRestore() {
-    return confirm("Czy na pewno chcesz przywrócić backup? Obecne dane zostaną nadpisane.");
-}
-</script>
-{% if show_backup %}
-<div style="position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:999;">
-    <a href="/admin/backup"
-       style="padding:10px 18px; background:#0f172a; color:white; border-radius:10px;
-              text-decoration:none; font-weight:700; font-size:14px; text-align:center;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-        ⬇ Pobierz backup
-    </a>
-    <form action="/admin/restore" method="post" enctype="multipart/form-data"
-          onsubmit="return confirmRestore()"
-          style="display:flex; flex-direction:column; gap:6px;">
-        <label style="background:#475569; color:white; padding:10px 18px; border-radius:10px;
-                      font-weight:700; font-size:14px; text-align:center; cursor:pointer;
-                      box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-            ⬆ Importuj backup
-            <input type="file" name="backup_file" accept=".zip"
-                   style="display:none" onchange="this.form.submit()">
-        </label>
-    </form>
-</div>
 {% endif %}
 
 </body>
