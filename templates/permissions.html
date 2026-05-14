@@ -344,45 +344,127 @@
 </form>
 
 <!-- ================= BLOKADY GODZIN ================= -->
-
-<div style="margin-top:40px;
-            background:#fff;
-            border:1px solid #e2e8f0;
-            border-radius:12px;
-            padding:28px 28px 24px;">
-
+<div style="margin-top:40px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:28px 28px 24px;">
 <h2 style="margin:0 0 6px;">Blokady godzin w kalendarzu</h2>
-
-<p style="color:#64748b;
-          font-size:14px;
-          margin:0 0 20px;">
-
-    Zablokowane sloty wyświetlają się w kalendarzu jako
-    <strong>🔒 BLOKADA</strong>
-    – klienci nie mogą ich rezerwować.
-
-</p>
+<p style="color:#64748b; font-size:14px; margin:0 0 20px;">Zablokowane sloty wyświetlają się w kalendarzu jako <strong>🔒 BLOKADA</strong> – klienci nie mogą ich rezerwować.</p>
 
 <form action="/admin/time_block/add" method="post">
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr auto; gap:14px; align-items:end; margin-bottom:16px;">
 
-<div style="display:grid;
-            grid-template-columns:1fr 1fr 1fr 1fr auto;
-            gap:14px;
-            align-items:end;
-            margin-bottom:16px;">
+    <div>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Data</label>
+        <input type="date" name="data_blokady" required
+               style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; width:100%; box-sizing:border-box;">
+    </div>
 
-<!-- tutaj zostawiasz swoje selecty slotów bez zmian -->
+    <div>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Slot od</label>
+        <select name="slot_od" required style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; width:100%; box-sizing:border-box;">
+                <option value="07:30">07:30</option>
+                <option value="07:45">07:45</option>
+                <option value="08:00">08:00</option>
+                <option value="08:15">08:15</option>
+                <option value="08:30">08:30</option>
+                <option value="08:45">08:45</option>
+                <option value="09:00">09:00</option>
+                <option value="09:15">09:15</option>
+                <option value="11:00">11:00</option>
+                <option value="11:15">11:15</option>
+                <option value="11:30">11:30</option>
+                <option value="11:45">11:45</option>
+                <option value="12:00">12:00</option>
+                <option value="12:15">12:15</option>
+                <option value="12:30">12:30</option>
+                <option value="12:45">12:45</option>
+                <option value="13:00">13:00</option>
+                <option value="14:15">14:15</option>
+                <option value="14:30">14:30</option>
+                <option value="14:45">14:45</option>
+                <option value="15:00">15:00</option>
+                <option value="15:15">15:15</option>
+                <option value="15:30">15:30</option>
+                <option value="15:45">15:45</option>
+                <option value="16:00">16:00</option>
+                <option value="16:15">16:15</option>
+                <option value="16:30">16:30</option>
+                <option value="16:45">16:45</option>
+                <option value="17:00">17:00</option>
+                <option value="17:15">17:15</option>
+                <option value="17:30">17:30</option>
+                <option value="17:45">17:45</option>
+                <option value="18:00">18:00</option>
+                <option value="18:15">18:15</option>
+                <option value="18:30">18:30</option>
+                <option value="18:45">18:45</option>
+                <option value="19:00">19:00</option>
+                <option value="19:15">19:15</option>
+                <option value="19:30">19:30</option>
+                <option value="19:45">19:45</option>
+        </select>
+    </div>
+
+    <div>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Slot do</label>
+        <select name="slot_do" required style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; width:100%; box-sizing:border-box;">
+                <option value="07:30">07:30</option>
+                <option value="07:45">07:45</option>
+                <option value="08:00">08:00</option>
+                <option value="08:15">08:15</option>
+                <option value="08:30">08:30</option>
+                <option value="08:45">08:45</option>
+                <option value="09:00">09:00</option>
+                <option value="09:15">09:15</option>
+                <option value="11:00">11:00</option>
+                <option value="11:15">11:15</option>
+                <option value="11:30">11:30</option>
+                <option value="11:45">11:45</option>
+                <option value="12:00">12:00</option>
+                <option value="12:15">12:15</option>
+                <option value="12:30">12:30</option>
+                <option value="12:45">12:45</option>
+                <option value="13:00">13:00</option>
+                <option value="14:15">14:15</option>
+                <option value="14:30">14:30</option>
+                <option value="14:45">14:45</option>
+                <option value="15:00">15:00</option>
+                <option value="15:15">15:15</option>
+                <option value="15:30">15:30</option>
+                <option value="15:45">15:45</option>
+                <option value="16:00">16:00</option>
+                <option value="16:15">16:15</option>
+                <option value="16:30">16:30</option>
+                <option value="16:45">16:45</option>
+                <option value="17:00">17:00</option>
+                <option value="17:15">17:15</option>
+                <option value="17:30">17:30</option>
+                <option value="17:45">17:45</option>
+                <option value="18:00">18:00</option>
+                <option value="18:15">18:15</option>
+                <option value="18:30">18:30</option>
+                <option value="18:45">18:45</option>
+                <option value="19:00">19:00</option>
+                <option value="19:15">19:15</option>
+                <option value="19:30">19:30</option>
+                <option value="19:45">19:45</option>
+        </select>
+    </div>
+
+    <div>
+        <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Komentarz</label>
+        <input type="text" name="komentarz" placeholder="np. Serwis, Urlop…" maxlength="80"
+               style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; width:100%; box-sizing:border-box;">
+    </div>
+
+    <div>
+        <button type="submit" style="padding:8px 18px; background:#0f172a; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer; white-space:nowrap; height:38px;">+ Dodaj</button>
+    </div>
 
 </div>
-
 </form>
 
 {% if time_blocks %}
-
 <div style="overflow-x:auto; margin-top:8px;">
-
 <table class="table">
-
 <tr>
     <th>Data</th>
     <th>Od</th>
@@ -392,85 +474,29 @@
     <th>Kiedy</th>
     <th></th>
 </tr>
-
 {% for tb in time_blocks %}
-
 <tr>
-
-    <td style="font-weight:600; white-space:nowrap;">
-        {{ tb[1][:10] }}
-    </td>
-
-    <td style="white-space:nowrap;">
-        {{ tb[1][11:] }}
-    </td>
-
-    <td style="white-space:nowrap;">
-        {{ tb[2][11:] }}
-    </td>
-
+    <td style="font-weight:600; white-space:nowrap;">{{ tb[1][:10] }}</td>
+    <td style="white-space:nowrap;">{{ tb[1][11:] }}</td>
+    <td style="white-space:nowrap;">{{ tb[2][11:] }}</td>
+    <td>{{ tb[3] or "–" }}</td>
+    <td style="color:#64748b; font-size:13px;">{{ tb[4] or "–" }}</td>
+    <td style="color:#64748b; font-size:13px; white-space:nowrap;">{{ tb[5] or "–" }}</td>
     <td>
-        {{ tb[3] or "–" }}
-    </td>
-
-    <td style="color:#64748b; font-size:13px;">
-        {{ tb[4] or "–" }}
-    </td>
-
-    <td style="color:#64748b;
-               font-size:13px;
-               white-space:nowrap;">
-
-        {{ tb[5] or "–" }}
-
-    </td>
-
-    <td>
-
-        <form action="/admin/time_block/delete/{{ tb[0] }}"
-              method="post"
-              onsubmit="return confirm('Usunąć blokadę?')">
-
-            <button type="submit"
-                    style="background:#ef4444;
-                           color:white;
-                           border:none;
-                           border-radius:6px;
-                           padding:4px 10px;
-                           font-size:13px;
-                           cursor:pointer;">
-
-                Usuń
-
-            </button>
-
+        <form action="/admin/time_block/delete/{{ tb[0] }}" method="post" onsubmit="return confirm('Usunąć blokadę?')">
+            <button type="submit" style="background:#ef4444; color:white; border:none; border-radius:6px; padding:4px 10px; font-size:13px; cursor:pointer;">Usuń</button>
         </form>
-
     </td>
-
 </tr>
-
 {% endfor %}
-
 </table>
-
 </div>
-
 {% else %}
-
-<p style="color:#94a3b8;
-          font-size:14px;
-          margin:12px 0 0;">
-
-    Brak aktywnych blokad.
-
-</p>
-
+<p style="color:#94a3b8; font-size:14px; margin:12px 0 0;">Brak aktywnych blokad.</p>
 {% endif %}
 
 </div>
 
 </div>
-
 </body>
 </html>
