@@ -146,7 +146,7 @@ def init_db():
         auto_refresh INTEGER DEFAULT 0,
         auto_refresh_interval INTEGER DEFAULT 60,
         show_maile INTEGER DEFAULT 1,
-        show_backup INTEGER DEFAULT 0,
+        show_backup INTEGER DEFAULT 1,
         show_zalaczniki INTEGER DEFAULT 1
     )''')
 
@@ -154,7 +154,7 @@ def init_db():
         ("auto_refresh", "0"),
         ("auto_refresh_interval", "60"),
         ("show_maile", "1"),
-        ("show_backup", "0"),
+        ("show_backup", "1"),
         ("show_zalaczniki", "1"),
     ]:
         try:
@@ -301,7 +301,7 @@ def get_perms(login):
     """, (login,))
     row = c.fetchone()
     conn.close()
-    return row if row else (1, 1, 0, 1, 1, 1, 0, 900, 1, 0, 1)
+    return row if row else (1, 1, 0, 1, 1, 1, 0, 900, 1, 1, 1)
 
 # ================= SLOTY =================
 
