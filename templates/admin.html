@@ -9,6 +9,7 @@
 {% endif %}
 </head>
 <body>
+
 <!-- ================= SAFE PERMS FIX ================= -->
 {% set can_edit = True %}
 {% set can_status = True %}
@@ -17,8 +18,8 @@
 {% set show_historia = True %}
 {% set show_permissions = True %}
 {% set show_maile = True %}
-{% set show_backup = True %}
 {% set show_zalaczniki = True %}
+
 {% if perms %}
     {% set can_edit = perms[0] %}
     {% set can_status = perms[1] %}
@@ -27,38 +28,47 @@
     {% set show_historia = perms[4] %}
     {% set show_permissions = perms[5] %}
     {% set show_maile = perms[8] %}
-    {% set show_backup = perms[9] %}
     {% set show_zalaczniki = perms[10] %}
 {% endif %}
 <!-- =============================================== -->
+
 <div class="topbar">
     <div class="topbar-left">
         <img src="/static/logo.png" class="logo">
     </div>
+
     <div class="topbar-center">
         Awizacja transportu
     </div>
+
     <div class="topbar-right">
         {% if show_maile %}
             <a href="/admin/maile">Maile</a>
         {% endif %}
+
         {% if show_logi %}
             <a href="/admin/logi">Logi</a>
         {% endif %}
+
         {% if show_historia %}
             <a href="/admin/historia">Historia</a>
         {% endif %}
+
         {% if show_permissions %}
             <a href="/admin/permissions">Permissions</a>
         {% endif %}
+
         <a href="/logout">Wyloguj</a>
     </div>
 </div>
+
 <div class="container">
 
 <!-- ================= AWIZACJE ================= -->
 {% if not calendar_only %}
+
 <h2>Awizacje</h2>
+
 <table class="table">
 <tr>
     <th>ID</th>
@@ -73,6 +83,7 @@
     <th>Załącznik</th>
     <th>Akcje</th>
 </tr>
+
 {% for a in awizacje %}
 <tr>
     <td>{{ a[0] }}</td>
@@ -83,137 +94,178 @@
     <td>{{ a[7] }}</td>
     <td>{{ a[8] }}</td>
     <td>{{ a[9] }}</td>
-    <td class="{{ a[10] }}">{{ a[10] }}</td>
+
+    <td class="{{ a[10] }}">
+        {{ a[10] }}
+    </td>
+
     <td>
         {% if show_zalaczniki and a[11] %}
-            <a href="/admin/zalacznik/{{ a[0] }}" target="_blank">📎 Pobierz</a>
+            <a href="/admin/zalacznik/{{ a[0] }}" target="_blank">
+                📎 Pobierz
+            </a>
         {% elif show_zalaczniki %}
             —
         {% endif %}
     </td>
+
     <td>
+
         {% if can_status %}
-        <form action="/admin/update_status/{{ a[0] }}" method="post" onsubmit="return checkPowod(this)">
+        <form action="/admin/update_status/{{ a[0] }}"
+              method="post"
+              onsubmit="return checkPowod(this)">
+
             <select name="status">
                 <option value="oczekująca">oczekująca</option>
                 <option value="zaakceptowana">zaakceptowana</option>
                 <option value="odrzucona">odrzucona</option>
             </select>
-            <input type="hidden" name="powod_odrzucenia" class="powod-field" value="">
+
+            <input type="hidden"
+                   name="powod_odrzucenia"
+                   class="powod-field"
+                   value="">
+
             <button class="btn">OK</button>
         </form>
         {% endif %}
+
         {% if can_edit %}
-        <a class="link" href="/admin/edit/{{ a[0] }}">Edytuj</a>
+        <a class="link" href="/admin/edit/{{ a[0] }}">
+            Edytuj
+        </a>
         {% endif %}
+
     </td>
 </tr>
 {% endfor %}
 </table>
+
 {% endif %}
 
 <!-- ================= KALENDARZ ================= -->
+
 <h2>Kalendarz</h2>
+
 <table class="calendar">
+
 <tr>
     <th>Godzina</th>
+
     {% for d in dni %}
         <th>{{ d.strftime('%d.%m') }}</th>
     {% endfor %}
 </tr>
+
 {% for h in godziny %}
+
 <tr>
+
     <td class="time">{{ h }}</td>
+
     {% for d in dni %}
+
         {% set slot = d.strftime('%Y-%m-%d') + 'T' + h %}
         {% set data = zajete.get(slot) %}
 
         {% if not data %}
+
             <td class="empty">—</td>
 
         {% elif data.is_past or data.is_before %}
+
             <td class="empty">—</td>
 
         {% elif data.status == 'blokada' %}
-            {# Blokada administracyjna #}
+
+            <!-- Blokada administracyjna -->
             <td>
-                <div class="slot blokada" style="border:2px solid #ef4444; background:#fef2f2; color:#991b1b;">
+                <div class="slot blokada"
+                     style="border:2px solid #ef4444;
+                            background:#fef2f2;
+                            color:#991b1b;">
+
                     🔒 BLOKADA
+
                     {% if data.komentarz %}
-                    <div class="small" style="color:#b91c1c;">{{ data.komentarz }}</div>
+                    <div class="small"
+                         style="color:#b91c1c;">
+                        {{ data.komentarz }}
+                    </div>
                     {% endif %}
+
                 </div>
             </td>
 
         {% elif data.main %}
-            {# Slot główny — pełna informacja, kolor = status awizacji #}
+
+            <!-- Slot główny -->
             <td>
                 <div class="slot {{ data.status }}">
                     {{ data.firma }}
-                    <div class="small">{{ data.typ_ladunku }}</div>
-                    <div class="small">{{ data.komentarz }}</div>
+
+                    <div class="small">
+                        {{ data.typ_ladunku }}
+                    </div>
+
+                    <div class="small">
+                        {{ data.komentarz }}
+                    </div>
                 </div>
             </td>
 
         {% elif data.future_block %}
-            {# Slot blokujący — te same info co slot główny #}
+
+            <!-- Slot blokujący -->
             <td>
                 <div class="slot {{ data.status }}">
                     {{ data.firma }}
-                    <div class="small">{{ data.typ_ladunku }}</div>
-                    <div class="small">{{ data.komentarz }}</div>
+
+                    <div class="small">
+                        {{ data.typ_ladunku }}
+                    </div>
+
+                    <div class="small">
+                        {{ data.komentarz }}
+                    </div>
                 </div>
             </td>
 
         {% else %}
+
             <td class="empty">—</td>
+
         {% endif %}
 
     {% endfor %}
+
 </tr>
+
 {% endfor %}
+
 </table>
 
 </div>
 
 <script>
 function checkPowod(form) {
+
     var status = form.querySelector('select[name="status"]').value;
+
     if (status === 'odrzucona') {
+
         var powod = prompt('Podaj powód odrzucenia awizacji:');
-        if (powod === null) return false;
+
+        if (powod === null)
+            return false;
+
         form.querySelector('.powod-field').value = powod;
     }
+
     return true;
 }
 </script>
-
-<script>
-function confirmRestore() {
-    return confirm("Czy na pewno chcesz przywrócić backup? Obecne dane zostaną nadpisane.");
-}
-</script>
-{% if show_backup %}
-<div style="position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:999;">
-    <a href="/admin/backup"
-       style="padding:10px 18px; background:#0f172a; color:white; border-radius:10px;
-              text-decoration:none; font-weight:700; font-size:14px; text-align:center;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-        ⬇ Pobierz backup
-    </a>
-    <form action="/admin/restore" method="post" enctype="multipart/form-data"
-          onsubmit="return confirmRestore()"
-          style="display:flex; flex-direction:column; gap:6px;">
-        <label style="background:#475569; color:white; padding:10px 18px; border-radius:10px;
-                      font-weight:700; font-size:14px; text-align:center; cursor:pointer;
-                      box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-            ⬆ Importuj backup
-            <input type="file" name="backup_file" accept=".zip"
-                   style="display:none" onchange="this.form.submit()">
-        </label>
-    </form>
-</div>
-{% endif %}
 
 </body>
 </html>
