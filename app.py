@@ -68,20 +68,30 @@ MAIL_PASS = "--0bO8YLba^A0JQq"
 def _send_mail_worker(to, subject, body):
     try:
         from email.header import Header
+
         msg = MIMEMultipart()
         msg["From"] = MAIL_USER
         msg["To"] = to
-        msg["Subject"] = Header(subject, "utf-8")
+        msg["Subject"] = str(Header(subject, "utf-8"))
+
         msg.attach(MIMEText(body, "html", "utf-8"))
+
         context = ssl.create_default_context()
+
         with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context) as server:
             server.login(MAIL_USER, MAIL_PASS)
             server.sendmail(MAIL_USER, to, msg.as_bytes())
+
     except Exception as e:
-        pass
+        print("MAIL ERROR:", e)
+
 
 def send_mail(to, subject, body):
-    t = threading.Thread(target=_send_mail_worker, args=(to, subject, body))
+    t = threading.Thread(
+        target=_send_mail_worker,
+        args=(to, subject, body)
+    )
+
     t.daemon = True
     t.start()
 
