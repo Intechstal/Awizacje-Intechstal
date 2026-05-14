@@ -78,22 +78,22 @@ def _send_mail_worker(to, subject, body):
 
         context = ssl.create_default_context()
 
-        with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context) as server:
+        with smtplib.SMTP_SSL(
+            MAIL_HOST,
+            MAIL_PORT,
+            context=context,
+            timeout=10
+        ) as server:
+
             server.login(MAIL_USER, MAIL_PASS)
             server.sendmail(MAIL_USER, to, msg.as_bytes())
 
     except Exception as e:
-        print("MAIL ERROR:", e)
+        print("MAIL ERROR:", str(e))
 
 
 def send_mail(to, subject, body):
-    t = threading.Thread(
-        target=_send_mail_worker,
-        args=(to, subject, body)
-    )
-
-    t.daemon = True
-    t.start()
+    _send_mail_worker(to, subject, body)
 
 # ================= SLOT CONFIG =================
 
