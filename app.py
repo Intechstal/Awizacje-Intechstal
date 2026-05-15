@@ -232,7 +232,8 @@ Kontrahent: {firma}<br>
 Data operacji: {termin}<br>
 Okno czasowe: {godz_od} – {godz_do}<br>
 Rodzaj operacji: {typ_ladunku}<br>
-Numer rejestracyjny pojazdu: {rejestracja}</p>
+Numer rejestracyjny pojazdu: {rejestracja}<br>
+Telefon: {telefon}</p>
 <p><strong>Zmiany wprowadzone w awizacji:</strong><br>{opis_zmian}</p>
 <p>Prosimy o uwzględnienie zaktualizowanych informacji podczas realizacji dostawy/załadunku.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
@@ -550,11 +551,11 @@ def update_status(id):
     log_action(session.get("user"), f"ZMIANA STATUSU: {firma} → {status}")
     conn2 = sqlite3.connect("awizacje.db")
     c2 = conn2.cursor()
-    c2.execute("SELECT email, firma, data_godzina, typ_ladunku, rejestracja FROM awizacje WHERE id=?", (id,))
+    c2.execute("SELECT email, firma, data_godzina, typ_ladunku, rejestracja, telefon FROM awizacje WHERE id=?", (id,))
     row2 = c2.fetchone()
     conn2.close()
     if row2:
-        email_klienta, firma2, data2, typ2, rejestracja2 = row2
+        email_klienta, firma2, data2, typ2, rejestracja2, telefon2 = row2
         if status in ("zaakceptowana", "odrzucona"):
             godz_od, godz_do, data_fmt = get_time_window(data2, typ2)
             subject, body = get_mail_template(status)
@@ -562,7 +563,7 @@ def update_status(id):
             body = body.format(
                 firma=firma2, termin=data_fmt, typ_ladunku=typ2,
                 godz_od=godz_od, godz_do=godz_do,
-                rejestracja=rejestracja2, powod=powod
+                rejestracja=rejestracja2, powod=powod, telefon=telefon2
             )
             send_mail(email_klienta, subject, body)
     return redirect("/admin")
@@ -593,7 +594,7 @@ def edit(id):
         body = body.format(
             firma=f["firma"], termin=data_fmt, typ_ladunku=f["typ_ladunku"],
             godz_od=godz_od, godz_do=godz_do,
-            rejestracja=f["rejestracja"], opis_zmian=opis_zmian
+            rejestracja=f["rejestracja"], opis_zmian=opis_zmian, telefon=f["telefon"]
         )
         send_mail(f["email"], subject, body)
         return redirect("/admin")
@@ -857,6 +858,44 @@ def restore():
         return redirect("/admin")
     except Exception as e:
         return f"Błąd przywracania: {e}", 500
+
+
+# ================= MAIL TEST =================
+
+@app.route("/admin/mail_test")
+def mail_test():
+    if not session.get("logged_in"):
+        return redirect("/login")
+    to = request.args.get("to", "")
+    if not to:
+        return """<form method="get">
+            <input name="to" placeholder="adres email" style="padding:8px; width:300px;">
+            <button type="submit">Wyślij test</button>
+        </form>"""
+    wynik = []
+    try:
+        import smtplib, ssl
+        wynik.append("1. Import OK")
+        context = ssl.create_default_context()
+        wynik.append("2. SSL context OK")
+        wynik.append(f"3. Łączę z {MAIL_HOST}:{MAIL_PORT}...")
+        with smtplib.SMTP_SSL(MAIL_HOST, MAIL_PORT, context=context, timeout=30) as server:
+            wynik.append("4. Połączenie OK")
+            server.login(MAIL_USER, MAIL_PASS)
+            wynik.append("5. Login OK")
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            from email.header import Header
+            msg = MIMEMultipart()
+            msg["From"] = MAIL_USER
+            msg["To"] = to
+            msg["Subject"] = str(Header("Test maila – awizacje", "utf-8"))
+            msg.attach(MIMEText("<p>To jest testowy mail z systemu awizacji.</p>", "html", "utf-8"))
+            server.sendmail(MAIL_USER, to, msg.as_bytes())
+            wynik.append("6. Wysłano OK ✅")
+    except Exception as e:
+        wynik.append(f"BŁĄD: {type(e).__name__}: {e}")
+    return "<br>".join(wynik)
 
 # ================= TIME BLOCKS =================
 
