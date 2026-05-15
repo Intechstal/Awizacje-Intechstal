@@ -3,39 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <title>Historia awizacji</title>
+    <link rel="stylesheet" href="/static/style.css">
     <style>
-        body {
-            font-family: Arial;
+        .oczekująca { background-color: #fff7ed; }
+        .zaakceptowana { background-color: #f0fdf4; }
+        .odrzucona { background-color: #f1f5f9; color: #94a3b8; }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
         }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        td, th {
-            padding: 6px;
-            border: 1px solid #ccc;
-            text-align: center;
-        }
-        .oczekująca {
-            background-color: #ffcccc;
-        }
-        .zaakceptowana {
-            background-color: #ccffcc;
-        }
-        .odrzucona {
-            background-color: #dddddd;
-        }
+        .badge.zaakceptowana { background:#dcfce7; color:#166534; }
+        .badge.odrzucona     { background:#e2e8f0; color:#475569; }
+        .badge.oczekująca    { background:#ffedd5; color:#9a3412; }
+        .ostatnia-zmiana     { color: #64748b; font-size: 12px; white-space: nowrap; }
     </style>
 </head>
 <body>
+<div class="topbar">
+    <div class="topbar-left"><img src="/static/logo.png" class="logo"></div>
+    <div class="topbar-center">Historia awizacji</div>
+    <div class="topbar-right"><a href="/admin">⬅ Powrót do panelu</a></div>
+</div>
 
-<h1>Pełna historia awizacji</h1>
-
-<a href="/admin">⬅ Powrót do panelu</a>
-
-<br><br>
-
-<table>
+<div style="padding: 28px 32px;">
+<table class="table">
 <tr>
     <th>ID</th>
     <th>Firma</th>
@@ -43,27 +37,28 @@
     <th>Kierowca</th>
     <th>Email</th>
     <th>Telefon</th>
-    <th>Data</th>
+    <th>Data awizacji</th>
     <th>Typ</th>
     <th>Waga</th>
     <th>Status</th>
+    <th>Ostatnia zmiana</th>
 </tr>
-
 {% for a in awizacje %}
 <tr class="{{ a[10] }}">
-    <td>{{ a[0] }}</td>
+    <td style="font-weight:600;">{{ a[0] }}</td>
     <td>{{ a[1] }}</td>
     <td>{{ a[2] }}</td>
     <td>{{ a[3] }}</td>
     <td>{{ a[4] }}</td>
     <td>{{ a[5] }}</td>
-    <td>{{ a[6] }}</td>
+    <td style="white-space:nowrap;">{{ a[6]|replace("T"," ") }}</td>
     <td>{{ a[7] }}</td>
     <td>{{ a[8] }}</td>
-    <td>{{ a[10] }}</td>
+    <td><span class="badge {{ a[10] }}">{{ a[10] }}</span></td>
+    <td class="ostatnia-zmiana">{{ ostatnie_zmiany[a[0]] or "–" }}</td>
 </tr>
 {% endfor %}
 </table>
-
+</div>
 </body>
 </html>
