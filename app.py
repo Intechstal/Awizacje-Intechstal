@@ -199,13 +199,12 @@ def init_db():
 <p>potwierdzamy przyjęcie awizacji.</p>
 <p><strong>Szczegóły awizacji:</strong><br>
 Kontrahent: {firma}<br>
-Telefon: {telefon}<br>
 Data dostawy/załadunku: {termin}<br>
 Okno czasowe: {godz_od} – {godz_do}<br>
 Rodzaj operacji: {typ_ladunku}<br>
 Numer rejestracyjny pojazdu: {rejestracja}</p>
 <p>Prosimy o przybycie w wyznaczonym oknie czasowym. W przypadku opóźnienia awizacja może zostać przesunięta lub wymagać ponownego umówienia.</p>
-<p>W razie potrzeby zmiany terminu prosimy o kontakt pod numerem 797 816 814.</p>
+<p>W razie potrzeby zmiany terminu prosimy o kontakt poprzez system awizacji.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
@@ -218,10 +217,8 @@ Numer rejestracyjny pojazdu: {rejestracja}</p>
 <p><strong>Szczegóły awizacji:</strong><br>
 Kontrahent: {firma}<br>
 Planowana data: {termin}<br>
-Okno czasowe: {godz_od} – {godz_do}<br>
-Telefon: {telefon}</p>
+Okno czasowe: {godz_od} – {godz_do}</p>
 <p>Prosimy o ponowne przesłanie awizacji z poprawnymi danymi lub wybór innego dostępnego terminu.</p>
-<p>W razie potrzeby prosimy o kontakt pod numerem 797 816 814.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
@@ -239,7 +236,6 @@ Numer rejestracyjny pojazdu: {rejestracja}<br>
 Telefon: {telefon}</p>
 <p><strong>Zmiany wprowadzone w awizacji:</strong><br>{opis_zmian}</p>
 <p>Prosimy o uwzględnienie zaktualizowanych informacji podczas realizacji dostawy/załadunku.</p>
-<p>W razie potrzeby prosimy o kontakt pod numerem 797 816 814.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
@@ -629,10 +625,31 @@ def historia():
         return redirect("/login")
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT * FROM awizacje ORDER BY data_godzina DESC")
-    dane = c.fetchall()
+    c.execute("SELECT * FROM awizacje ORDER BY id DESC")
+    awizacje = c.fetchall()
+
+    # Dla każdej awizacji szukaj ostatniej zmiany statusu w logach
+    ostatnie_zmiany = {}
+    for a in awizacje:
+        aid = a[0]
+        firma = a[1]
+        c.execute("""
+            SELECT akcja, data FROM logi
+            WHERE (akcja LIKE ? OR akcja LIKE ? OR akcja LIKE ?)
+            ORDER BY id DESC LIMIT 1
+        """, (
+            f"%{firma}% → zaakceptowana%",
+            f"%{firma}% → odrzucona%",
+            f"%{firma}% → oczekująca%"
+        ))
+        row = c.fetchone()
+        if row:
+            ostatnie_zmiany[aid] = row[1]
+        else:
+            ostatnie_zmiany[aid] = None
+
     conn.close()
-    return render_template("historia.html", awizacje=dane)
+    return render_template("historia.html", awizacje=awizacje, ostatnie_zmiany=ostatnie_zmiany)
 
 # ================= PERMISSIONS =================
 
