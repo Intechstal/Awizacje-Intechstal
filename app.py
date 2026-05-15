@@ -199,6 +199,7 @@ def init_db():
 <p>potwierdzamy przyjęcie awizacji.</p>
 <p><strong>Szczegóły awizacji:</strong><br>
 Kontrahent: {firma}<br>
+Telefon: {telefon}<br>
 Data dostawy/załadunku: {termin}<br>
 Okno czasowe: {godz_od} – {godz_do}<br>
 Rodzaj operacji: {typ_ladunku}<br>
@@ -217,7 +218,8 @@ Numer rejestracyjny pojazdu: {rejestracja}</p>
 <p><strong>Szczegóły awizacji:</strong><br>
 Kontrahent: {firma}<br>
 Planowana data: {termin}<br>
-Okno czasowe: {godz_od} – {godz_do}</p>
+Okno czasowe: {godz_od} – {godz_do}<br>
+Telefon: {telefon}</p>
 <p>Prosimy o ponowne przesłanie awizacji z poprawnymi danymi lub wybór innego dostępnego terminu.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
