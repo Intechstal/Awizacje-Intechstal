@@ -205,7 +205,7 @@ Okno czasowe: {godz_od} – {godz_do}<br>
 Rodzaj operacji: {typ_ladunku}<br>
 Numer rejestracyjny pojazdu: {rejestracja}</p>
 <p>Prosimy o przybycie w wyznaczonym oknie czasowym. W przypadku opóźnienia awizacja może zostać przesunięta lub wymagać ponownego umówienia.</p>
-<p>W razie potrzeby zmiany terminu prosimy o kontakt poprzez system awizacji.</p>
+<p>W razie potrzeby zmiany terminu prosimy o kontakt pod numerem 797 816 814.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
@@ -221,6 +221,7 @@ Planowana data: {termin}<br>
 Okno czasowe: {godz_od} – {godz_do}<br>
 Telefon: {telefon}</p>
 <p>Prosimy o ponowne przesłanie awizacji z poprawnymi danymi lub wybór innego dostępnego terminu.</p>
+<p>W razie potrzeby prosimy o kontakt pod numerem 797 816 814.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
@@ -238,6 +239,7 @@ Numer rejestracyjny pojazdu: {rejestracja}<br>
 Telefon: {telefon}</p>
 <p><strong>Zmiany wprowadzone w awizacji:</strong><br>{opis_zmian}</p>
 <p>Prosimy o uwzględnienie zaktualizowanych informacji podczas realizacji dostawy/załadunku.</p>
+<p>W razie potrzeby prosimy o kontakt pod numerem 797 816 814.</p>
 <p><em>Uwaga: Ta wiadomość została wygenerowana automatycznie. Prosimy na nią nie odpowiadać.</em></p>
 <p>Z poważaniem,<br>System Awizacji<br>Intechstal Sp. z o.o.</p>"""
         ),
