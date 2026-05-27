@@ -283,50 +283,27 @@
 <!-- ================= BLOKADY SLOTÓW ================= -->
 
 <h2>Blokady slotów</h2>
-
 <form action="/admin/slot_blocks" method="post">
-
 <div style="overflow-x:auto;">
-
 <table class="table">
-
 <tr>
     <th>Typ ładunku</th>
     <th>Blokada (ilość slotów x15 min)</th>
 </tr>
-
 {% for typ, blokada in slot_blocks.items() %}
-
 <tr>
-
     <td>{{ typ }}</td>
-
     <td>
-
-        <form action="/admin/slot_blocks"
-              method="post"
-              style="display:flex; align-items:center; gap:6px;">
-
-            <input type="hidden" name="typ" value="{{ typ }}">
-
-            <input type="number"
-                   name="blokada_{{ typ }}"
-                   value="{{ blokada }}"
-                   min="0"
-                   max="10">
-
-        </form>
-
+        <input type="number"
+               name="blokada_{{ typ }}"
+               value="{{ blokada }}"
+               min="0"
+               max="10">
     </td>
-
 </tr>
-
 {% endfor %}
-
 </table>
-
 </div>
-
 <button type="submit"
         style="margin-top:10px;
                padding:6px 14px;
@@ -336,11 +313,8 @@
                border-radius:8px;
                font-weight:600;
                cursor:pointer;">
-
     Zapisz blokady
-
 </button>
-
 </form>
 
 <!-- ================= BLOKADY GODZIN ================= -->
