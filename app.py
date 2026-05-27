@@ -506,7 +506,11 @@ def admin():
         return redirect("/login")
     conn = sqlite3.connect("awizacje.db")
     c = conn.cursor()
-    c.execute("SELECT * FROM awizacje WHERE status != 'odrzucona' ORDER BY id DESC")
+    today = now_pl().strftime("%Y-%m-%d")
+    c.execute("""SELECT * FROM awizacje
+                 WHERE status != 'odrzucona'
+                 AND date(data_godzina) >= ?
+                 ORDER BY id DESC""", (today,))
     awizacje = c.fetchall()
     conn.close()
     dni, godziny, zajete = get_days_and_slots()
